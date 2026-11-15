@@ -4,15 +4,22 @@ import { useMe } from "../lib/identity";
 import {
   ARTISTS,
   coverOf,
+  fetchCharts,
+  fetchExplore,
+  fetchMusicArtist,
+  fetchSuggestions,
   fetchYtPlaylist,
   findYtPlaylists,
   getMusic,
   music,
   playlistIdFrom,
+  playRadio,
   searchMusic,
   setMusic,
   useMusic,
   type Artist,
+  type ChartArtist,
+  type ChartList,
   type Track,
   type YtPlaylist,
 } from "../lib/music";
@@ -26,7 +33,7 @@ import {
   usePlaylists,
   type Playlist,
 } from "../lib/musicDb";
-import { Cover, ModeSwitch, Progress, SearchError } from "./MusicPlayer";
+import { Cover, ModeSwitch, PremiumToggle, Progress, SearchError } from "./MusicPlayer";
 import "../styles/musicTab.css";
 
 // -----------------------------------------------------------------------------
@@ -48,6 +55,7 @@ type View =
   | { kind: "import" }
   | { kind: "yt"; list: string }
   | { kind: "artist"; name: string }
+  | { kind: "martist"; id: string; name: string }
   | { kind: "playlist"; id: string };
 
 // The page you were on, kept while you visit other tabs (until a reload).
@@ -105,19 +113,6 @@ export function MusicTab() {
             </button>
           </div>
           <div className="mt-lib__list">
-            {ARTISTS.map((a) => (
-              <button
-                key={a.name}
-                className={`mt-libitem${view.kind === "artist" && view.name === a.name ? " is-on" : ""}`}
-                onClick={() => setView({ kind: "artist", name: a.name })}
-              >
-                <ArtistAvatar name={a.name} size={44} />
-                <span>
-                  <b>{a.name}</b>
-                  <small>{t("mt.artist")}</small>
-                </span>
-              </button>
-            ))}
             {playlists.map((p) => (
               <button
                 key={p.id}
@@ -133,6 +128,14 @@ export function MusicTab() {
                 </span>
               </button>
             ))}
+            {available && playlists.length === 0 && (
+              <p className="mt-hint">
+                {t("mt.libEmpty")}{" "}
+                <button className="mt-link" onClick={() => setView({ kind: "import" })}>
+                  {t("mt.import")} →
+                </button>
+              </p>
+            )}
             {!available && <p className="mt-hint">{t("mt.needMigration")}</p>}
           </div>
         </div>
@@ -145,6 +148,7 @@ export function MusicTab() {
         {view.kind === "yt" && (
           <YtPlaylistPage key={view.list} list={view.list} playlists={playlists} available={available} go={setView} />
         )}
+        {view.kind === "martist" && <MusicArtistPage key={view.id} id={view.id} name={view.name} playlists={playlists} />}
         {view.kind === "artist" && <ArtistPage artist={ARTISTS.find((a) => a.name === view.name)!} playlists={playlists} />}
         {view.kind === "playlist" && (
           <PlaylistPage
@@ -214,29 +218,82 @@ function greeting(t: (k: string) => string) {
 
 // ---- Home ---------------------------------------------------------------------
 
+/** The countries offered for charts on the home ("ZZ" = the world). */
+const COUNTRIES = ["IT", "ZZ", "ES", "US", "MX", "GB", "FR", "BR"];
+
+function countryName(code: string, lang: string, world: string): string {
+  if (code === "ZZ") return world;
+  try {
+    return new Intl.DisplayNames([lang], { type: "region" }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
+
+/** A section's data, loaded once per session (the answers are memoised in lib/music). */
+function useLoad<T>(load: () => Promise<T | { error: string }>, deps: unknown[]): { data: T | null; error: string | null } {
+  const [state, setState] = useState<{ data: T | null; error: string | null }>({ data: null, error: null });
+  useEffect(() => {
+    let alive = true;
+    setState({ data: null, error: null });
+    void load().then((r) => {
+      if (!alive) return;
+      if (r && typeof r === "object" && "error" in (r as object)) setState({ data: null, error: (r as { error: string }).error });
+      else setState({ data: r as T, error: null });
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+  return state;
+}
+
 function Home({ go, playlists }: { go: (v: View) => void; playlists: Playlist[] }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const st = useMusic();
+  const [country, setCountry] = useState(() => (typeof window !== "undefined" && sessionStorage.getItem("gtd-music-country")) || "IT");
+  const pickCountry = (c: string) => {
+    setCountry(c);
+    try {
+      sessionStorage.setItem("gtd-music-country", c);
+    } catch {
+      /* fine */
+    }
+  };
+  const explore = useLoad(fetchExplore, []);
+  const charts = useLoad(() => fetchCharts(country), [country]);
+  const trends = explore.data?.sections?.[0];
+  const fresh = explore.data?.sections?.slice(1) ?? [];
+  const trendLabel = trends?.title ?? t("mt.trends");
+  const playingTrends = st.source?.kind === "videos" && st.source.label === trendLabel && st.playing;
+
   return (
     <div className="mt-page">
       <div className="mt-hero" style={{ background: "linear-gradient(180deg, rgba(94,92,230,.45), transparent)" }}>
         <h1>{greeting(t)}</h1>
+        <p className="mt-hint" style={{ margin: "4px 0 0" }}>{t("mt.homeIntro")}</p>
       </div>
+
       <div className="mt-quick">
-        <button className="mt-qtile" onClick={() => music.play({ kind: "mix" })}>
-          <span className="mt-qtile__art" style={{ background: "linear-gradient(135deg,#0a84ff,#bf5af2)" }}>
-            ♫
+        <button
+          className="mt-qtile"
+          disabled={!trends}
+          onClick={() => trends && (playingTrends ? music.toggle() : music.play({ kind: "videos", label: trendLabel, tracks: trends.tracks, start: 0 }))}
+        >
+          <span className="mt-qtile__art" style={{ background: "linear-gradient(135deg,#ff375f,#ff9f0a)" }}>
+            🔥
           </span>
-          <b>{t("music.mix")}</b>
-          <PlayFab on={st.source?.kind === "mix" && st.playing} />
+          <b>{trendLabel}</b>
+          <PlayFab on={playingTrends} />
         </button>
-        {ARTISTS.map((a) => (
-          <button key={a.name} className="mt-qtile" onClick={() => go({ kind: "artist", name: a.name })}>
-            <ArtistAvatar name={a.name} size={56} />
-            <b>{a.name}</b>
+        {charts.data?.lists?.slice(0, 2).map((l) => (
+          <button key={l.list} className="mt-qtile" onClick={() => go({ kind: "yt", list: l.list })}>
+            <Cover src={l.thumb} className="mt-qtile__img" />
+            <b>{l.title}</b>
           </button>
         ))}
-        {playlists.slice(0, 4).map((p) => (
+        {playlists.slice(0, 5).map((p) => (
           <button key={p.id} className="mt-qtile" onClick={() => go({ kind: "playlist", id: p.id })}>
             <Mosaic tracks={p.tracks} size={56} />
             <b>{p.name}</b>
@@ -244,28 +301,33 @@ function Home({ go, playlists }: { go: (v: View) => void; playlists: Playlist[] 
         ))}
       </div>
 
-      <h2 className="mt-h2">{t("mt.yourArtists")}</h2>
-      <div className="mt-cards">
-        {ARTISTS.map((a) => (
-          <div key={a.name} className="mt-card" onClick={() => go({ kind: "artist", name: a.name })} role="button" tabIndex={0}>
-            <div className="mt-card__art mt-card__art--round">
-              <ArtistAvatar name={a.name} size={150} />
-              <button
-                className="mt-play mt-play--float"
-                aria-label={`${t("music.play")} ${a.name}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  music.play({ kind: "artist", artist: a.name });
-                }}
-              >
-                ▶
-              </button>
-            </div>
-            <b>{a.name}</b>
-            <small>{t("mt.artist")}</small>
-          </div>
+      {/* Trends: the songs, playable straight away. */}
+      <div className="mt-h2row">
+        <h2 className="mt-h2">{trendLabel}</h2>
+        {trends && (
+          <button className="mt-pill mt-pill--solid" onClick={() => music.play({ kind: "videos", label: trendLabel, tracks: trends.tracks, start: 0 })}>
+            ▶ {t("mt.playAll")}
+          </button>
+        )}
+      </div>
+      {explore.error && <p className="mt-hint">{t("mt.homeErr")}</p>}
+      {!trends && !explore.error && <div className="mt-spin mt-spin--block" />}
+      {trends && <TrackGrid tracks={trends.tracks.slice(0, 12)} label={trendLabel} />}
+
+      {/* Charts: country picker + the chart playlists + most listened artists. */}
+      <div className="mt-h2row">
+        <h2 className="mt-h2">{t("mt.charts")}</h2>
+      </div>
+      <div className="mt-chips" style={{ marginTop: 0 }}>
+        {COUNTRIES.map((c) => (
+          <button key={c} className={`mt-chip${country === c ? " is-on" : ""}`} onClick={() => pickCountry(c)}>
+            {countryName(c, lang, t("mt.world"))}
+          </button>
         ))}
       </div>
+      {!charts.data && !charts.error && <div className="mt-spin mt-spin--block" />}
+      {charts.error && <p className="mt-hint">{t("mt.homeErr")}</p>}
+      {charts.data?.lists && <ChartCards lists={charts.data.lists} go={go} />}
 
       <h2 className="mt-h2">{t("mt.teamPlaylists")}</h2>
       {playlists.length === 0 ? (
@@ -302,7 +364,139 @@ function Home({ go, playlists }: { go: (v: View) => void; playlists: Playlist[] 
           ))}
         </div>
       )}
+
+      {charts.data?.artists && charts.data.artists.length > 0 && (
+        <>
+          <h2 className="mt-h2">
+            {t("mt.topArtists")} · {countryName(country, lang, t("mt.world"))}
+          </h2>
+          <div className="mt-cards">
+            {charts.data.artists.slice(0, 12).map((a) => (
+              <ChartArtistCard key={a.id} artist={a} go={go} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {fresh.map((sec) => (
+        <div key={sec.title}>
+          <h2 className="mt-h2">{sec.title}</h2>
+          <TrackCards tracks={sec.tracks.slice(0, 12)} label={sec.title} />
+        </div>
+      ))}
+
+      <h2 className="mt-h2">{t("mt.teamArtists")}</h2>
+      <div className="mt-chips" style={{ marginTop: 0 }}>
+        <button className="mt-chip" onClick={() => music.play({ kind: "mix" })}>
+          ▶ {t("music.mix")}
+        </button>
+        {ARTISTS.map((a) => (
+          <button key={a.name} className="mt-chip" onClick={() => go({ kind: "artist", name: a.name })}>
+            {a.name}
+          </button>
+        ))}
+      </div>
     </div>
+  );
+}
+
+/** Songs as a compact two-column grid (number, cover, title), playable. */
+function TrackGrid({ tracks, label }: { tracks: Track[]; label: string }) {
+  const { t } = useT();
+  const st = useMusic();
+  return (
+    <div className="mt-tgrid">
+      {tracks.map((tr, i) => (
+        <div key={tr.id} className={`mt-trow${st.now?.id === tr.id ? " is-on" : ""}`}>
+          <span className="mt-trow__n">{i + 1}</span>
+          <button className="mt-trow__main" onClick={() => music.play({ kind: "videos", label, tracks, start: i })} aria-label={`${t("music.play")} ${tr.title}`}>
+            <Cover id={tr.id} src={tr.thumb} className="mt-img40" />
+            <span>
+              <b>{tr.title}</b>
+              <small>{tr.channel}</small>
+            </span>
+          </button>
+          <RadioButton track={tr} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Songs as cards (cover, title, artist), playable. */
+function TrackCards({ tracks, label }: { tracks: Track[]; label: string }) {
+  const { t } = useT();
+  return (
+    <div className="mt-cards">
+      {tracks.map((tr, i) => (
+        <div key={tr.id} className="mt-card" onClick={() => music.play({ kind: "videos", label, tracks, start: i })} role="button" tabIndex={0}>
+          <div className="mt-card__art mt-card__art--wide">
+            <Cover id={tr.id} src={tr.thumb} className="mt-card__img" />
+            <span className="mt-play mt-play--float" aria-label={`${t("music.play")} ${tr.title}`}>
+              ▶
+            </span>
+          </div>
+          <b title={tr.title}>{tr.title}</b>
+          <small>{tr.channel}</small>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ChartCards({ lists, go }: { lists: ChartList[]; go: (v: View) => void }) {
+  return (
+    <div className="mt-cards">
+      {lists.map((l) => (
+        <div key={l.list} className="mt-card" onClick={() => go({ kind: "yt", list: l.list })} role="button" tabIndex={0}>
+          <div className="mt-card__art">
+            <Cover src={l.thumb} className="mt-card__img" />
+          </div>
+          <b title={l.title}>{l.title}</b>
+          <small>YouTube Music</small>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ChartArtistCard({ artist, go }: { artist: ChartArtist; go: (v: View) => void }) {
+  const { t } = useT();
+  return (
+    <div className="mt-card" onClick={() => go({ kind: "martist", id: artist.id, name: artist.name })} role="button" tabIndex={0}>
+      <div className="mt-card__art mt-card__art--round">
+        {artist.thumb ? <Cover src={artist.thumb} className="mt-card__img mt-card__img--round" /> : <ArtistAvatar name={artist.name} size={150} />}
+      </div>
+      <b>{artist.name}</b>
+      <small>{t("mt.artist")}</small>
+    </div>
+  );
+}
+
+/** "Radio": this song, then ~50 like it. */
+function RadioButton({ track, big }: { track: Track; big?: boolean }) {
+  const { t } = useT();
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      className={big ? "mt-pill" : "mt-iconbtn mt-radio"}
+      title={t("mt.radioHint")}
+      aria-label={`${t("mt.radio")}: ${track.title}`}
+      disabled={busy}
+      onClick={(e) => {
+        e.stopPropagation();
+        setBusy(true);
+        void playRadio(track, t("mt.radio")).then((err) => {
+          setBusy(false);
+          if (err) {
+            setMusic({ notice: t("mt.radioErr") });
+            setTimeout(() => setMusic({ notice: null }), 2500);
+          }
+        });
+      }}
+    >
+      {busy ? "…" : big ? `📻 ${t("mt.radio")}` : "📻"}
+    </button>
   );
 }
 
@@ -320,12 +514,22 @@ function Search({ playlists }: { playlists: Playlist[] }) {
   const [error, setError] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => input.current?.focus(), []);
+  const [sugs, setSugs] = useState<string[]>([]);
+  const [showSugs, setShowSugs] = useState(false);
+  // Suggestions while typing (free), a moment after the last key.
+  useEffect(() => {
+    const text = q.trim();
+    if (text.length < 2) return setSugs([]);
+    const id = setTimeout(() => void fetchSuggestions(text).then(setSugs), 200);
+    return () => clearTimeout(id);
+  }, [q]);
 
-  const run = async () => {
-    if (!q.trim()) return;
+  const run = async (words = q) => {
+    setShowSugs(false);
+    if (!words.trim()) return;
     setBusy(true);
     setError(null);
-    const r = await searchMusic(q.trim());
+    const r = await searchMusic(words.trim());
     setBusy(false);
     if ("tracks" in r) setTracks(r.tracks);
     else setError(r.error);
@@ -341,8 +545,40 @@ function Search({ playlists }: { playlists: Playlist[] }) {
         }}
       >
         <span aria-hidden="true">⌕</span>
-        <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("mt.searchPh")} aria-label={t("mt.search")} />
+        <input
+          ref={input}
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setShowSugs(true);
+          }}
+          onFocus={() => setShowSugs(true)}
+          onBlur={() => setTimeout(() => setShowSugs(false), 150)}
+          onKeyDown={(e) => e.key === "Escape" && setShowSugs(false)}
+          placeholder={t("mt.searchPh")}
+          aria-label={t("mt.search")}
+          autoComplete="off"
+        />
         {busy && <span className="mt-spin" aria-hidden="true" />}
+        {showSugs && sugs.length > 0 && (
+          <div className="mt-sugs" role="listbox">
+            {sugs.map((sg) => (
+              <button
+                key={sg}
+                type="button"
+                role="option"
+                aria-selected={false}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setQ(sg);
+                  void run(sg);
+                }}
+              >
+                <span aria-hidden="true">⌕</span> {sg}
+              </button>
+            ))}
+          </div>
+        )}
       </form>
       {error && <SearchError error={error} q={q} />}
       {tracks && (tracks.length ? <TrackTable tracks={tracks} label={q} playlists={playlists} /> : <p className="mt-hint">{t("music.noResults")}</p>)}
@@ -651,6 +887,40 @@ function ArtistPage({ artist, playlists }: { artist: Artist; playlists: Playlist
   );
 }
 
+/** Any YouTube Music artist (from the charts). */
+function MusicArtistPage({ id, name, playlists }: { id: string; name: string; playlists: Playlist[] }) {
+  const { t } = useT();
+  const st = useMusic();
+  const { data, error } = useLoad(() => fetchMusicArtist(id), [id]);
+  const title = data?.name || name;
+  const playing = st.source?.kind === "videos" && st.source.label === title && st.playing;
+  return (
+    <div className="mt-page">
+      <div className="mt-hero mt-hero--artist" style={{ background: gradientFor(title) }}>
+        {data?.thumb ? <Cover src={data.thumb} className="mt-hero__img mt-hero__img--round" /> : <ArtistAvatar name={title} size={160} />}
+        <div>
+          <small>{t("mt.artist")}</small>
+          <h1>{title}</h1>
+        </div>
+      </div>
+      <div className="mt-actions">
+        <button
+          className="mt-play mt-play--big"
+          disabled={!data?.tracks?.length}
+          aria-label={t("music.play")}
+          onClick={() => data && (playing ? music.toggle() : music.play({ kind: "videos", label: title, tracks: data.tracks, start: 0 }))}
+        >
+          {playing ? "❚❚" : "▶"}
+        </button>
+        {data?.tracks?.[0] && <RadioButton track={data.tracks[0]} big />}
+      </div>
+      {error && <p className="mt-hint">{t("mt.homeErr")}</p>}
+      {!data && !error && <div className="mt-spin mt-spin--block" />}
+      {data?.tracks && <TrackTable tracks={data.tracks} label={title} playlists={playlists} />}
+    </div>
+  );
+}
+
 // ---- Playlist ----------------------------------------------------------------
 
 function PlaylistPage({ playlist, playlists, onDeleted }: { playlist?: Playlist; playlists: Playlist[]; onDeleted: () => void }) {
@@ -788,6 +1058,7 @@ function TrackTable({ tracks, label, playlists, inPlaylist }: { tracks: Track[];
                   </button>
                 </>
               )}
+              <RadioButton track={tr} />
               <AddToPlaylist track={tr} playlists={playlists} />
             </span>
           </div>
@@ -920,6 +1191,9 @@ function NowPlaying() {
             </div>
           </>
         )}
+        <div className="mt-now__fine">
+          <PremiumToggle />
+        </div>
       </div>
     </aside>
   );
@@ -939,6 +1213,7 @@ function PlayerBar({ playlists }: { playlists: Playlist[] }) {
           <b>{st.notice ?? st.now?.title ?? t("music.nothing")}</b>
           <small>{st.now?.author}</small>
         </span>
+        {current && <RadioButton track={current} />}
         {current && <AddToPlaylist track={current} playlists={playlists} />}
       </div>
       <div className="mt-bar__center">

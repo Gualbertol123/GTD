@@ -316,3 +316,69 @@ export async function findYtPlaylists(q: string, cache = false): Promise<{ lists
 export function playlistIdFrom(input: string): string | null {
   return parseYouTube(input)?.list ?? null;
 }
+
+// ---- Home, radio, suggestions (YouTube.js on the server: no quota) ----------
+
+/** Answers kept for this session, so moving between pages asks nothing again. */
+const memo = new Map<string, unknown>();
+
+async function browse<T>(params: Record<string, string>, keep = true): Promise<T | { error: string }> {
+  const key = new URLSearchParams(params).toString();
+  if (keep && memo.has(key)) return memo.get(key) as T;
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { error: "login" };
+  try {
+    const res = await fetch(`/.netlify/functions/music-browse?${key}`, { headers: { Authorization: `Bearer ${token}` } });
+    const body = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
+    // Not JSON: the functions are not deployed here (local dev).
+    if (!body || typeof body !== "object") return { error: "no-functions" };
+    if (res.ok && !body.error) {
+      if (keep) memo.set(key, body);
+      return body;
+    }
+    return { error: body.error ?? `HTTP ${res.status}` };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export interface ChartList {
+  list: string;
+  title: string;
+  thumb: string;
+}
+export interface ChartArtist {
+  id: string;
+  name: string;
+  thumb: string;
+}
+
+/** YouTube Music's charts for a country ("ZZ" = the world). */
+export function fetchCharts(country: string) {
+  return browse<{ lists: ChartList[]; artists: ChartArtist[] }>({ charts: country });
+}
+
+/** YouTube Music's Explore: trends, new music videos. */
+export function fetchExplore() {
+  return browse<{ sections: { title: string; tracks: Track[] }[] }>({ explore: "1" });
+}
+
+/** Any YouTube Music artist (from the charts): name, picture, songs. */
+export function fetchMusicArtist(id: string) {
+  return browse<{ name: string; thumb: string; tracks: Track[] }>({ artist: id });
+}
+
+/** Search suggestions while typing. */
+export async function fetchSuggestions(q: string): Promise<string[]> {
+  const r = await browse<{ suggestions: string[] }>({ suggest: q.trim().toLowerCase() });
+  return "suggestions" in r ? r.suggestions : [];
+}
+
+/** "Radio": play this song, then ~50 like it. Returns an error key, or null. */
+export async function playRadio(t: { id: string; title: string }, label: string): Promise<string | null> {
+  const r = await browse<{ tracks: Track[] }>({ radio: t.id });
+  if ("error" in r || !r.tracks.length) return "error" in r ? r.error : "empty";
+  music.play({ kind: "videos", label: `${label} · ${t.title}`, tracks: r.tracks, start: 0 });
+  return null;
+}

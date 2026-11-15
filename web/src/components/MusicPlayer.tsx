@@ -4,10 +4,12 @@ import { useBackClose } from "../lib/history";
 import {
   ARTISTS,
   coverOf,
+  fetchExplore,
   formatTime,
   getMusic,
   music,
   parseYouTube,
+  playRadio,
   registerController,
   searchMusic,
   setMusic,
@@ -18,6 +20,7 @@ import {
   type Track,
 } from "../lib/music";
 import { usePlaylists } from "../lib/musicDb";
+import { readPref, writePref } from "../lib/prefs";
 import "../styles/music.css";
 
 // -----------------------------------------------------------------------------
@@ -156,7 +159,12 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
           fs: "0",
           iv_load_policy: "3",
         });
-        frame.src = `https://www.youtube-nocookie.com/embed/?${vars}`;
+        // youtube-nocookie keeps YouTube's cookies out (more private), but
+        // that also leaves out a YouTube Premium login, so Premium members
+        // would still see ads. "Ho YouTube Premium" switches to youtube.com,
+        // where their login (and so no ads) applies.
+        const ytHost = readPref("musicPremium") === "1" ? "www.youtube.com" : "www.youtube-nocookie.com";
+        frame.src = `https://${ytHost}/embed/?${vars}`;
         frame.referrerPolicy = "strict-origin-when-cross-origin";
         frame.allow = "autoplay; encrypted-media; picture-in-picture";
         frame.title = "YouTube";
@@ -448,6 +456,21 @@ function MusicBrowser() {
   const [link, setLink] = useState("");
   const [linkErr, setLinkErr] = useState(false);
   const src = st.source;
+  const [trendBusy, setTrendBusy] = useState(false);
+  const [trendErr, setTrendErr] = useState(false);
+  const [radioBusy, setRadioBusy] = useState(false);
+  const [trendLabel, setTrendLabel] = useState(t("mt.trends"));
+
+  const playTrends = async () => {
+    setTrendBusy(true);
+    setTrendErr(false);
+    const r = await fetchExplore();
+    setTrendBusy(false);
+    const sec = "sections" in r ? r.sections?.[0] : undefined;
+    if (!sec) return setTrendErr(true);
+    setTrendLabel(sec.title);
+    music.play({ kind: "videos", label: sec.title, tracks: sec.tracks, start: 0 });
+  };
 
   const search = async () => {
     const text = q.trim();
@@ -471,24 +494,30 @@ function MusicBrowser() {
 
   return (
     <div className="mp-body">
-      <button className={`mp-mix${src?.kind === "mix" ? " is-on" : ""}`} onClick={() => music.play({ kind: "mix" })}>
-        <span className="mp-mix__icon">▶</span>
+      <button className={`mp-mix${src?.kind === "videos" && src.label === trendLabel ? " is-on" : ""}`} onClick={() => void playTrends()} disabled={trendBusy}>
+        <span className="mp-mix__icon">{trendBusy ? "…" : "🔥"}</span>
         <span>
-          <b>{t("music.mix")}</b>
-          <small>{ARTISTS.map((a) => a.name).join(" · ")}</small>
+          <b>{trendLabel}</b>
+          <small>{trendErr ? t("music.trendErr") : t("music.trendHint")}</small>
         </span>
       </button>
-      <div className="mp-chips">
-        {ARTISTS.map((a) => (
+      {st.now && (
+        <div className="mp-chips">
           <button
-            key={a.name}
-            className={`mp-chip${src?.kind === "artist" && src.artist === a.name ? " is-on" : ""}`}
-            onClick={() => music.play({ kind: "artist", artist: a.name })}
+            className="mp-chip"
+            disabled={radioBusy}
+            onClick={() => {
+              setRadioBusy(true);
+              void playRadio({ id: st.now!.id, title: st.now!.title }, t("mt.radio")).then((err) => {
+                setRadioBusy(false);
+                if (err) setMusic({ notice: t("mt.radioErr") });
+              });
+            }}
           >
-            {a.name}
+            📻 {radioBusy ? "…" : `${t("mt.radio")}: ${st.now.title.slice(0, 32)}`}
           </button>
-        ))}
-      </div>
+        </div>
+      )}
 
       {playlists.length > 0 && (
         <>
@@ -560,7 +589,59 @@ function MusicBrowser() {
       </div>
       {linkErr && <div className="mp-note">{t("music.badLink")}</div>}
 
+      <div className="mp-label">{t("mt.teamArtists")}</div>
+      <div className="mp-chips">
+        <button className={`mp-chip${src?.kind === "mix" ? " is-on" : ""}`} onClick={() => music.play({ kind: "mix" })}>
+          {t("music.mix")}
+        </button>
+        {ARTISTS.map((a) => (
+          <button
+            key={a.name}
+            className={`mp-chip${src?.kind === "artist" && src.artist === a.name ? " is-on" : ""}`}
+            onClick={() => music.play({ kind: "artist", artist: a.name })}
+          >
+            {a.name}
+          </button>
+        ))}
+      </div>
+
+      <PremiumToggle />
       <p className="mp-fine">{t("music.adsNote")}</p>
+    </div>
+  );
+}
+
+/**
+ * "Ho YouTube Premium": load the player from youtube.com so a Premium login in
+ * this browser removes the ads. Takes effect on the next page load (the
+ * player is created once).
+ */
+export function PremiumToggle() {
+  const { t } = useT();
+  const [on, setOn] = useState(() => readPref("musicPremium") === "1");
+  const [changed, setChanged] = useState(false);
+  return (
+    <div className="mp-premium">
+      <label>
+        <input
+          type="checkbox"
+          checked={on}
+          onChange={(e) => {
+            writePref("musicPremium", e.target.checked ? "1" : "0");
+            setOn(e.target.checked);
+            setChanged(true);
+          }}
+        />
+        <span>
+          <b>{t("music.premium")}</b>
+          <small>{t("music.premiumHint")}</small>
+        </span>
+      </label>
+      {changed && (
+        <button className="mp-btn" onClick={() => window.location.reload()}>
+          {t("music.reload")}
+        </button>
+      )}
     </div>
   );
 }

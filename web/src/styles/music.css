@@ -311,3 +311,10 @@ input[type="range"].mt-volume::-moz-range-thumb { width: 12px; height: 12px; bor
 .mp-cover .mp-noimg { font-size: 56px; }
 .mp-result__img { width: 64px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }
 .mp-result > .mp-noimg { width: 64px; height: 36px; border-radius: 6px; flex-shrink: 0; }
+
+/* "Ho YouTube Premium" */
+.mp-premium { margin-top: 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mp-premium label { display: flex; gap: 10px; align-items: flex-start; flex: 1; min-width: 200px; cursor: pointer; }
+.mp-premium input { margin-top: 3px; width: 16px; height: 16px; accent-color: #c9a96e; flex: none; }
+.mp-premium b { display: block; font-size: 13px; }
+.mp-premium small { display: block; font-size: 12px; opacity: 0.7; line-height: 1.35; margin-top: 2px; }

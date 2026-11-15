@@ -10,9 +10,13 @@
 //
 // Only a logged-in team account may use it (same check as report-pdf), so the
 // key's daily quota cannot be spent by anyone else. Nothing is stored.
+//
+// First choice is YouTube.js (lib/ytjs.mts): YouTube's own search, no key and
+// no quota. Only if that fails does it use the Data API below (100 units).
 // -----------------------------------------------------------------------------
 
 import { isTeamMember } from "../lib/teamAuth.mts";
+import { artistTop, searchSongs } from "../lib/ytjs.mts";
 
 const KEY = process.env.YOUTUBE_API_KEY ?? "";
 
@@ -49,6 +53,15 @@ export default async (req: Request): Promise<Response> => {
   if (channelId && !/^UC[\w-]{22}$/.test(channelId)) return json(400, { error: "Bad channel" });
   if (!q && !channelId) return json(400, { error: "Empty search" });
   if (!(await isTeamMember(req.headers.get("authorization") ?? ""))) return json(403, { error: "Log in first." });
+
+  // Free first.
+  try {
+    const tracks = channelId ? await artistTop(channelId) : await searchSongs(q);
+    if (tracks.length) return json(200, { tracks, via: "ytjs" }, "private, max-age=600");
+  } catch (e) {
+    console.warn("ytjs search failed, using the Data API:", e instanceof Error ? e.message : e);
+  }
+
   if (!KEY) return json(501, { error: "no-key" });
 
   const url = new URL("https://www.googleapis.com/youtube/v3/search");
@@ -56,7 +69,7 @@ export default async (req: Request): Promise<Response> => {
     part: "snippet",
     type: "video",
     videoEmbeddable: "true",
-    maxResults: "25",
+    maxResults: "50", // same 100 units as 25
     safeSearch: "moderate",
     order,
     key: KEY,
@@ -81,5 +94,5 @@ export default async (req: Request): Promise<Response> => {
       thumb: it.snippet?.thumbnails?.medium?.url ?? it.snippet?.thumbnails?.default?.url ?? "",
     }));
   // The same words give the same songs for a while: let the browser reuse it.
-  return json(200, { tracks }, "private, max-age=600");
+  return json(200, { tracks, via: "api" }, "private, max-age=600");
 };

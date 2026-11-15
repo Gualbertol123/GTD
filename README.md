@@ -115,12 +115,28 @@ official embedded player** (the same source as freefy.app): free, and the app
 adds no ads. YouTube itself may show ads on some videos (none with YouTube
 Premium). Nothing is downloaded or stored: only video ids and titles.
 
-- **Defaults:** *Mix preferiti* shuffles **Enrique Iglesias, Ricky Martin and
-  Tiziano Ferro** (their official VEVO channels' uploads, `lib/music.ts`),
-  moving to the next artist when one runs out; each artist plays alone too.
-  No key needed for these.
-- **Anything else:** search (YouTube Data API, see setup), or paste any
-  YouTube song or playlist link.
+- **Finding music: YouTube.js, no quota.** Search, suggestions while typing,
+  *Radio* (a song + ~50 like it), YouTube Music's trends and charts (per
+  country), any artist's page and playlist import all go through
+  [YouTube.js](https://ytjs.dev) (`youtubei.js`) in the server functions
+  (`netlify/lib/ytjs.mts`): it reads YouTube like its own website does, so
+  there is **no API key involved and no daily limit**. It is unofficial: if
+  YouTube changes its internals or challenges the server, search and import
+  fall back automatically to the official Data API key (100 units a search,
+  10,000 a day); trends, charts, radio and suggestions just say "try again".
+- **Playing has no limit either:** songs always play in YouTube's official
+  embedded player in the browser, which no quota applies to.
+- **Home (MUSICA tab):** trending songs (play all, or one), quick tiles,
+  charts by country (Italia, Mondo, Spagna, USA, …) with YouTube Music's chart
+  playlists, the team's playlists, the most listened artists, new music
+  videos. The three favourite artists (**Enrique Iglesias, Ricky Martin,
+  Tiziano Ferro**, *Mix preferiti*) are still there, at the bottom.
+- **Radio 📻** on every song (track lists, trends, the player bar, the ♪ panel).
+- **Ads:** the app adds none; YouTube may show its own on some videos.
+  *Ho YouTube Premium* (♪ panel / *In riproduzione*) loads the player from
+  youtube.com instead of youtube-nocookie.com, so a Premium login in that
+  browser removes them (not in Safari / on iPhone, which block YouTube's
+  cookies in other sites). Saved per browser (`gtd-music-premium`).
 - **Solo musica / Video:** music only by default (the song's cover is shown,
   the video is hidden); Video shows it. Note: YouTube's rules for embedded
   players ask for a visible player of at least 200 × 200 px, which only Video
@@ -152,7 +168,8 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
 **Setup (once):**
 1. Supabase → SQL Editor: run `supabase/migration-018-music-playlists.sql`.
 2. Netlify → Site configuration → Environment variables: add
-   `YOUTUBE_API_KEY` = your YouTube Data API v3 key, then redeploy. The key is
+   `YOUTUBE_API_KEY` = your YouTube Data API v3 key, then redeploy. (Optional
+   since YouTube.js: it is now only the fallback when YouTube.js fails.) The key is
    only read by the server function `netlify/functions/music-search.mts`
    (team login required), never sent to browsers, and **must never be put in
    the code** — this repository is public.
@@ -407,6 +424,8 @@ prova_sito_GTD/
     ├── netlify/functions/report-pdf.mts ← POST → the weekly report PDF (team login only)
     ├── netlify/functions/music-search.mts ← GET → YouTube search for the music player (team login only; YOUTUBE_API_KEY)
     ├── netlify/functions/music-playlist.mts ← GET → read / find YouTube playlists for Importa (same rules)
+    ├── netlify/functions/music-browse.mts ← GET → suggestions, radio, charts, trends, artists (YouTube.js)
+    ├── netlify/lib/ytjs.mts             ← YouTube.js wrapper: every result shape → { id, title, channel, thumb }
     ├── netlify/lib/teamAuth.mts  ← the functions' shared "is this the team login?" check
     ├── netlify/lib/reportPdf.mts ← the PDF layout (@react-pdf/renderer)
     ├── scripts/gen-pdf-fonts.mjs ← embeds Inter into the function at build time

@@ -9,12 +9,13 @@
 // Same rules as music-search: YOUTUBE_API_KEY stays here, only a logged-in
 // team account may call it, nothing is stored.
 //
-// Quota (10,000 units a day, free): reading a playlist costs 1 unit per 50
-// songs (+1 for its title), so importing is almost free; a playlist search
-// costs 100, like a song search.
+// YouTube.js (lib/ytjs.mts) answers first, with no key and no quota. If it
+// fails, the Data API does: reading a playlist costs 1 unit per 50 songs
+// (+1 for its title), a playlist search 100.
 // -----------------------------------------------------------------------------
 
 import { isTeamMember } from "../lib/teamAuth.mts";
+import * as ytjs from "../lib/ytjs.mts";
 
 const KEY = process.env.YOUTUBE_API_KEY ?? "";
 const API = "https://www.googleapis.com/youtube/v3";
@@ -126,6 +127,16 @@ export default async (req: Request): Promise<Response> => {
   if (list && !/^[\w-]{10,64}$/.test(list)) return json(400, { error: "Bad playlist" });
   if (!list && !q) return json(400, { error: "Empty request" });
   if (!(await isTeamMember(req.headers.get("authorization") ?? ""))) return json(403, { error: "Log in first." });
+
+  // YouTube.js first (no quota); the Data API only if it fails.
+  try {
+    if (list) return json(200, { ...(await ytjs.playlist(list, MAX_SONGS)), via: "ytjs" }, "private, max-age=600");
+    const lists = await ytjs.findPlaylists(q);
+    if (lists.length) return json(200, { lists, via: "ytjs" }, "private, max-age=3600");
+  } catch (e) {
+    console.warn("ytjs playlist failed, using the Data API:", e instanceof Error ? e.message : e);
+  }
+
   if (!KEY) return json(501, { error: "no-key" });
   return list ? readPlaylist(list) : findPlaylists(q);
 };

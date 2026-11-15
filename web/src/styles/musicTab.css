@@ -395,3 +395,46 @@ html[data-skin] .mt input::placeholder { color: var(--mt-text-2) !important; opa
 /* A text link, not a raised button: no glass hover ring. */
 html[data-skin] .mt .mt-link { outline: none !important; box-shadow: none !important; background: none !important; }
 html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
+
+/* Home ------------------------------------------------------------------------ */
+.mt-h2row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 30px 0 14px; }
+.mt-h2row .mt-h2 { margin: 0; }
+.mt-qtile:disabled { opacity: 0.6; cursor: default; }
+.mt-qtile__img { width: 64px; height: 64px; object-fit: cover; flex-shrink: 0; }
+/* Trends: numbered songs in two columns */
+.mt-tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2px 18px; }
+.mt-trow { display: flex; align-items: center; gap: 10px; border-radius: 6px; padding: 0 6px 0 10px; }
+.mt-trow:hover { background: var(--mt-hover); }
+.mt-trow.is-on b { color: var(--mt-gold); }
+.mt-trow__n { width: 18px; text-align: right; font-size: 14px; color: var(--mt-text-2); font-variant-numeric: tabular-nums; flex: none; }
+.mt-trow__main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 8px 0; text-align: left; }
+.mt-trow__main > span { min-width: 0; }
+.mt-trow__main b { display: block; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mt-trow__main small { display: block; font-size: 12.5px; color: var(--mt-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mt-trow .mt-radio { opacity: 0; }
+.mt-trow:hover .mt-radio, .mt-trow .mt-radio:focus-visible { opacity: 1; }
+/* 16:9 song cards (new music videos) */
+.mt-card__art--wide { aspect-ratio: 16 / 9; }
+.mt-card__img--round, .mt-hero__img--round { border-radius: 50% !important; }
+.mt-card__art span.mt-play--float { pointer-events: none; }
+
+/* Search suggestions */
+.mt-search { position: sticky; }
+.mt-sugs {
+  position: absolute;
+  left: 54px;
+  right: 24px;
+  top: calc(100% - 10px);
+  z-index: 5;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--mt-box-2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px var(--mt-line);
+}
+.mt-sugs button { display: flex; gap: 12px; align-items: center; width: 100%; padding: 9px 12px; border-radius: 8px; font-size: 14.5px; text-align: left; color: var(--mt-text) !important; }
+.mt-sugs button:hover { background: var(--mt-hover); }
+.mt-sugs span { color: var(--mt-text-2); }
+
+/* Now playing: the Premium option at the bottom */
+.mt-now__fine { margin-top: 22px; padding-top: 6px; border-top: 1px solid var(--mt-line); }
+.mt-now__fine .mp-premium { color: var(--mt-text); }
