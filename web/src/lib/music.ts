@@ -251,3 +251,68 @@ export async function searchMusic(q: string, opts: { channelId?: string; order?:
 export function youtubeSearchUrl(q: string): string {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
 }
+
+// ---- Playlists from YouTube (Importa) ---------------------------------------
+
+export interface YtPlaylist {
+  list: string;
+  title: string;
+  channel: string;
+  thumb: string;
+  /** Songs YouTube says the list has (the import keeps up to 200). */
+  total?: number;
+  tracks?: Track[];
+}
+
+async function callPlaylistFn<T>(params: Record<string, string>): Promise<T | { error: string }> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { error: "login" };
+  try {
+    const res = await fetch(`/.netlify/functions/music-playlist?${new URLSearchParams(params)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const body = (await res.json().catch(() => ({}))) as T & { error?: string };
+    if (res.ok && !body.error) return body;
+    if (res.status === 404 && !body.error) return { error: "no-key" }; // functions not deployed (local dev)
+    return { error: body.error ?? `HTTP ${res.status}` };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/** One public YouTube / YouTube Music playlist, with its songs. */
+export function fetchYtPlaylist(list: string): Promise<YtPlaylist | { error: string }> {
+  return callPlaylistFn<YtPlaylist>({ list });
+}
+
+// A playlist search costs 100 of the key's 10,000 daily units: the suggested
+// ones are kept in this browser for a day.
+const FIND_CACHE = "gtd-music-find:";
+const DAY = 24 * 60 * 60 * 1000;
+
+export async function findYtPlaylists(q: string, cache = false): Promise<{ lists: YtPlaylist[] } | { error: string }> {
+  const key = FIND_CACHE + q.toLowerCase();
+  if (cache) {
+    try {
+      const hit = JSON.parse(localStorage.getItem(key) ?? "null") as { at: number; lists: YtPlaylist[] } | null;
+      if (hit && Date.now() - hit.at < DAY && Array.isArray(hit.lists)) return { lists: hit.lists };
+    } catch {
+      /* no storage: just ask */
+    }
+  }
+  const r = await callPlaylistFn<{ lists: YtPlaylist[] }>({ q });
+  if (cache && "lists" in r) {
+    try {
+      localStorage.setItem(key, JSON.stringify({ at: Date.now(), lists: r.lists }));
+    } catch {
+      /* full or blocked */
+    }
+  }
+  return r;
+}
+
+/** The playlist id in a pasted link (or a bare id), if any. */
+export function playlistIdFrom(input: string): string | null {
+  return parseYouTube(input)?.list ?? null;
+}

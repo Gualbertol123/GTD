@@ -1,7 +1,21 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useT } from "../lib/i18n";
 import { useMe } from "../lib/identity";
-import { ARTISTS, coverOf, getMusic, music, searchMusic, setMusic, useMusic, type Artist, type Track } from "../lib/music";
+import {
+  ARTISTS,
+  coverOf,
+  fetchYtPlaylist,
+  findYtPlaylists,
+  getMusic,
+  music,
+  playlistIdFrom,
+  searchMusic,
+  setMusic,
+  useMusic,
+  type Artist,
+  type Track,
+  type YtPlaylist,
+} from "../lib/music";
 import {
   addToPlaylist,
   createPlaylist,
@@ -28,7 +42,13 @@ import "../styles/musicTab.css";
 // (state.dock) to sit in.
 // -----------------------------------------------------------------------------
 
-type View = { kind: "home" } | { kind: "search" } | { kind: "artist"; name: string } | { kind: "playlist"; id: string };
+type View =
+  | { kind: "home" }
+  | { kind: "search" }
+  | { kind: "import" }
+  | { kind: "yt"; list: string }
+  | { kind: "artist"; name: string }
+  | { kind: "playlist"; id: string };
 
 // The page you were on, kept while you visit other tabs (until a reload).
 let lastView: View = { kind: "home" };
@@ -69,6 +89,12 @@ export function MusicTab() {
           </button>
           <button className={`mt-nav${view.kind === "search" ? " is-on" : ""}`} onClick={() => setView({ kind: "search" })}>
             <span aria-hidden="true">⌕</span> {t("mt.search")}
+          </button>
+          <button
+            className={`mt-nav${view.kind === "import" || view.kind === "yt" ? " is-on" : ""}`}
+            onClick={() => setView({ kind: "import" })}
+          >
+            <span aria-hidden="true">⤓</span> {t("mt.import")}
           </button>
         </nav>
         <div className="mt-box mt-lib">
@@ -115,6 +141,10 @@ export function MusicTab() {
       <main className="mt-main">
         {view.kind === "home" && <Home go={setView} playlists={playlists} />}
         {view.kind === "search" && <Search playlists={playlists} />}
+        {view.kind === "import" && <ImportPage go={setView} />}
+        {view.kind === "yt" && (
+          <YtPlaylistPage key={view.list} list={view.list} playlists={playlists} available={available} go={setView} />
+        )}
         {view.kind === "artist" && <ArtistPage artist={ARTISTS.find((a) => a.name === view.name)!} playlists={playlists} />}
         {view.kind === "playlist" && (
           <PlaylistPage
@@ -239,7 +269,12 @@ function Home({ go, playlists }: { go: (v: View) => void; playlists: Playlist[] 
 
       <h2 className="mt-h2">{t("mt.teamPlaylists")}</h2>
       {playlists.length === 0 ? (
-        <p className="mt-hint">{t("mt.noPlaylists")}</p>
+        <p className="mt-hint">
+          {t("mt.noPlaylists")}{" "}
+          <button className="mt-link" onClick={() => go({ kind: "import" })}>
+            {t("mt.importCta")}
+          </button>
+        </p>
       ) : (
         <div className="mt-cards">
           {playlists.map((p) => (
@@ -336,6 +371,237 @@ function Search({ playlists }: { playlists: Playlist[] }) {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// ---- Import ------------------------------------------------------------------
+
+/** Searches suggested on the Import page; the first three run on their own. */
+const SUGGESTED = [
+  "Enrique Iglesias greatest hits",
+  "Ricky Martin greatest hits",
+  "Tiziano Ferro best of",
+  "Latin pop hits",
+  "Hit italiane",
+  "Reggaeton classics",
+  "Ballate romantiche",
+  "Pop anni 2000",
+  "Musica per concentrarsi",
+];
+
+function ImportPage({ go }: { go: (v: View) => void }) {
+  const { t } = useT();
+  const [link, setLink] = useState("");
+  const [linkError, setLinkError] = useState(false);
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [found, setFound] = useState<{ title: string; lists: YtPlaylist[] } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [picks, setPicks] = useState<YtPlaylist[] | null>(null);
+
+  // "For your artists": the top lists for each favourite, from the day's cache.
+  useEffect(() => {
+    let alive = true;
+    void Promise.all(SUGGESTED.slice(0, 3).map((s) => findYtPlaylists(s, true))).then((rs) => {
+      if (!alive) return;
+      const err = rs.find((r): r is { error: string } => "error" in r);
+      const lists = rs.flatMap((r) => ("lists" in r ? r.lists.slice(0, 4) : []));
+      if (lists.length) setPicks(lists);
+      else if (err) setError(err.error);
+      else setPicks([]);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const run = async (words: string) => {
+    if (!words.trim()) return;
+    setQ(words);
+    setBusy(true);
+    setError(null);
+    const r = await findYtPlaylists(words.trim(), SUGGESTED.includes(words));
+    setBusy(false);
+    if ("lists" in r) setFound({ title: words.trim(), lists: r.lists });
+    else setError(r.error);
+  };
+
+  return (
+    <div className="mt-page">
+      <div className="mt-hero" style={{ background: "linear-gradient(180deg, rgba(255,55,95,.4), transparent)" }}>
+        <h1>{t("mt.import")}</h1>
+        <p className="mt-hint" style={{ margin: "6px 0 0" }}>{t("mt.importIntro")}</p>
+      </div>
+
+      <form
+        className="mt-search mt-search--static"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const list = playlistIdFrom(link);
+          if (!list) return setLinkError(true);
+          setLinkError(false);
+          go({ kind: "yt", list });
+        }}
+      >
+        <span aria-hidden="true">🔗</span>
+        <input
+          value={link}
+          onChange={(e) => {
+            setLink(e.target.value);
+            setLinkError(false);
+          }}
+          placeholder={t("mt.linkPh")}
+          aria-label={t("mt.linkPh")}
+        />
+        <button type="submit" className="mt-pill mt-pill--solid" disabled={!link.trim()}>
+          {t("mt.open")}
+        </button>
+      </form>
+      {linkError && <div className="mp-note">{t("mt.badLink")}</div>}
+
+      <form
+        className="mt-search mt-search--static"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void run(q);
+        }}
+      >
+        <span aria-hidden="true">⌕</span>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("mt.findPh")} aria-label={t("mt.findPh")} />
+        {busy && <span className="mt-spin" aria-hidden="true" />}
+      </form>
+      <div className="mt-chips">
+        {SUGGESTED.map((s) => (
+          <button key={s} className={`mt-chip${found?.title === s ? " is-on" : ""}`} onClick={() => void run(s)}>
+            {s}
+          </button>
+        ))}
+      </div>
+
+      {error && <SearchError error={error} q={q} />}
+
+      {found && (
+        <>
+          <h2 className="mt-h2">{found.title}</h2>
+          {found.lists.length ? <ListCards lists={found.lists} go={go} /> : <p className="mt-hint">{t("music.noResults")}</p>}
+        </>
+      )}
+
+      <h2 className="mt-h2">{t("mt.forArtists")}</h2>
+      {!picks && !error && <div className="mt-spin mt-spin--block" />}
+      {picks && <ListCards lists={picks} go={go} />}
+    </div>
+  );
+}
+
+function ListCards({ lists, go }: { lists: YtPlaylist[]; go: (v: View) => void }) {
+  return (
+    <div className="mt-cards">
+      {lists.map((l) => (
+        <div key={l.list} className="mt-card" onClick={() => go({ kind: "yt", list: l.list })} role="button" tabIndex={0}>
+          <div className="mt-card__art">
+            <Cover src={l.thumb} className="mt-card__img" />
+          </div>
+          <b title={l.title}>{l.title}</b>
+          <small>{l.channel || "YouTube"}</small>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** A YouTube playlist before it is saved: listen to it, or keep it for the team. */
+function YtPlaylistPage({
+  list,
+  playlists,
+  available,
+  go,
+}: {
+  list: string;
+  playlists: Playlist[];
+  available: boolean;
+  go: (v: View) => void;
+}) {
+  const { t } = useT();
+  const { me } = useMe();
+  const st = useMusic();
+  const [data, setData] = useState<YtPlaylist | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    void fetchYtPlaylist(list).then((r) => {
+      if (!alive) return;
+      if ("error" in r) setError(r.error);
+      else setData(r);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [list]);
+
+  if (error)
+    return (
+      <div className="mt-page">
+        <button className="mt-link" onClick={() => go({ kind: "import" })}>← {t("mt.import")}</button>
+        <div style={{ height: 44 }} />
+        {error === "not-found" ? <div className="mp-note">{t("mt.listNotFound")}</div> : <SearchError error={error} q="" />}
+      </div>
+    );
+  if (!data) return <div className="mt-page"><div className="mt-spin mt-spin--block" /></div>;
+
+  const tracks = data.tracks ?? [];
+  const label = data.title;
+  const saved = playlists.find((p) => p.name === data.title && p.tracks[0]?.id === tracks[0]?.id);
+  const playingThis = st.source?.kind === "videos" && st.source.label === label && st.playing;
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const p = await createPlaylist(data.title, me, tracks);
+      go({ kind: "playlist", id: p.id });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-page">
+      <button className="mt-link" onClick={() => go({ kind: "import" })}>← {t("mt.import")}</button>
+      <div className="mt-hero mt-hero--artist" style={{ background: gradientFor(data.title) }}>
+        {data.thumb ? <Cover src={data.thumb} className="mt-hero__img" /> : <Mosaic tracks={tracks} size={160} />}
+        <div>
+          <small>{t("mt.ytPlaylist")}</small>
+          <h1>{data.title}</h1>
+          <small>
+            {data.channel || "YouTube"} · {t("mt.songs").replace("{n}", String(tracks.length))}
+            {data.total && data.total > tracks.length ? ` (${t("mt.ofTotal").replace("{n}", String(data.total))})` : ""}
+          </small>
+        </div>
+      </div>
+      <div className="mt-actions">
+        <button
+          className="mt-play mt-play--big"
+          disabled={!tracks.length}
+          aria-label={t("music.play")}
+          onClick={() => (playingThis ? music.toggle() : music.play({ kind: "videos", label, tracks, start: 0 }))}
+        >
+          {playingThis ? "❚❚" : "▶"}
+        </button>
+        {saved ? (
+          <button className="mt-pill" onClick={() => go({ kind: "playlist", id: saved.id })}>
+            ✓ {t("mt.saved")}
+          </button>
+        ) : (
+          <button className="mt-pill mt-pill--solid" disabled={!available || saving || !tracks.length} onClick={() => void save()}>
+            {saving ? "…" : `＋ ${t("mt.saveTeam")}`}
+          </button>
+        )}
+        {!available && <span className="mt-hint">{t("mt.needMigration")}</span>}
+      </div>
+      {tracks.length ? <TrackTable tracks={tracks} label={label} playlists={playlists} /> : <p className="mt-hint">{t("mt.listEmpty")}</p>}
     </div>
   );
 }

@@ -138,6 +138,14 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
 - **Team playlists:** stored in Supabase (`music_playlists`, migration 018),
   shared by everyone on the team and live-updated; **+** on any song adds it
   to a playlist or a new one. Also playable from the ♪ panel and on a phone.
+- **Importa (MUSICA tab):** bring any public YouTube or YouTube Music
+  playlist into the team library — paste its link (`…playlist?list=…`, also
+  `music.youtube.com` links) or search YouTube's playlists (suggested
+  searches for the three favourite artists and a few genres). The preview
+  plays it straight away; **Salva nella libreria del team** stores it (up to
+  200 songs, deleted / private videos skipped) as an ordinary team playlist.
+  YouTube's auto-generated *Mix* lists (`RD…`) and private lists can't be read.
+  Server side: `netlify/functions/music-playlist.mts` (same key and login).
 - On a phone the music stops when the screen locks or the app goes to the
   background (a limit of YouTube embeds on iOS / Android).
 
@@ -151,8 +159,10 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
 3. Google Cloud → Credentials → the key → *API restrictions*: allow only
    *YouTube Data API v3*. (Leave *Application restrictions* on None: the
    calls come from Netlify's servers, which have no fixed address.)
-   The free quota is 10,000 units a day; a search costs 100, so about 100
-   searches a day for the whole team. When it runs out the player says so and
+   The free quota is 10,000 units a day; a search (songs or playlists) costs
+   100, so about 100 searches a day for the whole team. Importing a playlist
+   costs only 1 unit per 50 songs, and the suggested playlist searches are
+   kept in each browser for a day. When it runs out the player says so and
    offers YouTube's own search until the next day.
 
 **Why the player frame sends a referrer:** since 2025 YouTube refuses to play
@@ -396,6 +406,7 @@ prova_sito_GTD/
     ├── .env.example              ← VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY / VITE_TEAM_EMAIL
     ├── netlify/functions/report-pdf.mts ← POST → the weekly report PDF (team login only)
     ├── netlify/functions/music-search.mts ← GET → YouTube search for the music player (team login only; YOUTUBE_API_KEY)
+    ├── netlify/functions/music-playlist.mts ← GET → read / find YouTube playlists for Importa (same rules)
     ├── netlify/lib/teamAuth.mts  ← the functions' shared "is this the team login?" check
     ├── netlify/lib/reportPdf.mts ← the PDF layout (@react-pdf/renderer)
     ├── scripts/gen-pdf-fonts.mjs ← embeds Inter into the function at build time
