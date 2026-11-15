@@ -13,7 +13,6 @@ import {
   getMusic,
   music,
   playlistIdFrom,
-  playRadio,
   searchMusic,
   setMusic,
   useMusic,
@@ -34,6 +33,30 @@ import {
   type Playlist,
 } from "../lib/musicDb";
 import { Cover, ModeSwitch, PremiumToggle, Progress, SearchError } from "./MusicPlayer";
+import { songMenuProps } from "./SongMenu";
+import {
+  IconBack,
+  IconBars,
+  IconCheck,
+  IconClose,
+  IconDown,
+  IconHome,
+  IconImport,
+  IconLink,
+  IconMute,
+  IconNext,
+  IconNote,
+  IconPause,
+  IconPlay,
+  IconPlus,
+  IconPrev,
+  IconRepeat,
+  IconSearch,
+  IconShuffle,
+  IconTrend,
+  IconUp,
+  IconVolume,
+} from "./MusicIcons";
 import "../styles/musicTab.css";
 
 // -----------------------------------------------------------------------------
@@ -93,16 +116,16 @@ export function MusicTab() {
       <aside className="mt-side">
         <nav className="mt-box">
           <button className={`mt-nav${view.kind === "home" ? " is-on" : ""}`} onClick={() => setView({ kind: "home" })}>
-            <span aria-hidden="true">⌂</span> {t("mt.home")}
+            <IconHome size={22} /> {t("mt.home")}
           </button>
           <button className={`mt-nav${view.kind === "search" ? " is-on" : ""}`} onClick={() => setView({ kind: "search" })}>
-            <span aria-hidden="true">⌕</span> {t("mt.search")}
+            <IconSearch size={22} /> {t("mt.search")}
           </button>
           <button
             className={`mt-nav${view.kind === "import" || view.kind === "yt" ? " is-on" : ""}`}
             onClick={() => setView({ kind: "import" })}
           >
-            <span aria-hidden="true">⤓</span> {t("mt.import")}
+            <IconImport size={22} /> {t("mt.import")}
           </button>
         </nav>
         <div className="mt-box mt-lib">
@@ -195,7 +218,7 @@ function ArtistAvatar({ name, size }: { name: string; size: number }) {
 /** A playlist's cover: its first four songs' pictures, or a note. */
 function Mosaic({ tracks, size }: { tracks: Track[]; size: number }) {
   const pics = tracks.slice(0, 4).map((t) => coverOf(t.id));
-  if (pics.length === 0) return <span className="mt-mosaic mt-mosaic--empty" style={{ width: size, height: size }}>♪</span>;
+  if (pics.length === 0) return <span className="mt-mosaic mt-mosaic--empty" style={{ width: size, height: size }}><IconNote size={Math.max(18, size * 0.36)} /></span>;
   if (pics.length < 4)
     return (
       <span className="mt-mosaic" style={{ width: size, height: size, display: "inline-grid" }}>
@@ -281,8 +304,8 @@ function Home({ go, playlists }: { go: (v: View) => void; playlists: Playlist[] 
           disabled={!trends}
           onClick={() => trends && (playingTrends ? music.toggle() : music.play({ kind: "videos", label: trendLabel, tracks: trends.tracks, start: 0 }))}
         >
-          <span className="mt-qtile__art" style={{ background: "linear-gradient(135deg,#ff375f,#ff9f0a)" }}>
-            🔥
+          <span className="mt-qtile__art mt-glyph" style={{ background: "linear-gradient(135deg,#ff375f,#ff9f0a)" }}>
+            <IconTrend size={28} />
           </span>
           <b>{trendLabel}</b>
           <PlayFab on={playingTrends} />
@@ -306,7 +329,7 @@ function Home({ go, playlists }: { go: (v: View) => void; playlists: Playlist[] 
         <h2 className="mt-h2">{trendLabel}</h2>
         {trends && (
           <button className="mt-pill mt-pill--solid" onClick={() => music.play({ kind: "videos", label: trendLabel, tracks: trends.tracks, start: 0 })}>
-            ▶ {t("mt.playAll")}
+            <IconPlay size={15} /> {t("mt.playAll")}
           </button>
         )}
       </div>
@@ -352,7 +375,7 @@ function Home({ go, playlists }: { go: (v: View) => void; playlists: Playlist[] 
                       music.play({ kind: "videos", label: p.name, tracks: p.tracks, start: 0 });
                     }}
                   >
-                    ▶
+                    <IconPlay size={18} />
                   </button>
                 )}
               </div>
@@ -388,7 +411,7 @@ function Home({ go, playlists }: { go: (v: View) => void; playlists: Playlist[] 
       <h2 className="mt-h2">{t("mt.teamArtists")}</h2>
       <div className="mt-chips" style={{ marginTop: 0 }}>
         <button className="mt-chip" onClick={() => music.play({ kind: "mix" })}>
-          ▶ {t("music.mix")}
+          <IconPlay size={14} /> {t("music.mix")}
         </button>
         {ARTISTS.map((a) => (
           <button key={a.name} className="mt-chip" onClick={() => go({ kind: "artist", name: a.name })}>
@@ -407,7 +430,7 @@ function TrackGrid({ tracks, label }: { tracks: Track[]; label: string }) {
   return (
     <div className="mt-tgrid">
       {tracks.map((tr, i) => (
-        <div key={tr.id} className={`mt-trow${st.now?.id === tr.id ? " is-on" : ""}`}>
+        <div key={tr.id} className={`mt-trow${st.now?.id === tr.id ? " is-on" : ""}`} {...songMenuProps(tr, { list: { tracks, label, index: i } })}>
           <span className="mt-trow__n">{i + 1}</span>
           <button className="mt-trow__main" onClick={() => music.play({ kind: "videos", label, tracks, start: i })} aria-label={`${t("music.play")} ${tr.title}`}>
             <Cover id={tr.id} src={tr.thumb} className="mt-img40" />
@@ -416,7 +439,6 @@ function TrackGrid({ tracks, label }: { tracks: Track[]; label: string }) {
               <small>{tr.channel}</small>
             </span>
           </button>
-          <RadioButton track={tr} />
         </div>
       ))}
     </div>
@@ -429,11 +451,18 @@ function TrackCards({ tracks, label }: { tracks: Track[]; label: string }) {
   return (
     <div className="mt-cards">
       {tracks.map((tr, i) => (
-        <div key={tr.id} className="mt-card" onClick={() => music.play({ kind: "videos", label, tracks, start: i })} role="button" tabIndex={0}>
+        <div
+          key={tr.id}
+          className="mt-card"
+          onClick={() => music.play({ kind: "videos", label, tracks, start: i })}
+          role="button"
+          tabIndex={0}
+          {...songMenuProps(tr, { list: { tracks, label, index: i } })}
+        >
           <div className="mt-card__art mt-card__art--wide">
             <Cover id={tr.id} src={tr.thumb} className="mt-card__img" />
             <span className="mt-play mt-play--float" aria-label={`${t("music.play")} ${tr.title}`}>
-              ▶
+              <IconPlay size={18} />
             </span>
           </div>
           <b title={tr.title}>{tr.title}</b>
@@ -473,35 +502,8 @@ function ChartArtistCard({ artist, go }: { artist: ChartArtist; go: (v: View) =>
   );
 }
 
-/** "Radio": this song, then ~50 like it. */
-function RadioButton({ track, big }: { track: Track; big?: boolean }) {
-  const { t } = useT();
-  const [busy, setBusy] = useState(false);
-  return (
-    <button
-      className={big ? "mt-pill" : "mt-iconbtn mt-radio"}
-      title={t("mt.radioHint")}
-      aria-label={`${t("mt.radio")}: ${track.title}`}
-      disabled={busy}
-      onClick={(e) => {
-        e.stopPropagation();
-        setBusy(true);
-        void playRadio(track, t("mt.radio")).then((err) => {
-          setBusy(false);
-          if (err) {
-            setMusic({ notice: t("mt.radioErr") });
-            setTimeout(() => setMusic({ notice: null }), 2500);
-          }
-        });
-      }}
-    >
-      {busy ? "…" : big ? `📻 ${t("mt.radio")}` : "📻"}
-    </button>
-  );
-}
-
 function PlayFab({ on }: { on: boolean }) {
-  return <span className={`mt-play mt-play--tile${on ? " is-on" : ""}`}>{on ? "❚❚" : "▶"}</span>;
+  return <span className={`mt-play mt-play--tile${on ? " is-on" : ""}`}>{on ? <IconPause size={16} /> : <IconPlay size={16} />}</span>;
 }
 
 // ---- Search -------------------------------------------------------------------
@@ -544,7 +546,7 @@ function Search({ playlists }: { playlists: Playlist[] }) {
           void run();
         }}
       >
-        <span aria-hidden="true">⌕</span>
+        <span aria-hidden="true" className="mt-search__icon"><IconSearch size={20} /></span>
         <input
           ref={input}
           value={q}
@@ -574,7 +576,7 @@ function Search({ playlists }: { playlists: Playlist[] }) {
                   void run(sg);
                 }}
               >
-                <span aria-hidden="true">⌕</span> {sg}
+                <IconSearch size={16} /> {sg}
               </button>
             ))}
           </div>
@@ -680,7 +682,7 @@ function ImportPage({ go }: { go: (v: View) => void }) {
           go({ kind: "yt", list });
         }}
       >
-        <span aria-hidden="true">🔗</span>
+        <span aria-hidden="true" className="mt-search__icon"><IconLink size={20} /></span>
         <input
           value={link}
           onChange={(e) => {
@@ -703,7 +705,7 @@ function ImportPage({ go }: { go: (v: View) => void }) {
           void run(q);
         }}
       >
-        <span aria-hidden="true">⌕</span>
+        <span aria-hidden="true" className="mt-search__icon"><IconSearch size={20} /></span>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("mt.findPh")} aria-label={t("mt.findPh")} />
         {busy && <span className="mt-spin" aria-hidden="true" />}
       </form>
@@ -781,7 +783,7 @@ function YtPlaylistPage({
   if (error)
     return (
       <div className="mt-page">
-        <button className="mt-link" onClick={() => go({ kind: "import" })}>← {t("mt.import")}</button>
+        <button className="mt-link" onClick={() => go({ kind: "import" })}><IconBack size={15} /> {t("mt.import")}</button>
         <div style={{ height: 44 }} />
         {error === "not-found" ? <div className="mp-note">{t("mt.listNotFound")}</div> : <SearchError error={error} q="" />}
       </div>
@@ -805,7 +807,7 @@ function YtPlaylistPage({
 
   return (
     <div className="mt-page">
-      <button className="mt-link" onClick={() => go({ kind: "import" })}>← {t("mt.import")}</button>
+      <button className="mt-link" onClick={() => go({ kind: "import" })}><IconBack size={15} /> {t("mt.import")}</button>
       <div className="mt-hero mt-hero--artist" style={{ background: gradientFor(data.title) }}>
         {data.thumb ? <Cover src={data.thumb} className="mt-hero__img" /> : <Mosaic tracks={tracks} size={160} />}
         <div>
@@ -824,15 +826,15 @@ function YtPlaylistPage({
           aria-label={t("music.play")}
           onClick={() => (playingThis ? music.toggle() : music.play({ kind: "videos", label, tracks, start: 0 }))}
         >
-          {playingThis ? "❚❚" : "▶"}
+          {playingThis ? <IconPause size={24} /> : <IconPlay size={24} />}
         </button>
         {saved ? (
           <button className="mt-pill" onClick={() => go({ kind: "playlist", id: saved.id })}>
-            ✓ {t("mt.saved")}
+            <IconCheck size={16} /> {t("mt.saved")}
           </button>
         ) : (
           <button className="mt-pill mt-pill--solid" disabled={!available || saving || !tracks.length} onClick={() => void save()}>
-            {saving ? "…" : `＋ ${t("mt.saveTeam")}`}
+            {saving ? "…" : <><IconPlus size={16} /> {t("mt.saveTeam")}</>}
           </button>
         )}
         {!available && <span className="mt-hint">{t("mt.needMigration")}</span>}
@@ -875,7 +877,7 @@ function ArtistPage({ artist, playlists }: { artist: Artist; playlists: Playlist
       </div>
       <div className="mt-actions">
         <button className="mt-play mt-play--big" onClick={() => (playing ? music.toggle() : music.play({ kind: "artist", artist: artist.name }))} aria-label={t("music.play")}>
-          {playing ? "❚❚" : "▶"}
+          {playing ? <IconPause size={24} /> : <IconPlay size={24} />}
         </button>
         <span className="mt-hint">{t("mt.artistAll")}</span>
       </div>
@@ -910,9 +912,8 @@ function MusicArtistPage({ id, name, playlists }: { id: string; name: string; pl
           aria-label={t("music.play")}
           onClick={() => data && (playing ? music.toggle() : music.play({ kind: "videos", label: title, tracks: data.tracks, start: 0 }))}
         >
-          {playing ? "❚❚" : "▶"}
+          {playing ? <IconPause size={24} /> : <IconPlay size={24} />}
         </button>
-        {data?.tracks?.[0] && <RadioButton track={data.tracks[0]} big />}
       </div>
       {error && <p className="mt-hint">{t("mt.homeErr")}</p>}
       {!data && !error && <div className="mt-spin mt-spin--block" />}
@@ -968,7 +969,7 @@ function PlaylistPage({ playlist, playlists, onDeleted }: { playlist?: Playlist;
           onClick={() => (playingThis ? music.toggle() : music.play({ kind: "videos", label: p.name, tracks: p.tracks, start: 0 }))}
           aria-label={t("music.play")}
         >
-          {playingThis && st.playing ? "❚❚" : "▶"}
+          {playingThis && st.playing ? <IconPause size={24} /> : <IconPlay size={24} />}
         </button>
         <button
           className={`mt-ghost${st.shuffle ? " is-on" : ""}`}
@@ -976,7 +977,7 @@ function PlaylistPage({ playlist, playlists, onDeleted }: { playlist?: Playlist;
           title={t("mt.shuffle")}
           aria-pressed={st.shuffle}
         >
-          ⤮ {t("mt.shuffle")}
+          <IconShuffle size={16} /> {t("mt.shuffle")}
         </button>
         <span style={{ flex: 1 }} />
         {confirm ? (
@@ -1029,12 +1030,14 @@ function TrackTable({ tracks, label, playlists, inPlaylist }: { tracks: Track[];
             key={tr.id + i}
             className={`mt-tr${on ? " is-on" : ""}`}
             role="row"
+            tabIndex={0}
             onDoubleClick={() => music.play({ kind: "videos", label, tracks, start: i })}
+            {...songMenuProps(tr, { list: { tracks, label, index: i }, playlistId: inPlaylist?.id })}
           >
             <span className="mt-tr__n">
-              <span className="mt-tr__num">{on && st.playing ? "♫" : i + 1}</span>
+              <span className="mt-tr__num">{on && st.playing ? <IconBars size={16} className="mi-eq" /> : i + 1}</span>
               <button className="mt-tr__play" onClick={() => music.play({ kind: "videos", label, tracks, start: i })} aria-label={`${t("music.play")} ${tr.title}`}>
-                ▶
+                <IconPlay size={15} />
               </button>
             </span>
             <span className="mt-tr__title">
@@ -1048,17 +1051,16 @@ function TrackTable({ tracks, label, playlists, inPlaylist }: { tracks: Track[];
               {inPlaylist && (
                 <>
                   <button className="mt-iconbtn" title={t("mt.up")} aria-label={t("mt.up")} disabled={i === 0} onClick={() => void moveInPlaylist(inPlaylist.id, i, i - 1)}>
-                    ↑
+                    <IconUp size={16} />
                   </button>
                   <button className="mt-iconbtn" title={t("mt.down")} aria-label={t("mt.down")} disabled={i === tracks.length - 1} onClick={() => void moveInPlaylist(inPlaylist.id, i, i + 1)}>
-                    ↓
+                    <IconDown size={16} />
                   </button>
                   <button className="mt-iconbtn" title={t("mt.remove")} aria-label={t("mt.remove")} onClick={() => void removeFromPlaylist(inPlaylist.id, tr.id)}>
-                    ✕
+                    <IconClose size={16} />
                   </button>
                 </>
               )}
-              <RadioButton track={tr} />
               <AddToPlaylist track={tr} playlists={playlists} />
             </span>
           </div>
@@ -1084,7 +1086,7 @@ function AddToPlaylist({ track, playlists }: { track: Track; playlists: Playlist
   return (
     <span className="mt-add" ref={ref}>
       <button className="mt-iconbtn" title={t("mt.addTo")} aria-label={t("mt.addTo")} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-        {done ? "✓" : "+"}
+        {done ? <IconCheck size={17} /> : <IconPlus size={17} />}
       </button>
       {open && (
         <div className="mt-menu" role="menu">
@@ -1102,7 +1104,7 @@ function AddToPlaylist({ track, playlists }: { track: Track; playlists: Playlist
               }}
             >
               {p.name}
-              {p.tracks.some((x) => x.id === track.id) && <small> ✓</small>}
+              {p.tracks.some((x) => x.id === track.id) && <IconCheck size={14} />}
             </button>
           ))}
           <button
@@ -1117,7 +1119,7 @@ function AddToPlaylist({ track, playlists }: { track: Track; playlists: Playlist
               setTimeout(() => setDone(null), 1500);
             }}
           >
-            + {t("mt.create")}
+            <IconPlus size={15} /> {t("mt.create")}
           </button>
         </div>
       )}
@@ -1169,7 +1171,9 @@ function NowPlaying() {
         {video ? (
           <div className="mt-now__video" ref={slot} />
         ) : (
-          <div className="mt-now__cover">{st.now ? <Cover id={st.now.id} big /> : <span>♪</span>}</div>
+          <div className="mt-now__cover" {...(st.now ? songMenuProps({ id: st.now.id, title: st.now.title, channel: st.now.author }) : {})}>
+            {st.now ? <Cover id={st.now.id} big /> : <IconNote size={48} />}
+          </div>
         )}
         <div className="mt-now__title">{st.notice ?? st.now?.title ?? t("music.nothing")}</div>
         <div className="mt-now__author">{st.now?.author}</div>
@@ -1180,7 +1184,7 @@ function NowPlaying() {
             </div>
             <div className="mt-queue">
               {upNext.map((tr, i) => (
-                <button key={tr.id + i} className="mt-qitem" onClick={() => music.playAt(st.index + 1 + i)}>
+                <button key={tr.id + i} className="mt-qitem" onClick={() => music.playAt(st.index + 1 + i)} {...songMenuProps(tr)}>
                   <Cover id={tr.id} src={tr.thumb} className="mt-img40" />
                   <span>
                     <b>{tr.title}</b>
@@ -1207,31 +1211,30 @@ function PlayerBar({ playlists }: { playlists: Playlist[] }) {
   const current: Track | null = st.now ? { id: st.now.id, title: st.now.title, channel: st.now.author } : null;
   return (
     <footer className="mt-bar">
-      <div className="mt-bar__song">
-        {st.now ? <Cover id={st.now.id} className="mt-bar__img" /> : <span className="mt-bar__ph">♪</span>}
+      <div className="mt-bar__song" {...(current ? songMenuProps(current) : {})}>
+        {st.now ? <Cover id={st.now.id} className="mt-bar__img" /> : <span className="mt-bar__ph"><IconNote size={22} /></span>}
         <span>
           <b>{st.notice ?? st.now?.title ?? t("music.nothing")}</b>
           <small>{st.now?.author}</small>
         </span>
-        {current && <RadioButton track={current} />}
         {current && <AddToPlaylist track={current} playlists={playlists} />}
       </div>
       <div className="mt-bar__center">
         <div className="mt-bar__controls">
           <button className={`mt-iconbtn${st.shuffle ? " is-on" : ""}`} onClick={() => music.setShuffle(!st.shuffle)} aria-pressed={st.shuffle} title={t("mt.shuffle")} aria-label={t("mt.shuffle")}>
-            ⤮
+            <IconShuffle size={18} />
           </button>
           <button className="mt-iconbtn" onClick={music.prev} disabled={!st.source} aria-label={t("music.prev")}>
-            ⏮
+            <IconPrev size={18} />
           </button>
           <button className="mt-play" onClick={music.toggle} disabled={!st.source} aria-label={st.playing ? t("music.pause") : t("music.play")}>
-            {st.playing ? "❚❚" : "▶"}
+            {st.playing ? <IconPause size={18} /> : <IconPlay size={18} />}
           </button>
           <button className="mt-iconbtn" onClick={music.next} disabled={!st.source} aria-label={t("music.next")}>
-            ⏭
+            <IconNext size={18} />
           </button>
           <button className={`mt-iconbtn${st.repeat ? " is-on" : ""}`} onClick={() => music.setRepeat(!st.repeat)} aria-pressed={st.repeat} title={t("mt.repeat")} aria-label={t("mt.repeat")}>
-            ⟲
+            <IconRepeat size={18} />
           </button>
         </div>
         <Progress />
@@ -1239,7 +1242,7 @@ function PlayerBar({ playlists }: { playlists: Playlist[] }) {
       <div className="mt-bar__right">
         <ModeSwitch />
         <button className="mt-iconbtn" onClick={() => music.setMuted(!st.muted)} aria-label={st.muted ? t("mt.unmute") : t("mt.mute")}>
-          {st.muted || st.volume === 0 ? "🔇" : "🔊"}
+          {st.muted || st.volume === 0 ? <IconMute size={18} /> : <IconVolume size={18} />}
         </button>
         <input
           className="mt-volume"

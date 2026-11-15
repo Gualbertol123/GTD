@@ -131,7 +131,12 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
   playlists, the team's playlists, the most listened artists, new music
   videos. The three favourite artists (**Enrique Iglesias, Ricky Martin,
   Tiziano Ferro**, *Mix preferiti*) are still there, at the bottom.
-- **Radio 📻** on every song (track lists, trends, the player bar, the ♪ panel).
+- **Song menu:** right-click any song (long-press on a touch screen, or the
+  keyboard's menu key): *Riproduci*, *Riproduci dopo*, *Aggiungi alla coda*,
+  *Avvia radio* (the song + ~50 like it), *Aggiungi a playlist*, *Rimuovi
+  dalla playlist* (inside a team playlist), *Apri su YouTube*, *Copia link*
+  (`components/SongMenu.tsx`). Icons are one SVG set in the Liquid Glass style
+  (`components/MusicIcons.tsx`), no emoji.
 - **Ads:** the app adds none; YouTube may show its own on some videos.
   *Ho YouTube Premium* (♪ panel / *In riproduzione*) loads the player from
   youtube.com instead of youtube-nocookie.com, so a Premium login in that

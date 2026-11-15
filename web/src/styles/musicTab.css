@@ -438,3 +438,43 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
 /* Now playing: the Premium option at the bottom */
 .mt-now__fine { margin-top: 22px; padding-top: 6px; border-top: 1px solid var(--mt-line); }
 .mt-now__fine .mp-premium { color: var(--mt-text); }
+
+/* ---- Liquid Glass controls ---------------------------------------------------
+   Icon buttons are small glass lenses: a light film (gradient), a bright top
+   rim and a faint edge, all drawn with gradients and inset shadows. No
+   backdrop-filter here: these sit inside blurred panels, and nested blurs are
+   what drew the stray lines Chrome showed on hover. */
+.mt {
+  --gl-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
+  --gl-fill-hi: linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.08));
+  --gl-rim: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(255, 255, 255, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+.mi { display: block; flex: none; }
+.mt-iconbtn { background: transparent; transition: background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease; }
+.mt-iconbtn:hover:not(:disabled) { background: var(--gl-fill-hi) !important; box-shadow: var(--gl-rim), 0 4px 12px rgba(0, 0, 0, 0.25); }
+.mt-bar__controls .mt-iconbtn, .mt-bar__right .mt-iconbtn { background: var(--gl-fill); box-shadow: var(--gl-rim); }
+.mt-iconbtn.is-on { box-shadow: var(--gl-rim), 0 0 0 1px rgba(212, 180, 122, 0.45); }
+/* The gold play button: a lens of gold glass with a sheen on top. */
+.mt-play {
+  background: radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, #f0d7a4 0%, #d4b47a 55%, #b38f55 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 -2px 4px rgba(120, 85, 30, 0.35), 0 6px 18px rgba(212, 180, 122, 0.35);
+}
+.mt-play:hover:not(:disabled) { filter: brightness(1.06); }
+.mt-play:disabled { opacity: 0.5; }
+.mt-play .mi { margin-left: 1px; }
+.mt-nav .mi { opacity: 0.85; }
+.mt-nav.is-on .mi { opacity: 1; }
+.mt-pill { display: inline-flex; align-items: center; gap: 8px; }
+.mt-pill:not(.mt-pill--solid) { background: var(--gl-fill) !important; box-shadow: var(--gl-rim); }
+.mt-ghost { display: inline-flex; align-items: center; gap: 6px; background: var(--gl-fill); }
+.mt-chip { display: inline-flex; align-items: center; gap: 6px; }
+.mt-link { display: inline-flex; align-items: center; gap: 6px; }
+.mt-search__icon { display: grid; color: var(--mt-text-2); }
+.mt-sugs button .mi { color: var(--mt-text-2); }
+.mt-glyph { color: #fff; }
+.mt-mosaic--empty, .mt-bar__ph, .mt-now__cover { color: var(--mt-text-2); }
+.mt-bar__ph { display: grid; place-items: center; background: var(--gl-fill); box-shadow: var(--gl-rim); }
+.mt-tr:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: -2px; }
+/* The "now playing" bars in the track number column */
+.mi-eq { color: var(--mt-gold); }

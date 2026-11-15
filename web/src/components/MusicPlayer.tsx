@@ -9,7 +9,6 @@ import {
   getMusic,
   music,
   parseYouTube,
-  playRadio,
   registerController,
   searchMusic,
   setMusic,
@@ -21,6 +20,21 @@ import {
 } from "../lib/music";
 import { usePlaylists } from "../lib/musicDb";
 import { readPref, writePref } from "../lib/prefs";
+import { SongMenuHost, songMenuProps } from "./SongMenu";
+import {
+  IconChevronDown,
+  IconClose,
+  IconExpand,
+  IconExternal,
+  IconNext,
+  IconNote,
+  IconPause,
+  IconPlay,
+  IconPrev,
+  IconSwap,
+  IconTrend,
+  IconVideo,
+} from "./MusicIcons";
 import "../styles/music.css";
 
 // -----------------------------------------------------------------------------
@@ -41,7 +55,7 @@ import "../styles/music.css";
 // -----------------------------------------------------------------------------
 
 interface YTPlayer {
-  loadPlaylist(arg: string[] | { list: string; listType: "playlist"; index?: number }, index?: number): void;
+  loadPlaylist(arg: string[] | { list: string; listType: "playlist"; index?: number }, index?: number, startSeconds?: number): void;
   playVideo(): void;
   pauseVideo(): void;
   stopVideo(): void;
@@ -196,6 +210,7 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
                 setShuffle: (on) => p.setShuffle(on),
                 setRepeat: (on) => p.setLoop(on),
                 playAt: (i) => p.playVideoAt(i),
+                enqueue: (tracks, where) => enqueue(p, tracks, where),
               });
             },
             onStateChange: (e) => {
@@ -268,6 +283,44 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
     return () => clearInterval(id);
   }, [loaded, st.playing]);
 
+  /**
+   * Adds songs to what is playing without stopping it: the player's list is
+   * reloaded with the new songs in it, at the same song and second. A mix,
+   * an artist or a pasted playlist become a plain list of songs here (their
+   * remaining songs keep their ids; titles show once they play).
+   */
+  function enqueue(p: YTPlayer, tracks: Track[], where: "next" | "end") {
+    const cur = getMusic();
+    const ids = p.getPlaylist() ?? [];
+    let index = p.getPlaylistIndex();
+    let queue: Track[] =
+      cur.queue.length && cur.queue.length === ids.length
+        ? cur.queue.slice()
+        : ids.map((id) => cur.queue.find((x) => x.id === id) ?? (cur.now?.id === id ? { id, title: cur.now.title, channel: cur.now.author } : { id, title: "", channel: "" }));
+    if (index < 0 || !queue.length) {
+      queue = cur.now ? [{ id: cur.now.id, title: cur.now.title, channel: cur.now.author }] : [];
+      index = 0;
+    }
+    const adding = tracks.filter((t) => t.id !== queue[index]?.id);
+    const at = where === "next" ? index + 1 : queue.length;
+    queue.splice(at, 0, ...adding);
+    const time = p.getCurrentTime() || 0;
+    const wasPlaying = cur.playing;
+    // The player's own shuffle would reorder the new list: our order wins.
+    if (cur.shuffle) {
+      p.setShuffle(false);
+      setMusic({ shuffle: false });
+    }
+    const label = cur.source?.kind === "videos" ? cur.source.label : cur.now?.title ?? "";
+    setMusic({ queue, index, source: { kind: "videos", label, tracks: queue, start: index } });
+    p.loadPlaylist(
+      queue.map((x) => x.id),
+      index,
+      time
+    );
+    if (!wasPlaying) setTimeout(() => p.pauseVideo(), 400);
+  }
+
   function playSource(s: Source) {
     const p = player.current;
     if (!p) return;
@@ -319,15 +372,13 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
       {mobile && view === "open" && <BackToMini />}
       {!inTab && view === "open" && (
         <div className="mp-head">
-          <span className="mp-head__title">♪ {t("music.title")}</span>
+          <span className="mp-head__title"><IconNote size={17} /> {t("music.title")}</span>
           <ModeSwitch />
           <button className="mp-icon" onClick={music.minimize} aria-label={t("music.minimize")} title={t("music.minimize")}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
+            <IconChevronDown size={18} />
           </button>
           <button className="mp-icon" onClick={music.close} aria-label={t("music.close")} title={t("music.close")}>
-            ✕
+            <IconClose size={17} />
           </button>
         </div>
       )}
@@ -337,12 +388,12 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
       </div>
 
       {!inTab && audio && view === "open" && (
-        <div className="mp-cover">{st.now ? <Cover id={st.now.id} big /> : <div className="mp-cover__ph">♪</div>}</div>
+        <div className="mp-cover">{st.now ? <Cover id={st.now.id} big /> : <div className="mp-cover__ph"><IconNote size={44} /></div>}</div>
       )}
 
       {!inTab && (
         <div className="mp-strip">
-          {audio && view === "mini" && <span className="mp-thumb">{st.now ? <Cover id={st.now.id} /> : "♪"}</span>}
+          {audio && view === "mini" && <span className="mp-thumb">{st.now ? <Cover id={st.now.id} /> : <IconNote size={18} />}</span>}
           <div className="mp-now">
             <div className="mp-now__title">{st.notice ?? st.now?.title ?? (st.source ? "…" : t("music.nothing"))}</div>
             {(view === "open" || audio) && st.now?.author && <div className="mp-now__author">{st.now.author}</div>}
@@ -350,27 +401,27 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
           <div className="mp-controls">
             {view === "open" && (
               <button className="mp-icon" onClick={music.prev} aria-label={t("music.prev")} disabled={!st.source}>
-                ⏮
+                <IconPrev size={17} />
               </button>
             )}
             <button className="mp-icon mp-icon--main" onClick={music.toggle} aria-label={st.playing ? t("music.pause") : t("music.play")} disabled={!st.source}>
-              {st.playing ? "❚❚" : "▶"}
+              {st.playing ? <IconPause size={17} /> : <IconPlay size={17} />}
             </button>
             <button className="mp-icon" onClick={music.next} aria-label={t("music.next")} disabled={!st.source}>
-              ⏭
+              <IconNext size={17} />
             </button>
             {view === "mini" && (
               <>
                 <button className="mp-icon" onClick={music.open} aria-label={t("music.expand")}>
-                  ⤢
+                  <IconExpand size={16} />
                 </button>
                 {!audio && (
                   <button className="mp-icon" onClick={() => setMusic({ side: st.side === "right" ? "left" : "right" })} aria-label={t("music.side")}>
-                    ⇆
+                    <IconSwap size={16} />
                   </button>
                 )}
                 <button className="mp-icon" onClick={music.close} aria-label={t("music.close")}>
-                  ✕
+                  <IconClose size={16} />
                 </button>
               </>
             )}
@@ -380,6 +431,7 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
       {!inTab && view === "open" && st.duration > 0 && <Progress />}
 
       {!inTab && view === "open" && <MusicBrowser />}
+      <SongMenuHost />
     </div>
   );
 }
@@ -389,7 +441,12 @@ export function Cover({ id, src, big, className }: { id?: string; src?: string; 
   const url = src || coverOf(id, big);
   const [bad, setBad] = useState(false);
   useEffect(() => setBad(false), [url]);
-  if (!url || bad) return <span className={`mp-noimg ${className ?? ""}`}>♪</span>;
+  if (!url || bad)
+    return (
+      <span className={`mp-noimg ${className ?? ""}`}>
+        <IconNote size={big ? 40 : 18} />
+      </span>
+    );
   return <img className={className} src={url} alt="" loading="lazy" onError={() => setBad(true)} />;
 }
 
@@ -400,10 +457,10 @@ export function ModeSwitch() {
   return (
     <div className="mp-mode" role="group" aria-label={t("music.mode")}>
       <button aria-pressed={st.mode === "audio"} onClick={() => music.setMode("audio")}>
-        ♪ {t("music.audioOnly")}
+        <IconNote size={14} /> {t("music.audioOnly")}
       </button>
       <button aria-pressed={st.mode === "video"} onClick={() => music.setMode("video")}>
-        ▶ {t("music.video")}
+        <IconVideo size={14} /> {t("music.video")}
       </button>
     </div>
   );
@@ -458,7 +515,6 @@ function MusicBrowser() {
   const src = st.source;
   const [trendBusy, setTrendBusy] = useState(false);
   const [trendErr, setTrendErr] = useState(false);
-  const [radioBusy, setRadioBusy] = useState(false);
   const [trendLabel, setTrendLabel] = useState(t("mt.trends"));
 
   const playTrends = async () => {
@@ -495,29 +551,12 @@ function MusicBrowser() {
   return (
     <div className="mp-body">
       <button className={`mp-mix${src?.kind === "videos" && src.label === trendLabel ? " is-on" : ""}`} onClick={() => void playTrends()} disabled={trendBusy}>
-        <span className="mp-mix__icon">{trendBusy ? "…" : "🔥"}</span>
+        <span className="mp-mix__icon">{trendBusy ? "…" : <IconTrend size={20} />}</span>
         <span>
           <b>{trendLabel}</b>
           <small>{trendErr ? t("music.trendErr") : t("music.trendHint")}</small>
         </span>
       </button>
-      {st.now && (
-        <div className="mp-chips">
-          <button
-            className="mp-chip"
-            disabled={radioBusy}
-            onClick={() => {
-              setRadioBusy(true);
-              void playRadio({ id: st.now!.id, title: st.now!.title }, t("mt.radio")).then((err) => {
-                setRadioBusy(false);
-                if (err) setMusic({ notice: t("mt.radioErr") });
-              });
-            }}
-          >
-            📻 {radioBusy ? "…" : `${t("mt.radio")}: ${st.now.title.slice(0, 32)}`}
-          </button>
-        </div>
-      )}
 
       {playlists.length > 0 && (
         <>
@@ -559,6 +598,7 @@ function MusicBrowser() {
               key={tr.id}
               className={`mp-result${st.now?.id === tr.id ? " is-on" : ""}`}
               onClick={() => music.play({ kind: "videos", label: q, tracks: results, start: i })}
+              {...songMenuProps(tr, { list: { tracks: results, label: q, index: i } })}
             >
               <Cover id={tr.id} src={tr.thumb} className="mp-result__img" />
               <span>
@@ -654,7 +694,7 @@ export function SearchError({ error, q }: { error: string; q: string }) {
       {error === "no-key" ? t("music.noKey") : error === "quota" ? t("music.quota") : `${t("music.searchError")} ${error}`}{" "}
       {q.trim() && (
         <a href={youtubeSearchUrl(q)} target="_blank" rel="noopener noreferrer">
-          {t("music.openYt")} ↗
+          {t("music.openYt")} <IconExternal size={13} />
         </a>
       )}
     </div>
@@ -675,7 +715,7 @@ export function MusicButton() {
         st.view !== "closed" ? "bg-[#C9A96E] text-[#0A1931] border-[#C9A96E]" : "bg-transparent text-white border-white/35 hover:border-[#C9A96E]"
       }`}
     >
-      {st.playing ? "♫" : "♪"}
+      <IconNote size={17} />
     </button>
   );
 }

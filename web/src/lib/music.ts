@@ -116,6 +116,8 @@ export interface MusicController {
   setShuffle: (on: boolean) => void;
   setRepeat: (on: boolean) => void;
   playAt: (i: number) => void;
+  /** Put songs in the queue: right after the current one, or at the end. */
+  enqueue: (tracks: Track[], where: "next" | "end") => void;
 }
 
 let state: MusicState = {
@@ -209,6 +211,11 @@ export const music = {
     controller?.setRepeat(on);
   },
   playAt: (i: number) => controller?.playAt(i),
+  /** "Play next" / "Add to queue". With nothing playing, it simply plays. */
+  enqueue: (tracks: Track[], where: "next" | "end", label: string) => {
+    if (!state.source || !controller) return music.play({ kind: "videos", label, tracks, start: 0 });
+    controller.enqueue(tracks, where);
+  },
   setMode: (m: Mode) => setMusic({ mode: m }),
 };
 
