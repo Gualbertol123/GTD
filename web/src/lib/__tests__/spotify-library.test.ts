@@ -27,17 +27,32 @@ const apiTrack = (n: number) => ({
   external_urls: { spotify: `https://open.spotify.com/track/${id22(n)}` },
 });
 
-/** sessionStorage with a signed-in token, a window and location (node test environment). */
-function signedIn(access = "user-tok") {
-  const store = new Map<string, string>();
-  store.set("gtd-spotify-token", JSON.stringify({ access, refresh: "ref", exp: Date.now() + 3600_000 }));
-  vi.stubGlobal("sessionStorage", {
+/**
+ * Signed in as the person picked on this device (Tester), plus a window (node
+ * test environment). The token is sealed at rest in the browser; here (no
+ * IndexedDB) it lives in memory only. The returned `get("gtd-spotify-token")`
+ * reads the token this tab holds, as JSON.
+ */
+async function signedIn(access = "user-tok") {
+  const store = new Map<string, string>([["gtd-me", "Tester"]]);
+  const storage = {
     getItem: (k: string) => store.get(k) ?? null,
     setItem: (k: string, v: string) => void store.set(k, String(v)),
     removeItem: (k: string) => void store.delete(k),
-  });
+  };
+  vi.stubGlobal("sessionStorage", storage);
+  vi.stubGlobal("localStorage", storage);
   vi.stubGlobal("window", { addEventListener: vi.fn(), removeEventListener: vi.fn() });
-  return store;
+  const auth = await import("../spotifyAuth");
+  await auth.__setSpotifyTokenForTests({ access, refresh: "ref", exp: Date.now() + 3600_000 });
+  return {
+    has: (k: string) => store.has(k),
+    get: (k: string) => {
+      if (k !== "gtd-spotify-token") return store.get(k);
+      const t = auth.__spotifyTokenForTests();
+      return t ? JSON.stringify(t) : undefined;
+    },
+  };
 }
 
 /** A paged Spotify list of `total` items, `limit` per page, with `next` links. */
@@ -61,7 +76,7 @@ afterEach(() => {
 
 describe("paging", () => {
   it("liked songs over 50: every page of 50 is read, each song with its Spotify id", async () => {
-    signedIn();
+    await signedIn();
     const f = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const u = new URL(String(input));
       expect(new Headers(init?.headers).get("authorization")).toBe("Bearer user-tok");
@@ -82,7 +97,7 @@ describe("paging", () => {
   });
 
   it("liked songs are capped at 2000, and say so", async () => {
-    signedIn();
+    await signedIn();
     const f = vi.fn(async (input: string | URL | Request) => ok(paged(new URL(String(input)), 2345, (i) => ({ track: apiTrack(i) }))));
     vi.stubGlobal("fetch", f);
     const { likedTracks, LIKED_CAP } = await import("../spotifyLibrary");
@@ -95,7 +110,7 @@ describe("paging", () => {
   });
 
   it("my playlists: every page; own and collaborative marked, cover and count kept", async () => {
-    signedIn();
+    await signedIn();
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: string | URL | Request) => {
@@ -122,7 +137,7 @@ describe("paging", () => {
   });
 
   it("followed artists: cursor pages under `artists`", async () => {
-    signedIn();
+    await signedIn();
     const f = vi.fn(async (input: string | URL | Request) => {
       const u = new URL(String(input));
       const after = u.searchParams.get("after");
@@ -138,7 +153,7 @@ describe("paging", () => {
 
 describe("one playlist / album", () => {
   it("a playlist that is not yours gives the details only (meta-only)", async () => {
-    signedIn();
+    await signedIn();
     vi.stubGlobal("fetch", vi.fn(async () => ok({ id: id22("X"), name: "Editorial", owner: { id: "spotify", display_name: "Spotify" }, images: [{ url: "https://i.scdn.co/e", width: 640 }] })));
     const { playlistTracks } = await import("../spotifyLibrary");
     const r = await playlistTracks(id22("X"));
@@ -147,7 +162,7 @@ describe("one playlist / album", () => {
   });
 
   it("…/items answering 403 is details only too", async () => {
-    signedIn();
+    await signedIn();
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: string | URL | Request) => (String(input).includes("/items") ? new Response("{}", { status: 403 }) : ok({ id: id22("Y"), name: "Party", items: { total: 140 } })))
@@ -157,7 +172,7 @@ describe("one playlist / album", () => {
   });
 
   it("your playlist: every …/items page (new `item` shape and the old `track` one)", async () => {
-    signedIn();
+    await signedIn();
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: string | URL | Request) => {
@@ -176,7 +191,7 @@ describe("one playlist / album", () => {
   });
 
   it("an album: the first page with the album, the rest from /albums/{id}/tracks", async () => {
-    signedIn();
+    await signedIn();
     const f = vi.fn(async (input: string | URL | Request) => {
       const u = new URL(String(input));
       if (u.pathname.endsWith("/tracks")) return ok(paged(u, 60, (i) => ({ ...apiTrack(i), album: undefined })));
@@ -194,7 +209,7 @@ describe("one playlist / album", () => {
   });
 
   it("an artist whose albums Spotify refuses (403) shows none, not an error", async () => {
-    signedIn();
+    await signedIn();
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: string | URL | Request) => (String(input).includes("/albums") ? new Response("{}", { status: 403 }) : ok({ id: id22("AR"), name: "Singer", images: [] })))
@@ -208,7 +223,7 @@ describe("one playlist / album", () => {
 
 describe("token and limits", () => {
   it("401: refreshes the token once and asks again", async () => {
-    const store = signedIn("old-tok");
+    const store = await signedIn("old-tok");
     const f = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const u = new URL(String(input));
       if (u.host === "accounts.spotify.com") {
@@ -227,7 +242,7 @@ describe("token and limits", () => {
   });
 
   it("401 again after the refresh: signed out (no loop)", async () => {
-    signedIn("old-tok");
+    await signedIn("old-tok");
     const f = vi.fn(async (input: string | URL | Request) => (String(input).includes("accounts") ? ok({ access_token: "x" }) : new Response("{}", { status: 401 })));
     vi.stubGlobal("fetch", f);
     const { recentlyPlayed, SpotifyApiError } = await import("../spotifyLibrary");
@@ -238,7 +253,7 @@ describe("token and limits", () => {
   });
 
   it("one caller leaving during the shared refresh does not cancel it for the others", async () => {
-    const store = signedIn("old-tok");
+    const store = await signedIn("old-tok");
     let answerToken!: () => void;
     let tokenSignal: AbortSignal | null | undefined;
     const f = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -269,7 +284,7 @@ describe("token and limits", () => {
   });
 
   it("the refresh not answering (offline) says network, and keeps the sign-in", async () => {
-    const store = signedIn("old-tok");
+    const store = await signedIn("old-tok");
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: string | URL | Request) => {
@@ -283,7 +298,7 @@ describe("token and limits", () => {
   });
 
   it("401 with a fresh token signs out, so the page offers Accedi as the message says", async () => {
-    const store = signedIn("old-tok");
+    const store = await signedIn("old-tok");
     vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request) => (String(input).includes("accounts") ? ok({ access_token: "fresh" }) : new Response("{}", { status: 401 }))));
     const { savedAlbums } = await import("../spotifyLibrary");
     await expect(savedAlbums()).rejects.toMatchObject({ code: "signed-out" });
@@ -291,7 +306,7 @@ describe("token and limits", () => {
   });
 
   it("429: a clear quota message with the wait from Retry-After", async () => {
-    signedIn();
+    await signedIn();
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: { status: 429, message: "API rate limit exceeded" } }), { status: 429, headers: { "Retry-After": "120" } })));
     const { myPlaylists, spotifyErrorText, SpotifyApiError } = await import("../spotifyLibrary");
     const e = await myPlaylists().catch((x) => x);
@@ -304,7 +319,7 @@ describe("token and limits", () => {
   });
 
   it("429 with a short Retry-After is waited out once", async () => {
-    signedIn();
+    await signedIn();
     let n = 0;
     vi.stubGlobal(
       "fetch",
@@ -325,7 +340,7 @@ describe("token and limits", () => {
   });
 
   it("a cancelled call says aborted", async () => {
-    signedIn();
+    await signedIn();
     vi.stubGlobal("fetch", vi.fn((_: unknown, init?: RequestInit) => new Promise((_r, rej) => init?.signal?.addEventListener("abort", () => rej(new DOMException("x", "AbortError"))))));
     const { savedAlbums } = await import("../spotifyLibrary");
     const c = new AbortController();
@@ -337,7 +352,7 @@ describe("token and limits", () => {
 
 describe("search", () => {
   it("10 per type, offset for more", async () => {
-    signedIn();
+    await signedIn();
     const f = vi.fn(async (input: string | URL | Request) => {
       const u = new URL(String(input));
       if (u.pathname === "/v1/me") return ok({ id: "me" });
@@ -399,7 +414,7 @@ describe("Spotify track → Track keeps the Spotify id", () => {
   });
 
   it("the single-link import read as the user keeps the ids (album)", async () => {
-    signedIn();
+    await signedIn();
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ok({ id: id22("AL"), name: "Record", artists: [{ name: "Band" }], images: [], total_tracks: 2, tracks: { items: [apiTrack(1), apiTrack(2)], next: null, total: 2 } }))
@@ -414,7 +429,7 @@ describe("Spotify track → Track keeps the Spotify id", () => {
   });
 
   it("the return flag counts only on a real return from Spotify with a code", async () => {
-    const store = signedIn();
+    const store = await signedIn();
     const { markLibraryReturn, takeLibraryReturn } = await import("../spotifyLibrary");
     markLibraryReturn();
     // Opening Importa da Spotify later, in a page not loaded at /callback: no redirect, flag gone.
@@ -434,7 +449,7 @@ describe("Spotify track → Track keeps the Spotify id", () => {
   });
 
   it("a playlist opened straight from a link knows it is yours", async () => {
-    signedIn();
+    await signedIn();
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: string | URL | Request) => {
@@ -457,5 +472,33 @@ describe("Spotify track → Track keeps the Spotify id", () => {
     ])
       expect(parseView(viewSub(v))).toEqual(v);
     expect(parseView("splib/nope/album/x")).toEqual({ kind: "splib" });
+  });
+});
+
+describe("the Spotify user id (review fix F1)", () => {
+  it("is cached per person picked and token: another name, a sign-out or fresh asks /me again", async () => {
+    await signedIn("tok-a");
+    let who = "user-a";
+    const f = vi.fn(async (input: string | URL | Request) => {
+      if (new URL(String(input)).pathname === "/v1/me") return ok({ id: who });
+      return ok({});
+    });
+    vi.stubGlobal("fetch", f);
+    const auth = await import("../spotifyAuth");
+    const lib = await import("../spotifyLibrary");
+    expect(await lib.spotifyMe()).toBe("user-a");
+    expect(await lib.spotifyMe()).toBe("user-a");
+    expect(f).toHaveBeenCalledTimes(1); // cached for this session
+    // Another person picked on this device, signed in to another Spotify account.
+    localStorage.setItem("gtd-me", "Bruno");
+    auth.spotifyOwnerChanged();
+    await auth.__setSpotifyTokenForTests({ access: "tok-b", exp: Date.now() + 3600_000 });
+    who = "user-b";
+    expect(await lib.spotifyMe()).toBe("user-b");
+    expect(f).toHaveBeenCalledTimes(2);
+    // fresh: never the cache (the liked songs' owner check).
+    who = "user-b2";
+    expect(await lib.spotifyMe(undefined, { fresh: true })).toBe("user-b2");
+    expect(f).toHaveBeenCalledTimes(3);
   });
 });

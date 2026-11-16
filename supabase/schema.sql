@@ -710,6 +710,56 @@ $$;
 revoke all on function public.music_playlist_radio_refresh(text, jsonb, bigint) from public, anon;
 grant execute on function public.music_playlist_radio_refresh(text, jsonb, bigint) to authenticated;
 
+-- ---- Imported playlists that sync daily (migration 022) -------------------
+-- A playlist imported from Spotify (playlist / album link, La mia libreria:
+-- playlist, album, liked songs) or from a YouTube playlist remembers its
+-- source; a team browser re-reads it once a day and the "Sincronizza" button
+-- on demand. source_kind null = an ordinary playlist. source_auto false =
+-- detached (songs edited by hand, or "Stacca"): no daily sync, but the button
+-- still works as a one-off. source_id is, for the liked songs, the Spotify
+-- user id of whoever imported them.
+alter table public.music_playlists add column if not exists source_kind      text    null;
+alter table public.music_playlists add column if not exists source_id        text    null;
+alter table public.music_playlists add column if not exists source_name      text    null;
+alter table public.music_playlists add column if not exists source_synced_at bigint  null;
+alter table public.music_playlists add column if not exists source_auto      boolean not null default true;
+
+-- Syncs an imported playlist only if it still has a source and either
+-- p_stale_ms <= 0 (the button: always) or it is automatic and was last checked
+-- more than p_stale_ms ago (database clock), so two browsers can't both do the
+-- daily sync. p_tracks null: songs unchanged, only the check is stamped.
+-- p_expect: the song ids the sync was planned on; the list changed since, refused.
+-- Returns the row, or nothing when not due. Runs with the caller's rights.
+drop function if exists public.music_playlist_source_sync(text, jsonb, bigint);
+create or replace function public.music_playlist_source_sync(p_id text, p_tracks jsonb, p_stale_ms bigint, p_expect jsonb default null)
+returns setof public.music_playlists
+language sql
+security invoker
+set search_path = ''
+as $$
+  update public.music_playlists as m
+     set tracks = case
+           when p_tracks is not null and jsonb_typeof(p_tracks) = 'array' then p_tracks
+           else m.tracks
+         end,
+         source_synced_at = n.ms,
+         updated_at = n.ms
+    from (select (extract(epoch from clock_timestamp()) * 1000)::bigint as ms) as n
+   where m.id = p_id
+     and m.source_kind is not null
+     -- The list the sync was planned on (its song ids, in order): changed since, refused.
+     and (p_expect is null
+          or coalesce((select jsonb_agg(e.v ->> 'id' order by e.o)
+                         from jsonb_array_elements(m.tracks) with ordinality as e(v, o)),
+                      '[]'::jsonb) = p_expect)
+     and (coalesce(p_stale_ms, 0) <= 0
+          or (m.source_auto
+              and (m.source_synced_at is null or m.source_synced_at < n.ms - p_stale_ms)))
+  returning m.*;
+$$;
+revoke all on function public.music_playlist_source_sync(text, jsonb, bigint, jsonb) from public, anon;
+grant execute on function public.music_playlist_source_sync(text, jsonb, bigint, jsonb) to authenticated;
+
 -- ---- Realtime --------------------------------------------------------------
 -- Change events for the board tables (they respect the policies above).
 -- reflection_access is deliberately NOT published.

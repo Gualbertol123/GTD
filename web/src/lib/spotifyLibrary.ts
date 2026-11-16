@@ -22,7 +22,7 @@
 // -----------------------------------------------------------------------------
 
 import { mlog, type SpotifyList, type SpotifySong, type Track } from "./music";
-import { refreshSpotifyToken, signOutSpotify, spotifyUserToken } from "./spotifyAuth";
+import { onSpotifySession, refreshSpotifyToken, signOutSpotify, spotifyOwner, spotifyUserToken } from "./spotifyAuth";
 
 export const SPOTIFY_API = "https://api.spotify.com/v1";
 /** Each call must answer within this. */
@@ -393,17 +393,35 @@ export function importListOf(item: SpItem | { kind: "liked" | "recent"; name: st
 // ---- The library ------------------------------------------------------------------
 
 let meId: string | null = null;
-/** The signed-in person's Spotify user id (to tell their own playlists). */
-export async function spotifyMe(signal?: AbortSignal): Promise<string | null> {
-  if (meId) return meId;
+/** Whose session meId was read with (the person picked + their access token): another one reads it again. */
+let meKey = "";
+const sessionKey = () => `${spotifyOwner()}|${spotifyUserToken() ?? ""}`;
+// Another person picked, signed out or signed in again: the cached id is not theirs.
+onSpotifySession(() => {
+  meId = null;
+  meKey = "";
+});
+/**
+ * The signed-in person's Spotify user id (to tell their own playlists). Cached
+ * for this person's session only. `fresh`: asked again with the token in hand
+ * (the liked songs' owner check, never from a cache).
+ */
+export async function spotifyMe(signal?: AbortSignal, opts: { fresh?: boolean } = {}): Promise<string | null> {
+  const key = sessionKey();
+  if (meId && meKey === key && !opts.fresh) return meId;
+  meId = null;
+  meKey = key;
   try {
     const j = await spGet<{ id?: string }>("/me", signal);
-    meId = j.id ?? null;
+    const id = j.id ?? null;
+    // Read for this session: the person or token changed meanwhile, then not kept.
+    if (meKey === key) meId = id;
+    return id;
   } catch (e) {
     if (e instanceof SpotifyApiError && (e.code === "aborted" || e.code === "quota" || e.code === "signed-out")) throw e;
     mlog("splib: /me unavailable", { error: String(e) }, "warn");
   }
-  return meId;
+  return null;
 }
 
 /** Your playlists, own and collaborative (and the ones you follow), every page. */
@@ -494,9 +512,9 @@ export async function albumTracks(id: string, signal?: AbortSignal): Promise<Lis
  */
 export async function playlistTracks(id: string, signal?: AbortSignal): Promise<ListResult> {
   const fields = "id,name,owner(id,display_name),images,collaborative,external_urls,items(total),tracks(total)";
-  await spotifyMe(signal).catch(() => null); // to tell the person's own playlist ("Tua")
+  const me = await spotifyMe(signal).catch(() => null); // to tell the person's own playlist ("Tua")
   const meta = await spGet<ApiPlaylist>(`/playlists/${encodeURIComponent(id)}?fields=${encodeURIComponent(fields)}`, signal);
-  const item = playlistItem({ ...meta, id: meta.id ?? id }, meId ?? undefined)!;
+  const item = playlistItem({ ...meta, id: meta.id ?? id }, me ?? undefined)!;
   const total = meta.items?.total ?? meta.tracks?.total;
   if (typeof total !== "number") {
     mlog("splib: playlist details only (not yours)", { id });
@@ -527,14 +545,14 @@ export interface SearchPage {
 
 /** Search Spotify: 10 results per type (Spotify's 2026 limit), `offset` for "more". */
 export async function searchSpotify(q: string, types: SearchType[], offset = 0, signal?: AbortSignal): Promise<SearchPage> {
-  if (types.includes("playlist")) await spotifyMe(signal).catch(() => null); // "Tua" on your own playlists
+  const me = types.includes("playlist") ? await spotifyMe(signal).catch(() => null) : null; // "Tua" on your own playlists
   const p = new URLSearchParams({ q: q.trim(), type: types.join(","), limit: String(SEARCH_LIMIT), offset: String(Math.max(0, Math.min(offset, 1000 - SEARCH_LIMIT))) });
   const j = await spGet<{ tracks?: Page<ApiTrack>; albums?: Page<ApiAlbum>; playlists?: Page<ApiPlaylist> }>(`/search?${p}`, signal);
   const more = (pg?: Page<unknown>) => !!pg?.next && offset + SEARCH_LIMIT < 1000;
   const out: SearchPage = {};
   if (j.tracks) out.tracks = { items: (j.tracks.items ?? []).map((t) => trackOf(t)).filter(notNull), more: more(j.tracks) };
   if (j.albums) out.albums = { items: (j.albums.items ?? []).map(albumItem).filter(notNull), more: more(j.albums) };
-  if (j.playlists) out.playlists = { items: (j.playlists.items ?? []).map((x) => (x ? playlistItem(x, meId ?? undefined) : null)).filter(notNull), more: more(j.playlists) };
+  if (j.playlists) out.playlists = { items: (j.playlists.items ?? []).map((x) => (x ? playlistItem(x, me ?? undefined) : null)).filter(notNull), more: more(j.playlists) };
   mlog("splib: search", { q: q.trim(), types, offset, n: { t: out.tracks?.items.length ?? 0, a: out.albums?.items.length ?? 0, p: out.playlists?.items.length ?? 0 } });
   return out;
 }
@@ -634,4 +652,5 @@ export function takeLibraryReturn(from = loadedAt()): boolean {
 /** Tests: forget the cached user id. */
 export function forgetSpotifyLibrary(): void {
   meId = null;
+  meKey = "";
 }

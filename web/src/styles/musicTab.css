@@ -809,3 +809,16 @@ p.mt-splogin { gap: 6px; font-size: 13px; }
 .spl-importbox { margin: 18px 0 14px; padding: 12px 14px; border-radius: 12px; background: var(--gl-fill); box-shadow: var(--gl-rim); }
 .spl-importbox .mt-actions { margin: 0; }
 .spl-importbox__note { margin: 8px 0 0; font-size: 12.5px; }
+
+/* ---- Sincronizza: imported playlists synced with their source (migration 022) ----
+   Inside the hero, as the radio badge: plain fills, no backdrop-filter. */
+.mt-syncbar { margin-top: 8px; }
+.mt-syncbar__auto { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: #fff; }
+.mt .mt-syncbar__btn { height: 28px; font-size: 12.5px; color: #fff; background: var(--gl-fill); box-shadow: var(--gl-rim); }
+.mt .mt-syncbar__btn:disabled { opacity: 1; cursor: progress; }
+.mt-syncbar__bar { position: relative; width: 120px; height: 4px; border-radius: 2px; overflow: hidden; background: rgba(255, 255, 255, 0.22); }
+.mt-syncbar__bar > span { position: absolute; inset: 0 auto 0 0; background: #fff; transition: width 0.2s ease; }
+.mt-libitem__sync { display: inline-flex; vertical-align: -1px; margin-left: 6px; color: var(--mt-text-2); }
+.mt-syncmissing li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.mt-syncmissing__find { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .mt-syncbar__bar > span { transition: none; } }

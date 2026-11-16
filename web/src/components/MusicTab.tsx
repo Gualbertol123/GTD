@@ -45,15 +45,24 @@ import {
   createPlaylist,
   deletePlaylist,
   detachRadio,
+  detachSource,
   insertInPlaylist,
   moveInPlaylist,
+  reattachSource,
   reloadPlaylists,
   removeFromPlaylist,
   renamePlaylist,
   restorePlaylist,
+  spotifySourceOf,
+  syncPlaylist,
   usePlaylist,
   usePlaylists,
+  useSyncState,
+  withSourceKeys,
+  type NewSource,
   type Playlist,
+  type SourceSaveResult,
+  type SyncResult,
   type WriteResult,
 } from "../lib/musicDb";
 import { countryName, isFail, parseView, rowKeys, viewSub, type View } from "../lib/musicTabRoute";
@@ -90,7 +99,7 @@ import {
   IconVolume,
 } from "./MusicIcons";
 import { beginSpotifyLogin, signOutSpotify, spotifyLoginAvailable, spotifyUserToken, takeReturnLink, useSpotifyAuth } from "../lib/spotifyAuth";
-import { readLinkAsUser, spotifyLinkTarget, takeLibraryReturn, withSpotifyIds } from "../lib/spotifyLibrary";
+import { readLinkAsUser, spotifyLinkTarget, spotifyMe, takeLibraryReturn, withSpotifyIds } from "../lib/spotifyLibrary";
 import { SpotifyLibrary } from "./SpotifyLibrary";
 import "../styles/musicTab.css";
 
@@ -291,7 +300,14 @@ const LibItem = memo(function LibItem({ p, on, go }: { p: Playlist; on: boolean;
     <button className={`mt-libitem${on ? " is-on" : ""}`} aria-current={on ? "page" : undefined} onClick={() => go({ kind: "playlist", id: p.id })}>
       <Mosaic tracks={p.tracks} size={44} />
       <span>
-        <b>{p.name}</b>
+        <b>
+          {p.name}
+          {(p.source?.auto || p.radio) && (
+            <span className="mt-libitem__sync" title={t("sync.badge")} aria-label={t("sync.badge")}>
+              <IconSync size={12} />
+            </span>
+          )}
+        </b>
         <small>
           {t("mt.playlist")} · {p.owner || "—"} · {t("mt.songs").replace("{n}", String(p.tracks.length))}
         </small>
@@ -306,7 +322,7 @@ const LibItem = memo(function LibItem({ p, on, go }: { p: Playlist; on: boolean;
  */
 function useFollowPlayingPlaylist(playlists: Playlist[]) {
   const key = useMusicSel((s) => s.source?.key ?? null);
-  const seen = useRef<{ key: string | null; ids: Set<string> }>({ key: null, ids: new Set() });
+  const seen = useRef<{ key: string | null; ids: Set<string>; synced?: number | null }>({ key: null, ids: new Set() });
   useEffect(() => {
     const id = key?.startsWith("pl:") ? key.slice(3) : null;
     const p = id ? playlists.find((x) => x.id === id) : undefined;
@@ -314,8 +330,11 @@ function useFollowPlayingPlaylist(playlists: Playlist[]) {
       seen.current = { key, ids: new Set() };
       return;
     }
-    if (seen.current.key !== key) {
-      seen.current = { key, ids: new Set(p.tracks.map((x) => x.id)) };
+    const synced = p.source?.syncedAt ?? p.radio?.refreshedAt ?? null;
+    if (seen.current.key !== key || seen.current.synced !== synced) {
+      // A new list, or a daily sync / refresh / Sincronizza wrote it: the queue playing is never touched.
+      if (seen.current.key === key) mlog("playing playlist synced: queue left as it is", { id });
+      seen.current = { key, ids: new Set(p.tracks.map((x) => x.id)), synced };
       return;
     }
     const queued = new Set(getMusic().queue.map((x) => x.id));
@@ -1440,6 +1459,12 @@ interface SpJob {
    * so the link field is empty and a submit there cannot replace this job.
    */
   source?: string;
+  /**
+   * What the saved playlist syncs with (migration 022): set for a library
+   * import (null: recently played, or liked songs without a Spotify user id);
+   * a link import works it out from `url` when saving.
+   */
+  src?: NewSource | null;
 }
 let spJob: SpJob | null = null;
 let spCtrl: AbortController | null = null;
@@ -1557,9 +1582,33 @@ function startSpotifyLibraryImport(list: SpotifyList, name: string, url: string)
   spCtrl?.abort();
   const ctrl = new AbortController();
   spCtrl = ctrl;
-  mlog("spotify import: from the library", { name, songs: list.songs.length });
-  setSp({ url: "", source: url, phase: "reading", error: null, list: null, done: 0, matches: [], name });
+  // The source to sync with: the liked songs need the importer's Spotify user id.
+  const liked = list.id.startsWith("liked:");
+  const src = liked ? null : spotifySourceOf(list, { library: true });
+  mlog("spotify import: from the library", { name, songs: list.songs.length, source: src?.kind ?? (liked ? "liked (resolving)" : null) });
+  setSp({ url: "", source: url, phase: "reading", error: null, list: null, done: 0, matches: [], name, src });
+  if (liked)
+    // Asked fresh with the token in hand: the liked songs are this account's.
+    void spotifyMe(undefined, { fresh: true })
+      .catch(() => null)
+      .then((me) => {
+        if (spCtrl !== ctrl || !spJob) return;
+        const s = spotifySourceOf(list, { library: true, me });
+        mlog("spotify import: liked songs source", { resolved: !!s });
+        setSp({ ...spJob, src: s });
+      });
   void matchList(list, ctrl);
+}
+
+/** Says (once saved) that an import was kept without its source: migration 022 is missing. */
+function reportImport(done: Promise<SourceSaveResult>, source: NewSource | null, t: T): void {
+  void done.then((r) => {
+    if (!r.ok) music.toast(playlistErrorText(t("mt.notSaved"), r.error, t), "error");
+    else if (source && r.sourceSaved === false) {
+      mlog("import saved without its source (migration 022 missing)", { kind: source.kind });
+      music.toast(t("sync.needMigration"));
+    }
+  });
 }
 
 /** README §1e: how the site admin adds Spotify's free keys. */
@@ -1637,10 +1686,15 @@ function SpotifyPage({ playlists, available, go }: { playlists: Playlist[]; avai
   const kindLabel = list ? t(list.kind === "album" ? "sp.album" : list.kind === "tracks" ? "sp.pasted" : "sp.playlist") : t(pasted ? "sp.pasted" : "sp.button");
 
   const save = () => {
-    if (!list) return;
-    const { playlist, saved: done } = createPlaylist(label, me, tracks);
+    if (!list || !job) return;
+    // Each song keeps its source key, so the daily sync knows which it already has.
+    const keyed = withSourceKeys(matches, list.songs).filter((m): m is Track => !!m);
+    // A library import knows its source; a link import is its link; pasted songs have none.
+    const source = job.source !== undefined ? (job.src ?? null) : spotifySourceOf(list, { link: job.url });
+    mlog("spotify import: save", { songs: keyed.length, source: source?.kind ?? null });
+    const { playlist, saved: done } = createPlaylist(label, me, keyed, source);
     music.toast(t("mt.created", { p: label }));
-    reportWrite(done, t);
+    reportImport(done, source, t);
     go({ kind: "playlist", id: playlist.id });
   };
 
@@ -1820,9 +1874,11 @@ function YtPlaylistPage({ list, playlists, available, go }: { list: string; play
   const saved = playlists.find((p) => p.name === data.title && p.tracks[0]?.id === tracks[0]?.id);
 
   const save = () => {
-    const { playlist, saved: done } = createPlaylist(data.title, me, tracks);
+    const source: NewSource = { kind: "youtube-playlist", id: data.list || list, name: data.title };
+    mlog("yt import: save", { songs: tracks.length, list: source.id });
+    const { playlist, saved: done } = createPlaylist(data.title, me, tracks, source);
     music.toast(t("mt.created", { p: data.title }));
-    reportWrite(done, t);
+    reportImport(done, source, t);
     go({ kind: "playlist", id: playlist.id });
   };
 
@@ -2011,6 +2067,7 @@ function PlaylistPage({ id, go }: { id: string; go: Go }) {
               <small className="mt-radiobadge__note">{t("mt.radioEditNote")}</small>
             </div>
           )}
+          {(p.source || p.radio) && <SyncControls p={p} />}
         </div>
       </div>
       <div className="mt-actions">
@@ -2035,8 +2092,152 @@ function PlaylistPage({ id, go }: { id: string; go: Go }) {
           </button>
         )}
       </div>
+      <SyncMissingList id={p.id} go={go} />
       {p.tracks.length === 0 ? <p className="mt-hint">{t("mt.emptyPlaylist")}</p> : <TrackTable tracks={p.tracks} label={p.name} srcKey={srcKey} playlistId={p.id} />}
     </div>
+  );
+}
+
+// ---- Sincronizza (migration 022; radio playlists: 021's refresh, forced) ------------
+
+function IconSync({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className="mi" aria-hidden="true">
+      <path d="M20 11a8 8 0 0 0-14.3-4.9L4 8" />
+      <path d="M4 3.5V8h4.5" />
+      <path d="M4 13a8 8 0 0 0 14.3 4.9L20 16" />
+      <path d="M20 20.5V16h-4.5" />
+    </svg>
+  );
+}
+
+// The last button sync of each playlist (its songs not found stay listed while you move around).
+const lastSyncs = new Map<string, SyncResult>();
+const lastSyncListeners = new Set<() => void>();
+function setLastSync(id: string, r: SyncResult | null) {
+  if (r) lastSyncs.set(id, r);
+  else lastSyncs.delete(id);
+  lastSyncListeners.forEach((l) => l());
+}
+const subscribeLastSync = (l: () => void) => {
+  lastSyncListeners.add(l);
+  return () => {
+    lastSyncListeners.delete(l);
+  };
+};
+function useLastSync(id: string): SyncResult | undefined {
+  return useSyncExternalStore(subscribeLastSync, () => lastSyncs.get(id), () => lastSyncs.get(id));
+}
+
+const MUSIC_CODES = new Set(["login", "offline", "timeout", "no-functions", "no-key", "quota", "not-found", "unavailable", "server", "aborted"]);
+
+/** The toast after a sync: "+3 nuovi, −1 rimossi, 2 non trovati", "Già aggiornata", or why not. */
+function syncResultText(r: SyncResult, t: T): { text: string; error: boolean } {
+  if (r.status === "done") {
+    const parts = [
+      r.added ? t("sync.added", { n: r.added }) : "",
+      r.removed ? t("sync.removed", { n: r.removed }) : "",
+      r.missing.length ? t("sync.notFound", { n: r.missing.length }) : "",
+    ].filter(Boolean);
+    const text = parts.length ? parts.join(", ") : t("sync.upToDate");
+    return { text: r.limited ? `${text} · ${t("sync.limited")}` : text, error: false };
+  }
+  if (r.status === "skipped") return { text: t(r.reason === "liked-other" ? "sync.likedOther" : r.reason === "not-due" ? "sync.notDue" : "sync.noSource"), error: r.reason !== "not-due" };
+  if (r.error === "migration") return { text: t("sync.needMigration"), error: true };
+  if (r.error === "empty") return { text: t("sync.empty"), error: true };
+  if (r.error === "forbidden" || r.error === "missing-table") return { text: playlistErrorText(t("sync.failed"), r.error, t), error: true };
+  return { text: `${t("sync.failed")}: ${MUSIC_CODES.has(r.error) ? musicErrorText(r.error, t) : playlistErrorText(t("sync.failed"), r.error, t)}`, error: true };
+}
+
+/** Header of a synced playlist: its source, last sync, "Auto ogni giorno · Stacca" / "Riattiva", and Sincronizza. */
+function SyncControls({ p }: { p: Playlist }) {
+  const { t, lang } = useT();
+  const st = useSyncState(p.id);
+  const [pending, setPending] = useState(false);
+  const busy = pending || !!st;
+  const src = p.source;
+  const when = (ms: number) => new Date(ms).toLocaleString(lang === "en" ? "en-GB" : "it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  const run = () => {
+    // Feedback at once: the spinner shows before anything is asked.
+    setPending(true);
+    setLastSync(p.id, null);
+    mlog("sync button", { id: p.id, kind: src?.kind ?? "radio", auto: src?.auto ?? null });
+    void syncPlaylist(p.id, { force: true }).then((r) => {
+      setPending(false);
+      setLastSync(p.id, r);
+      const m = syncResultText(r, t);
+      mlog("sync button: result", { id: p.id, ...r, missing: r.status === "done" ? r.missing.length : undefined });
+      music.toast(m.text, m.error ? "error" : "info");
+    });
+  };
+  const setAuto = (on: boolean) => {
+    void (on ? reattachSource(p.id) : detachSource(p.id)).then((r) => {
+      if (r.ok) music.toast(t(on ? "sync.reattached" : "sync.detached"));
+      else music.toast(playlistErrorText(t("mt.notSaved"), r.error, t), "error");
+    });
+  };
+
+  const label = !busy ? t("sync.button") : st?.phase === "matching" ? t("sync.matching", { n: st.n, m: st.m }) : t("sync.busy");
+  return (
+    <div className="mt-radiobadge mt-syncbar">
+      {src && (
+        <span className="mt-radiobadge__pill" title={src.name ? t("sync.fromTip", { s: src.name }) : undefined}>
+          <IconSync size={14} /> {t(src.kind === "youtube-playlist" ? "sync.fromYoutube" : src.kind === "spotify-liked" ? "sync.fromLiked" : "sync.fromSpotify")}
+          {src.syncedAt ? <span className="mt-radiobadge__when">· {t("sync.last", { d: when(src.syncedAt) })}</span> : null}
+        </span>
+      )}
+      {src &&
+        (src.auto ? (
+          <span className="mt-syncbar__auto">
+            {t("sync.auto")} ·{" "}
+            <button className="mt-ghost mt-radiobadge__stop" onClick={() => setAuto(false)} title={t("sync.stopTip")}>
+              {t("sync.stop")}
+            </button>
+          </span>
+        ) : (
+          <button className="mt-ghost mt-radiobadge__stop" onClick={() => setAuto(true)}>
+            {t("sync.reattach")}
+          </button>
+        ))}
+      <button className="mt-pill mt-pill--sm mt-syncbar__btn" onClick={run} disabled={busy} aria-busy={busy} aria-live="polite">
+        {busy ? <IconSpinner size={14} /> : <IconSync size={14} />} {label}
+      </button>
+      {busy && st?.phase === "matching" && (
+        <span className="mt-syncbar__bar" role="progressbar" aria-valuemin={0} aria-valuemax={st.m} aria-valuenow={st.n} aria-label={label}>
+          <span style={{ width: `${st.m ? (st.n / st.m) * 100 : 0}%` }} />
+        </span>
+      )}
+      {src && <small className="mt-radiobadge__note">{t(src.auto ? "sync.editNote" : "sync.detachedNote")}</small>}
+    </div>
+  );
+}
+
+/** The songs the last Sincronizza could not find on YouTube, each with "Cerca manualmente". */
+function SyncMissingList({ id, go }: { id: string; go: Go }) {
+  const { t } = useT();
+  const r = useLastSync(id);
+  if (r?.status !== "done" || !r.missing.length) return null;
+  return (
+    <details className="mt-missing mt-syncmissing" open>
+      <summary>{t("sync.missingTitle", { n: r.missing.length })}</summary>
+      <ul>
+        {r.missing.map((s, i) => (
+          <li key={i}>
+            {s.artist} — {s.title}{" "}
+            <button
+              className="mt-link mt-syncmissing__find"
+              onClick={() => {
+                mlog("sync: manual search for a song not found", { q: `${s.artist} ${s.title}` });
+                go({ kind: "search", q: `${s.artist} ${s.title}`.trim() });
+              }}
+            >
+              <IconSearch size={13} /> {t("sync.searchManual")}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 

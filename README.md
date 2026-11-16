@@ -190,6 +190,31 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
   its songs (add, remove, reorder) also stops the updates, so they never
   overwrite your changes; renaming does not. Before migration 021 runs, the
   radio is saved as an ordinary playlist and the app says the update needs 021.
+- **Imported playlists stay in sync (daily + Sincronizza):** a playlist
+  imported from a Spotify playlist / album link, from *La mia libreria
+  Spotify* (a playlist, an album, the liked songs) or from a YouTube playlist
+  remembers its source (migration 022; a pasted list of track links has none).
+  Once a day a team browser with the music open (after load and when the page
+  comes back, at most hourly per browser) reads the source again: Spotify with
+  the signed-in person's token when there is one, else the server (the embed
+  page gives a playlist's first 100: the sync is then *limited* and keeps the
+  songs already there past those); the liked songs only with the sign-in of
+  whoever imported them (otherwise skipped). Songs are compared by their
+  Spotify id (or title + artist when the server gave no id) or YouTube id:
+  existing matches are kept, only NEW songs are searched on YouTube, songs
+  removed at the source are dropped, and the source's order is followed.
+  `music_playlist_source_sync` writes only if the playlist is still due by
+  the database clock, so only one browser does it per day, and only if the
+  list is still the one the sync was planned on (`p_expect`): a song added or
+  removed by hand during a sync is kept as edited (the sync plans again). A queue that is
+  playing is never changed. The playlist header shows the source, the last
+  sync, *Auto ogni giorno · Stacca* and **Sincronizza** (also on radio
+  playlists, where it refreshes the radio now): spinner, "n di m" while
+  matching, then "+3 nuovi, −1 rimossi, 2 non trovati" or "Già aggiornata",
+  with the songs not found listed and *Cerca manualmente*. Editing the songs
+  by hand detaches the daily sync (`source_auto = false`, the source is
+  kept): **Sincronizza** still works as a one-off and *Riattiva sync
+  automatica* turns it back on. Renaming keeps it.
 - **Importa (MUSICA tab):** bring any public YouTube or YouTube Music
   playlist into the team library — paste its link (`…playlist?list=…`, also
   `music.youtube.com` links) or search YouTube's playlists (suggested
@@ -215,7 +240,10 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
     answer shapes are read.
   - **Accedi con Spotify** (optional, Setup step 4): a person signs in with
     their own Spotify account in the browser (Authorization Code with PKCE,
-    no secret, token kept in this tab only). Their **own and collaborative
+    no secret). The sign-in belongs to the **person picked in the identity
+    menu on this device** (the team shares one login), never to the shared
+    account and never in the database; see *Spotify sign-in: per person, per
+    device* below. Their **own and collaborative
     playlists** are then read whole (up to 1000) straight from Spotify; for
     anyone else's playlist Spotify still gives only the details, so the
     first 100 come from the embed page. A Development Mode app needs its
@@ -299,6 +327,50 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
     phone, iOS needs a tap to start (*Riproduci*) and the volume is the
     phone's buttons. Check: `node scripts/perf/spotify.mjs` (Playwright, a
     fake SDK and a mocked Spotify; nothing real is called).
+  - **Spotify sign-in: per person, per device** (`src/lib/spotifyAuth.ts`).
+    The token (access, refresh, expiry) is kept under
+    `gtd-spotify-token:<name>` for the name picked on this device, sealed with
+    AES-GCM under a key made on this device by WebCrypto with
+    `extractable: false` and kept in IndexedDB (`gtd-spotify` / `keys`).
+    localStorage holds only `{iv, ct}`, and the name is sealed in too. A copy
+    of the entry on another browser or device can't be opened there: it is
+    removed and that person is signed out. The token is decrypted once into
+    memory, at startup or when the name changes. Without WebCrypto or
+    IndexedDB (private mode, an old browser) it stays in memory for the tab
+    only, never in plain storage. Plain-text tokens from older versions are
+    removed, so people sign in again once. Without a name picked there is no
+    sign-in. A name change switches the session, also when the name is
+    changed in another tab (the `storage` event, or the next Spotify call
+    notices it); in Spotify mode, if the new person isn't signed in here, the
+    player goes back to YouTube with a toast. A player command never goes out
+    with another person's token to the previous person's device. Token
+    refreshes are per person and serialized across tabs (Web Locks): a tab
+    that finds a newer token stored by another tab uses it instead of spending
+    the rotated refresh token again. Only Spotify's `400 invalid_grant` signs
+    that person out (only them, even if the name changed meanwhile); a 5xx,
+    429 or no answer keeps the sign-in. If IndexedDB does not answer within
+    3 s (a stuck WebKit open), the tab is signed out with a toast and the
+    sealed entry is kept for later.
+    **Limit:** anyone using the same browser profile who picks someone else's
+    name in the menu gets that person's session on that device. The menu is a
+    convenience, not a login. Use separate browser profiles, or *Esci*, on
+    shared computers.
+  - **Plays only on this device** (`src/lib/spotifyPlayer.ts`). Every
+    player command carries `device_id` = this browser's *Team GTD* device;
+    anything else is refused before it is sent, so Spotify's "active device"
+    (someone's phone, another computer) is never used. If the device isn't
+    ready, nothing is sent and a toast says so. If playback moves to another
+    device (from the Spotify app, or `GET /me/player` names another device),
+    the player shows paused here with *In riproduzione su un altro
+    dispositivo* and does not take it back. Only *Riproduci* here does.
+  - **A network that blocks Spotify:** if the SDK script fails or takes more
+    than 10 s, a fetch fails, or the SDK's websocket gives no *ready* within
+    15 s, a toast says *Spotify non è raggiungibile da questa rete: torno a
+    YouTube* and the player goes back to YouTube with the same queue (details
+    in the `[music]` log). Nothing tries to get round the block: no proxy and
+    no other host. A network admin can allow `accounts.spotify.com`,
+    `api.spotify.com`, `*.spotify.com` (https and wss), `sdk.scdn.co`,
+    `*.scdn.co` and `*.spotifycdn.com`.
 - On a phone the music stops when the screen locks or the app goes to the
   background (a limit of YouTube embeds on iOS / Android).
 - **Every control answers at once.**
@@ -383,6 +455,11 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
 5. Supabase → SQL Editor: run `supabase/migration-021-music-radio-playlists.sql`
    (after 018–020), so playlists saved with *Salva radio come playlist* update
    themselves once a day. Before it, they are saved as ordinary playlists.
+6. Supabase → SQL Editor: run `supabase/migration-022-music-playlist-sources.sql`
+   (after 018–021), so playlists imported from Spotify or from a YouTube
+   playlist remember their source, sync with it once a day and get the
+   **Sincronizza** button. Before it, imports are saved as ordinary playlists
+   (the app says so) and no button is shown.
 
 **Why the player frame sends a referrer:** since 2025 YouTube refuses to play
 an embed whose page sends none ("Error 153"), and this site sends
@@ -589,12 +666,17 @@ SQL files in `supabase/`:
   `radio_title`, `radio_refreshed_at` (nullable) and the function
   `music_playlist_radio_refresh`, for radio playlists that update themselves
   once a day (§1e). Additive; run after 018–020. Re-runnable.
+- `migration-022-music-playlist-sources.sql` — adds `music_playlists.source_kind`,
+  `source_id`, `source_name`, `source_synced_at` (nullable), `source_auto`
+  (default true) and the function `music_playlist_source_sync`, for imported
+  playlists that sync with their Spotify / YouTube source once a day and on
+  *Sincronizza* (§1e). Additive; run after 018–021. Re-runnable.
 - `migration-012-auth-step2-lockdown.sql` — **real login, step 2.** Closes all
   tables to the anon key, hides `reflection_access`, deletes the clear-text
   password columns. Run only after the new site is live and you have logged in
   with it. See §11.
 
-Migrations 002–011, 013 and 015–021 are additive and safe on live data; run any you haven't yet.
+Migrations 002–011, 013 and 015–022 are additive and safe on live data; run any you haven't yet.
 012 changes access rules (not data) and must follow the order in §11. The
 app degrades gracefully before they're applied (settings can't save, reflections
 stay empty, tasks stay single-assignee) thanks to tolerant reads and fallbacks —
@@ -627,7 +709,8 @@ prova_sito_GTD/
 │   ├── migration-018-music-playlists.sql     ← the music player's team playlists
 │   ├── migration-019-music-playlist-rpc.sql  ← playlist edits one step at a time (no lost songs)
 │   ├── migration-020-music-playlist-clock.sql ← playlist changes stamped by the database clock
-│   └── migration-021-music-radio-playlists.sql ← radio playlists, updated once a day
+│   ├── migration-021-music-radio-playlists.sql ← radio playlists, updated once a day
+│   └── migration-022-music-playlist-sources.sql ← imported playlists synced with their source daily
 ├── .github/workflows/ci.yml      ← on every push / PR: npm test + production build
 ├── menu/                        ← the canteen menu: monthly PDF → web/src/data/menu.json (§8)
 │   ├── menu_from_pdf.py
