@@ -487,6 +487,14 @@ export async function seedIfEmpty(): Promise<boolean> {
 
 // ---- Write (one op -> one or more Supabase writes) --------------------------
 
+// A creation time that never repeats: rows are listed by created_at, so rows
+// added in the same millisecond (an Undo, "turn into tasks") keep their order.
+let lastCreatedAt = 0;
+export function nextCreatedAt(): number {
+  lastCreatedAt = Math.max(Date.now(), lastCreatedAt + 1);
+  return lastCreatedAt;
+}
+
 export async function writeOp(op: Op, board: Board): Promise<void> {
   const today = new Date().toISOString().slice(0, 10);
 
@@ -494,7 +502,7 @@ export async function writeOp(op: Op, board: Board): Promise<void> {
     case "addTask": {
       const t = {
         ...op.task,
-        createdAt: op.task.createdAt ?? Date.now(),
+        createdAt: op.task.createdAt ?? nextCreatedAt(),
         doneAt: op.task.status === "DONE" ? op.task.doneAt ?? Date.now() : op.task.doneAt,
       };
       const row = taskToRow(t) as unknown as Record<string, unknown>;
@@ -614,7 +622,7 @@ export async function writeOp(op: Op, board: Board): Promise<void> {
           id: op.item.id,
           bucket: op.column,
           body: op.item.text,
-          created_at: Date.now(),
+          created_at: nextCreatedAt(),
         })
       );
       break;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Board, Op, Task, Weekly, WeeklyItem } from "../lib/types";
 import { WEEKLY_COLUMNS, genId } from "../lib/constants";
 import { ownersLabel, taskOwners } from "../lib/owners";
@@ -161,34 +161,12 @@ export function WeeklyView({ board, send }: Props) {
   };
 
   // Restored items go back with the same id and text; the server stamps a new
-  // created_at, so a single restored item moves to the end of its column.
-  // They are re-added one per render (send() applies each op to the board as
-  // last rendered) and at least 1 ms apart, so a cleared weekly comes back in
-  // its original order.
-  const restoreQueue = useRef<Removed[]>([]);
-  const restoreWaiting = useRef(false);
-  const restoreLast = useRef(0);
-  const pumpRestore = useCallback(() => {
-    const next = restoreQueue.current[0];
-    if (!next || restoreWaiting.current) return;
-    if (Date.now() <= restoreLast.current) {
-      window.setTimeout(pumpRestore, 2);
-      return;
-    }
-    restoreQueue.current = restoreQueue.current.slice(1);
-    restoreLast.current = Date.now();
-    restoreWaiting.current = true;
-    send({ type: "weeklyAdd", column: next.column, item: { ...next.item } });
-  }, [send]);
-  useEffect(() => {
-    restoreWaiting.current = false;
-    pumpRestore();
-  }, [board.weekly, pumpRestore]);
+  // created_at (increasing, one per add), so a single restored item moves to
+  // the end of its column and a cleared weekly comes back in its order.
   const restore = () => {
     if (!undo) return;
-    restoreQueue.current = [...restoreQueue.current, ...undo.items];
+    for (const r of undo.items) send({ type: "weeklyAdd", column: r.column, item: { ...r.item } });
     setUndo(null);
-    pumpRestore();
   };
 
   const setGroup = (g: Grouping) => {

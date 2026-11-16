@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { goBackTo, useRouteSub } from "../lib/history";
 import type { Board, Op, Project } from "../lib/types";
 import { useT } from "../lib/i18n";
@@ -21,6 +20,7 @@ import { PRIORITY_DOT } from "../lib/constants";
 import { Avatars, HealthBadge, Icon, Pill, ProgressRing, StatusStack, fmtDay, fmtMs } from "./projects/ProjectBits";
 import { ProjectDetail } from "./projects/ProjectDetail";
 import { ProjectTimeline } from "./projects/ProjectTimeline";
+import { showUndo } from "./TaskDetails";
 
 interface Props {
   board: Board;
@@ -53,20 +53,9 @@ export function ProjectsView({ board, send }: Props) {
   const [onlyAttention, setOnlyAttention] = useState(false);
   const nameInput = useRef<HTMLInputElement>(null);
   const { me } = useMe();
-  // One Undo toast for the tab (a deleted project, an unlinked task). It lives
-  // here because the project page unmounts when its project is deleted.
-  const [toast, setToast] = useState<{ id: number; text: string; undo: () => void } | null>(null);
-  const notify = (text: string, undo: () => void) => setToast({ id: Date.now(), text, undo });
-  // Ops for an Undo, sent one per render: useBoard's send applies each op to
-  // the board of the last render, so several sends in one tick would keep only
-  // the last one on screen until the next reload.
-  const [queue, setQueue] = useState<Op[]>([]);
-  useEffect(() => {
-    if (!queue.length) return;
-    send(queue[0]);
-    setQueue((q) => q.slice(1));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queue]);
+  // Undo for a deleted project or an unlinked task: the app's one Undo toast
+  // (its host is at the App root, so it outlives the project page).
+  const notify = (text: string, undo: () => void) => showUndo(text, undo);
   const showFilter = (f: Filter) => {
     setFilter(f);
     setOnlyAttention(false);
@@ -159,7 +148,6 @@ export function ProjectsView({ board, send }: Props) {
     const idx = list.findIndex((p) => p.id === selected.id);
     return (
       <>
-      <UndoToast toast={toast} onClose={() => setToast(null)} />
       <ProjectDetail
         key={selected.id}
         board={board}
@@ -178,12 +166,9 @@ export function ProjectsView({ board, send }: Props) {
         onDeleted={(p, taskIds) =>
           notify(t("ux.projects.deleted", { name: p.name || "—" }), () => {
             send({ type: "projectAdd", project: p });
-            setQueue((q) => [
-              ...q,
-              // projectAdd does not write report_hidden.
-              ...(p.reportHidden ? [{ type: "projectReportHidden", id: p.id, hidden: true } as Op] : []),
-              ...taskIds.map((id): Op => ({ type: "updateTask", id, patch: { projectId: p.id } })),
-            ]);
+            // projectAdd does not write report_hidden.
+            if (p.reportHidden) send({ type: "projectReportHidden", id: p.id, hidden: true });
+            for (const id of taskIds) send({ type: "updateTask", id, patch: { projectId: p.id } });
             open(p.id);
           })
         }
@@ -202,7 +187,6 @@ export function ProjectsView({ board, send }: Props) {
 
   return (
     <>
-    <UndoToast toast={toast} onClose={() => setToast(null)} />
     <div className="space-y-4">
       {!v2 && <MigrationNote />}
 
@@ -580,52 +564,3 @@ function OlderRow({ project: p, stats: s, onOpen }: { project: Project; stats: P
   );
 }
 
-// The tab's Undo toast: one at a time, gone after 6 s. Into <body> so no panel's
-// backdrop-filter becomes its containing block (and no glass is nested).
-function UndoToast({
-  toast,
-  onClose,
-}: {
-  toast: { id: number; text: string; undo: () => void } | null;
-  onClose: () => void;
-}) {
-  const { t } = useT();
-  useEffect(() => {
-    if (!toast) return;
-    const h = window.setTimeout(onClose, 6000);
-    return () => window.clearTimeout(h);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast?.id]);
-  if (typeof document === "undefined") return null;
-  return createPortal(
-    <div
-      role="status"
-      aria-live="polite"
-      className="fixed left-1/2 -translate-x-1/2 bottom-6 z-[60] w-[min(92vw,460px)] pointer-events-none"
-    >
-      {toast && (
-        <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-white border border-[#E8E6E1] shadow-[0_10px_30px_rgba(10,25,49,0.18)] pl-4 pr-1.5 h-11 text-[13px] text-[#0A1931]">
-          <span className="flex-1 min-w-0 truncate">{toast.text}</span>
-          <button
-            onClick={() => {
-              onClose();
-              toast.undo();
-            }}
-            className="h-8 px-3 rounded-full text-[13px] font-semibold text-[#8B6F3E] hover:bg-[#F5F3EF]"
-          >
-            {t("ux.projects.undo")}
-          </button>
-          <button
-            onClick={onClose}
-            aria-label={t("ux.projects.dismiss")}
-            title={t("ux.projects.dismiss")}
-            className="w-8 h-8 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:bg-[#F5F3EF]"
-          >
-            <Icon name="x" size={14} />
-          </button>
-        </div>
-      )}
-    </div>,
-    document.body
-  );
-}

@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Board, Op } from "./types";
 import { fetchBoard, fetchChange, seedIfEmpty, writeOp, type ChangedTable } from "./db";
 import { applyRowChange, type RowChange } from "./rowSync";
-import { applyOpLocal } from "./localReducer";
+import { createSend, errMsg, type BoardCell } from "./optimisticSend";
 import { supabase } from "./supabaseClient";
 import { isConfigured } from "./supabaseConfig";
 import { requestAuthCheck } from "./auth";
@@ -41,8 +41,13 @@ export function useBoard(): UseBoard {
   const [conn, setConn] = useState<ConnState>("connecting");
   const [error, setError] = useState<string | null>(null);
 
-  const boardRef = useRef<Board | null>(null);
-  boardRef.current = board;
+  // The newest board, ahead of render: every change goes through `commit`, so
+  // an op sent right after another one (same tick) starts from it.
+  const boardRef = useRef<BoardCell>({ current: null }).current;
+  const commit = useCallback((next: Board) => {
+    boardRef.current = next;
+    setBoard(next);
+  }, [boardRef]);
 
   // Guard against overlapping/stale reloads clobbering newer state.
   const loadSeq = useRef(0);
@@ -63,14 +68,14 @@ export function useBoard(): UseBoard {
       .then((b) => {
         if (seq !== loadSeq.current) return; // a newer reload already won
         setError(null);
-        setBoard(b);
+        commit(b);
       })
       .catch((e: unknown) => {
         if (e === SKIP) return;
         setError(errMsg(e));
         requestAuthCheck(); // a refused read may mean the login has ended
       });
-  }, []);
+  }, [commit]);
 
   useEffect(() => {
     if (!isConfigured) {
@@ -119,7 +124,8 @@ export function useBoard(): UseBoard {
       if (cancelled || changes.length === 0) return;
       // These rows are newer than any full reload already in flight.
       ++loadSeq.current;
-      setBoard((prev) => (prev ? changes.reduce(applyRowChange, prev) : prev));
+      const prev = boardRef.current;
+      if (prev) commit(changes.reduce(applyRowChange, prev));
     };
 
     const onChange = (table: ChangedTable) => (payload: { eventType: string; new: unknown; old: unknown }) => {
@@ -183,33 +189,23 @@ export function useBoard(): UseBoard {
       window.removeEventListener("offline", onOffline);
       supabase.removeChannel(channel);
     };
-  }, [reload]);
+  }, [reload, commit, boardRef]);
 
-  const send = useCallback(
-    (op: Op, onError?: (message: string) => void) => {
-      const current = boardRef.current;
-      if (!current) return;
-      // Optimistic apply for instant feedback.
-      setBoard(applyOpLocal(current, op));
-      // Persist; realtime + poll reconcile to authoritative state.
-      writeOp(op, current).catch((e: unknown) => {
-        const message = errMsg(e);
-        setError(message);
-        // The banner at the top of the page is easy to miss, so let the caller
-        // tell the person right where they acted that it did not save.
-        onError?.(message);
-        requestAuthCheck();
-        reload(); // undo a failed optimistic change
-      });
-    },
-    [reload]
+  const send = useMemo(
+    () =>
+      createSend({
+        cell: boardRef,
+        publish: setBoard,
+        // Persist; realtime + poll reconcile to authoritative state.
+        write: writeOp,
+        onFail: (message) => {
+          setError(message);
+          requestAuthCheck();
+          reload(); // undo a failed optimistic change
+        },
+      }),
+    [boardRef, reload]
   );
 
   return { board, conn, error, send, reload };
-}
-
-function errMsg(e: unknown): string {
-  if (e && typeof e === "object" && "message" in e)
-    return String((e as { message: unknown }).message);
-  return String(e);
 }
