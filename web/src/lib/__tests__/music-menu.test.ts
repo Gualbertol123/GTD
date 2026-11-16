@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 // SongMenu pulls in the app's Supabase client through musicDb / identity.
 vi.mock("../supabaseClient", () => ({ supabase: { from: () => ({}), channel: () => ({}), auth: { getSession: async () => ({ data: {} }), onAuthStateChange: () => {} } } }));
 
-import { placeMenu, playlistErrorText } from "../../components/SongMenu";
+import { menuPlayAction, placeMenu, playlistErrorText } from "../../components/SongMenu";
+import { readFileSync } from "node:fs";
 import { MENU_EN, MENU_IT } from "../i18n.music.menu";
 
 const view = { w: 400, h: 800 };
@@ -38,5 +39,40 @@ describe("playlistErrorText", () => {
   });
   it("has the same keys in both languages", () => {
     expect(Object.keys(MENU_EN).sort()).toEqual(Object.keys(MENU_IT).sort());
+  });
+});
+
+describe("menuPlayAction (Riproduci keeps the queue)", () => {
+  const a = { id: "a", title: "A", channel: "" };
+  const b = { id: "b", title: "B", channel: "" };
+  const c = { id: "c", title: "C", channel: "" };
+  const queue = [a, b, c];
+  it("jumps to a queue row instead of replacing the queue", () => {
+    expect(menuPlayAction({ track: b, queueIndex: 1 }, queue)).toEqual({ kind: "at", index: 1 });
+  });
+  it("falls back when the queue moved on while the menu was open", () => {
+    expect(menuPlayAction({ track: b, queueIndex: 2 }, queue)).toEqual({ kind: "single", track: b });
+    expect(menuPlayAction({ track: b, queueIndex: 9 }, queue).kind).toBe("single");
+  });
+  it("restarts the song now playing", () => {
+    expect(menuPlayAction({ track: a, current: true }, queue)).toEqual({ kind: "restart" });
+  });
+  it("plays a shown list in context, or the lone song", () => {
+    const list = { tracks: queue, label: "L", index: 2, key: "pl:x" };
+    expect(menuPlayAction({ track: c, list }, [])).toEqual({ kind: "list", label: "L", key: "pl:x", tracks: queue, start: 2 });
+    expect(menuPlayAction({ track: c }, [])).toEqual({ kind: "single", track: c });
+  });
+});
+
+describe("skip link CSS", () => {
+  // It once sat at top:-60px, visible over the app's tab row, eating BOARD's clicks.
+  const css = readFileSync(new URL("../../styles/musicTab.css", import.meta.url), "utf8");
+  const rule = css.match(/\.mt-skip\s*\{([^}]*)\}/)?.[1] ?? "";
+  it("is hidden and click-through until focused", () => {
+    expect(rule).toMatch(/pointer-events:\s*none/);
+    expect(rule).toMatch(/clip-path:\s*inset\(50%\)/);
+    expect(rule).not.toMatch(/top:\s*-/);
+    expect(rule).not.toMatch(/display:\s*none|visibility:\s*hidden/);
+    expect(css).toMatch(/\.mt-skip:focus[^{]*\{[^}]*pointer-events:\s*auto/);
   });
 });

@@ -111,6 +111,8 @@ export function MusicTab() {
   const { t } = useT();
   const [sub, setSub] = useRouteSub("music");
   const view = useMemo(() => parseView(sub), [sub]);
+  // A route change (Back, a link) closes the "+" menu: its row is gone.
+  useEffect(() => openAddMenu(null), [sub]);
   const go = useCallback<Go>((v, opts) => setSub(viewSub(v) || undefined, opts), [setSub]);
   const { playlists, available, error: libError } = usePlaylists();
   const { me } = useMe();
@@ -2065,7 +2067,7 @@ function NowPlaying({ open, onClose }: { open: boolean; onClose: () => void }) {
 const QueueItem = memo(function QueueItem({ tr, at }: { tr: Track; at: number }) {
   const { t } = useT();
   return (
-    <div className="mt-qitem" role="listitem" {...songMenuProps(tr)}>
+    <div className="mt-qitem" role="listitem" {...songMenuProps(tr, { queueIndex: at })}>
       <button className="mt-qitem__main" onClick={() => music.playAt(at)} aria-label={`${t("music.play")} ${tr.title || tr.id}`}>
         <Cover id={tr.id} src={tr.thumb} className="mt-img40" />
         <span>
@@ -2073,12 +2075,15 @@ const QueueItem = memo(function QueueItem({ tr, at }: { tr: Track; at: number })
           <small>{tr.channel}</small>
         </span>
       </button>
-      <MoreBtn track={tr} ctx={{}} size={16} />
+      <MoreBtn track={tr} ctx={{ queueIndex: at }} size={16} />
     </div>
   );
 });
 
 // ---- Player bar ------------------------------------------------------------------
+
+// The bar shows the song now playing: its menu's "Riproduci" restarts it.
+const CURRENT_CTX: MenuCtx = { current: true };
 
 function PlayerBar({ barRef, queueOpen, onQueue }: { barRef: RefObject<HTMLElement>; queueOpen: boolean; onQueue: () => void }) {
   const { t } = useT();
@@ -2092,7 +2097,7 @@ function PlayerBar({ barRef, queueOpen, onQueue }: { barRef: RefObject<HTMLEleme
 
   return (
     <footer className="mt-bar" ref={barRef} tabIndex={-1} aria-label={t("mt.barLabel")}>
-      <div className="mt-bar__song" {...(current ? songMenuProps(current) : {})}>
+      <div className="mt-bar__song" {...(current ? songMenuProps(current, CURRENT_CTX) : {})}>
         {now ? (
           <Cover id={now.id} className="mt-bar__img" />
         ) : (
@@ -2103,7 +2108,7 @@ function PlayerBar({ barRef, queueOpen, onQueue }: { barRef: RefObject<HTMLEleme
           <small>{loading && !now?.author ? t("music.loading") : now?.author}</small>
         </span>
         {current && <AddBtn track={current} />}
-        {current && <MoreBtn track={current} ctx={{}} />}
+        {current && <MoreBtn track={current} ctx={CURRENT_CTX} />}
       </div>
       <div className="mt-bar__center">
         <div className="mt-bar__controls">

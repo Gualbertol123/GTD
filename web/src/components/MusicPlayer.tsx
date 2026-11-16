@@ -788,7 +788,8 @@ const SongRow = memo(function SongRow({
   playlistId?: string;
 }) {
   const { t } = useT();
-  const ctx = { list: { tracks, label, index: i, key: srcKey || undefined }, playlistId };
+  // A queue row: "Riproduci" in its menu jumps there (keeps the queue).
+  const ctx = queue ? { queueIndex: i } : { list: { tracks, label, index: i, key: srcKey || undefined }, playlistId };
   return (
     <div className={`mp-result${on ? " is-on" : ""}`}>
       <button

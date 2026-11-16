@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useT } from "../lib/i18n";
 import { useBackClose } from "../lib/history";
 import { useMe } from "../lib/identity";
-import { music, musicErrorText, playRadio, toast, type Track } from "../lib/music";
+import { getMusic, music, musicErrorText, playRadio, toast, type Track } from "../lib/music";
 import { addToPlaylist, createPlaylist, removeFromPlaylist, usePlaylists, type PlaylistError, type WriteResult } from "../lib/musicDb";
 import {
   IconCheck,
@@ -44,6 +44,30 @@ export interface SongMenuCtx {
   list?: { tracks: Track[]; label: string; index: number; key?: string };
   /** Shown inside this team playlist: offer "remove". */
   playlistId?: string;
+  /** A row of the play queue at this absolute index: "Riproduci" jumps there and keeps the queue. */
+  queueIndex?: number;
+  /** The song now playing (the player bar): "Riproduci" restarts it. */
+  current?: boolean;
+}
+
+/** What "Riproduci" does for a menu request, given the live queue. */
+export type MenuPlay =
+  | { kind: "restart" }
+  | { kind: "at"; index: number }
+  | { kind: "list"; label: string; key?: string; tracks: Track[]; start: number }
+  | { kind: "single"; track: Track };
+
+/**
+ * Picks the "Riproduci" action. A queue row jumps to its index only while the
+ * queue still holds that song there (the queue may have moved on while the
+ * menu was open); otherwise it falls back to playing the list or the song.
+ */
+export function menuPlayAction(req: SongMenuCtx & { track: Track }, queue: readonly Track[]): MenuPlay {
+  if (req.current) return { kind: "restart" };
+  const qi = req.queueIndex;
+  if (qi !== undefined && queue[qi]?.id === req.track.id) return { kind: "at", index: qi };
+  if (req.list) return { kind: "list", label: req.list.label, key: req.list.key, tracks: req.list.tracks, start: req.list.index };
+  return { kind: "single", track: req.track };
 }
 
 export interface SongMenuRequest extends SongMenuCtx {
@@ -501,11 +525,13 @@ function Menu({ req }: { req: SongMenuRequest }) {
           <>
             <Item
               icon={<IconPlay />}
-              onClick={run(() =>
-                req.list
-                  ? music.play({ kind: "videos", label: req.list.label, key: req.list.key, tracks: req.list.tracks, start: req.list.index })
-                  : music.play({ kind: "videos", label: tr.title, tracks: [tr], start: 0 })
-              )}
+              onClick={run(() => {
+                const a = menuPlayAction(req, getMusic().queue);
+                if (a.kind === "restart") music.seek(0);
+                else if (a.kind === "at") music.playAt(a.index);
+                else if (a.kind === "list") music.play({ kind: "videos", label: a.label, key: a.key, tracks: a.tracks, start: a.start });
+                else music.play({ kind: "videos", label: a.track.title, tracks: [a.track], start: 0 });
+              })}
             >
               {t("music.play")}
             </Item>
