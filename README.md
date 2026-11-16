@@ -133,7 +133,8 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
   Tiziano Ferro**, *Mix preferiti*) are still there, at the bottom.
 - **Song menu:** right-click any song (long-press on a touch screen, or the
   keyboard's menu key): *Riproduci*, *Riproduci dopo*, *Aggiungi alla coda*,
-  *Avvia radio* (the song + ~50 like it), *Aggiungi a playlist*, *Rimuovi
+  *Avvia radio* (the song + ~50 like it), *Salva radio come playlist* (see
+  *Radio playlists* below), *Aggiungi a playlist*, *Rimuovi
   dalla playlist* (inside a team playlist), *Apri su YouTube*, *Copia link*
   (`components/SongMenu.tsx`). Icons are one SVG set in the Liquid Glass style
   (`components/MusicIcons.tsx`), no emoji.
@@ -159,6 +160,22 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
 - **Team playlists:** stored in Supabase (`music_playlists`, migration 018),
   shared by everyone on the team and live-updated; **+** on any song adds it
   to a playlist or a new one. Also playable from the ♪ panel and on a phone.
+- **Radio playlists (updated daily):** *Salva radio come playlist* in the song
+  menu saves the song's radio as a team playlist, *Radio · (song title)*, with the
+  longest radio YouTube gives: YouTube Music's up-next mix (`RDAMVM<id>`)
+  with its continuations (`radioFull` in `netlify/lib/ytjs.mts`,
+  `music-browse?radio=ID&full=1`). That is usually **~60–110 songs**: after
+  that YouTube only repeats them (the cap is 200, never reached in tests).
+  Where YouTube answers with its short generic mix, songs by the same artist
+  are mixed in, as for *Avvia radio*. Once a day a team browser with the
+  music open asks for the radio again and saves the new songs, or just the
+  check if they are the same (`music_playlist_radio_refresh`, migration 021:
+  only one browser can do it per day). A song that is playing keeps playing:
+  only the stored list changes. The playlist page shows *Radio · aggiornata
+  ogni giorno* with the last update and **Stacca** (stop updating). Editing
+  its songs (add, remove, reorder) also stops the updates, so they never
+  overwrite your changes; renaming does not. Before migration 021 runs, the
+  radio is saved as an ordinary playlist and the app says the update needs 021.
 - **Importa (MUSICA tab):** bring any public YouTube or YouTube Music
   playlist into the team library — paste its link (`…playlist?list=…`, also
   `music.youtube.com` links) or search YouTube's playlists (suggested
@@ -265,6 +282,9 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
    Credentials flow: no user login, public playlists only), never sent to
    browsers or logged, and **must never be put in the code**. Playlists made by
    Spotify itself still give only 100 songs this way: use the paste method.
+5. Supabase → SQL Editor: run `supabase/migration-021-music-radio-playlists.sql`
+   (after 018–020), so playlists saved with *Salva radio come playlist* update
+   themselves once a day. Before it, they are saved as ordinary playlists.
 
 **Why the player frame sends a referrer:** since 2025 YouTube refuses to play
 an embed whose page sends none ("Error 153"), and this site sends
@@ -466,12 +486,16 @@ SQL files in `supabase/`:
 - `migration-020-music-playlist-clock.sql` — adds a trigger that stamps
   `music_playlists.updated_at` with the database clock on every insert and
   update. Adds a function and a trigger only; run after 018. Re-runnable.
+- `migration-021-music-radio-playlists.sql` — adds `music_playlists.radio_seed`,
+  `radio_title`, `radio_refreshed_at` (nullable) and the function
+  `music_playlist_radio_refresh`, for radio playlists that update themselves
+  once a day (§1e). Additive; run after 018–020. Re-runnable.
 - `migration-012-auth-step2-lockdown.sql` — **real login, step 2.** Closes all
   tables to the anon key, hides `reflection_access`, deletes the clear-text
   password columns. Run only after the new site is live and you have logged in
   with it. See §11.
 
-Migrations 002–011, 013 and 015–020 are additive and safe on live data; run any you haven't yet.
+Migrations 002–011, 013 and 015–021 are additive and safe on live data; run any you haven't yet.
 012 changes access rules (not data) and must follow the order in §11. The
 app degrades gracefully before they're applied (settings can't save, reflections
 stay empty, tasks stay single-assignee) thanks to tolerant reads and fallbacks —
@@ -503,7 +527,8 @@ prova_sito_GTD/
 │   ├── migration-017-subtask-functions.sql   ← subtasks changed one at a time (no lost edits)
 │   ├── migration-018-music-playlists.sql     ← the music player's team playlists
 │   ├── migration-019-music-playlist-rpc.sql  ← playlist edits one step at a time (no lost songs)
-│   └── migration-020-music-playlist-clock.sql ← playlist changes stamped by the database clock
+│   ├── migration-020-music-playlist-clock.sql ← playlist changes stamped by the database clock
+│   └── migration-021-music-radio-playlists.sql ← radio playlists, updated once a day
 ├── .github/workflows/ci.yml      ← on every push / PR: npm test + production build
 ├── menu/                        ← the canteen menu: monthly PDF → web/src/data/menu.json (§8)
 │   ├── menu_from_pdf.py

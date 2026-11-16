@@ -4,7 +4,7 @@ import { useT } from "../lib/i18n";
 import { useBackClose } from "../lib/history";
 import { useMe } from "../lib/identity";
 import { getMusic, music, musicErrorText, playRadio, toast, type Track } from "../lib/music";
-import { addToPlaylist, createPlaylist, removeFromPlaylist, usePlaylists, type PlaylistError, type WriteResult } from "../lib/musicDb";
+import { addToPlaylist, createPlaylist, createRadioPlaylist, removeFromPlaylist, usePlaylists, type PlaylistError, type WriteResult } from "../lib/musicDb";
 import {
   IconCheck,
   IconChevronRight,
@@ -24,6 +24,7 @@ import "../styles/songMenu.css";
 // long-press it (touch), press the keyboard's menu key on it, or tap its "⋯":
 //
 //   Riproduci · Riproduci dopo · Aggiungi alla coda · Avvia radio
+//   Salva radio come playlist (the longest radio, updated daily: lib/musicDb.ts)
 //   Aggiungi a playlist ▸ · Rimuovi da questa playlist
 //   Apri su YouTube · Copia link
 //
@@ -407,6 +408,25 @@ function Menu({ req }: { req: SongMenuRequest }) {
     void saved.then(onFail(t("sm.createFail").replace("{p}", name)));
   };
 
+  /** "Salva radio come playlist": a toast at once, then the result. */
+  const saveRadio = () => {
+    toast(t("sm.radioSaving"));
+    const seed: Track = { id: tr.id, title: tr.title, channel: tr.channel, thumb: tr.thumb };
+    void createRadioPlaylist(seed, me).then((r) => {
+      if (!r.ok) {
+        const why = r.error === "empty" ? t("mt.radioErr") : musicErrorText(r.error, t);
+        toast(t("sm.failWhy").replace("{what}", t("sm.radioSaveFail")).replace("{why}", why), "error");
+        return;
+      }
+      const name = r.playlist.name;
+      void r.saved.then((s) => {
+        if (!s.ok) return toast(playlistErrorText(t("sm.createFail").replace("{p}", name), s.error, t), "error");
+        const key = s.radioSaved ? "sm.radioSaved" : "sm.radioSavedPlain";
+        toast(t(key).replace("{p}", name).replace("{n}", String(r.playlist.tracks.length)));
+      });
+    });
+  };
+
   const copy = async () => {
     try {
       if (!navigator.clipboard) throw new Error("no clipboard");
@@ -564,6 +584,9 @@ function Menu({ req }: { req: SongMenuRequest }) {
             >
               {t("sm.radio")}
             </Item>
+            <Item icon={<IconRadioSave />} disabled={!available} onClick={run(saveRadio)}>
+              {t("sm.radioSave")}
+            </Item>
             <div className="song-menu__sep" />
             <Item icon={<IconPlus />} after={<IconChevronRight size={15} />} onClick={() => setSub(true)} disabled={!available}>
               {t("mt.addTo")}
@@ -622,5 +645,19 @@ function Item({
       <span className="song-menu__label">{children}</span>
       {after && <span className="song-menu__after">{after}</span>}
     </button>
+  );
+}
+
+/** A radio with a "+": save the radio as a playlist. Same outline style as MusicIcons. */
+function IconRadioSave() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="mi" aria-hidden="true">
+      <circle cx="10" cy="12" r="2" />
+      <path d="M13.54 8.46a5 5 0 0 1 0 7.08" />
+      <path d="M6.46 15.54a5 5 0 0 1 0-7.08" />
+      <path d="M3.64 18.36a9 9 0 0 1 0-12.72" />
+      <path d="M19 4v6" />
+      <path d="M16 7h6" />
+    </svg>
   );
 }

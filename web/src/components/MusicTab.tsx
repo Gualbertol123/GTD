@@ -44,6 +44,7 @@ import {
   addToPlaylist,
   createPlaylist,
   deletePlaylist,
+  detachRadio,
   insertInPlaylist,
   moveInPlaylist,
   reloadPlaylists,
@@ -77,6 +78,7 @@ import {
   IconPlus,
   IconPrev,
   IconQueue,
+  IconRadio,
   IconRepeat,
   IconSearch,
   IconShuffle,
@@ -1813,7 +1815,7 @@ function MusicArtistPage({ id, name }: { id: string; name: string }) {
 let renameOnOpen: string | null = null;
 
 function PlaylistPage({ id, go }: { id: string; go: Go }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const p = usePlaylist(id);
   const { loaded } = usePlaylists();
   const shuffle = useMusicSel((s) => s.shuffle);
@@ -1872,6 +1874,22 @@ function PlaylistPage({ id, go }: { id: string; go: Go }) {
           <p>
             {p.owner || "—"} · {t("mt.songs").replace("{n}", String(p.tracks.length))}
           </p>
+          {p.radio && (
+            <div className="mt-radiobadge">
+              <span className="mt-radiobadge__pill" title={t("mt.radioOf", { s: p.radio.title })}>
+                <IconRadio size={14} /> {t("mt.radioDaily")}
+                {p.radio.refreshedAt ? (
+                  <span className="mt-radiobadge__when">
+                    · {t("mt.radioUpdated", { d: new Date(p.radio.refreshedAt).toLocaleString(lang === "en" ? "en-GB" : "it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) })}
+                  </span>
+                ) : null}
+              </span>
+              <button className="mt-ghost mt-radiobadge__stop" onClick={() => reportWrite(detachRadio(p.id), t)} title={t("mt.radioStopTip")}>
+                {t("mt.radioStop")}
+              </button>
+              <small className="mt-radiobadge__note">{t("mt.radioEditNote")}</small>
+            </div>
+          )}
         </div>
       </div>
       <div className="mt-actions">

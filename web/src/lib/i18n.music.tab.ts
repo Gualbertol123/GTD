@@ -36,6 +36,12 @@ export const TAB_IT: Record<string, string> = {
   "sp.adminKeys": "Oppure l'amministratore del sito può aggiungere le chiavi gratuite di Spotify:",
   "sp.adminLink": "istruzioni",
   "sp.nameLabel": "Nome della playlist",
+  "mt.radioDaily": "Radio · aggiornata ogni giorno",
+  "mt.radioUpdated": "ultimo aggiornamento {d}",
+  "mt.radioOf": "La radio di «{s}»",
+  "mt.radioStop": "Stacca",
+  "mt.radioStopTip": "Non aggiornarla più: diventa una playlist normale",
+  "mt.radioEditNote": "Se modifichi i brani, l'aggiornamento automatico si ferma.",
 };
 
 export const TAB_EN: Record<string, string> = {
@@ -73,4 +79,10 @@ export const TAB_EN: Record<string, string> = {
   "sp.adminKeys": "Or the site admin can add Spotify's free keys:",
   "sp.adminLink": "how-to",
   "sp.nameLabel": "Playlist name",
+  "mt.radioDaily": "Radio · updated every day",
+  "mt.radioUpdated": "last updated {d}",
+  "mt.radioOf": "The radio of «{s}»",
+  "mt.radioStop": "Stop auto-update",
+  "mt.radioStopTip": "Stop updating it: it becomes an ordinary playlist",
+  "mt.radioEditNote": "Editing the songs stops the auto-update.",
 };

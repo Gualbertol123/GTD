@@ -15,6 +15,11 @@ export const MENU_IT: Record<string, string> = {
   "sm.why.missingTable": "manca la migrazione 018 del database",
   "sm.why.notFound": "la playlist non esiste più",
   "sm.why.server": "errore del server, riprova",
+  "sm.radioSave": "Salva radio come playlist",
+  "sm.radioSaving": "Creo la playlist radio…",
+  "sm.radioSaved": "Playlist «{p}» salvata ({n} brani), aggiornata ogni giorno",
+  "sm.radioSavedPlain": "Playlist «{p}» salvata ({n} brani). Per aggiornarla ogni giorno serve la migrazione 021 del database",
+  "sm.radioSaveFail": "Playlist radio non creata",
 };
 
 export const MENU_EN: Record<string, string> = {
@@ -31,4 +36,9 @@ export const MENU_EN: Record<string, string> = {
   "sm.why.missingTable": "database migration 018 is missing",
   "sm.why.notFound": "the playlist no longer exists",
   "sm.why.server": "server error, try again",
+  "sm.radioSave": "Save radio as playlist",
+  "sm.radioSaving": "Creating the radio playlist…",
+  "sm.radioSaved": "Playlist «{p}» saved ({n} songs), updated every day",
+  "sm.radioSavedPlain": "Playlist «{p}» saved ({n} songs). Updating it every day needs database migration 021",
+  "sm.radioSaveFail": "Radio playlist not created",
 };
