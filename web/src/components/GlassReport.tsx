@@ -65,6 +65,7 @@ function Ed({
   style?: React.CSSProperties;
   placeholder?: string;
 }) {
+  const { t } = useT();
   const text = edit.get(id) ?? value;
   return (
     <Tag
@@ -77,17 +78,29 @@ function Ed({
       suppressContentEditableWarning
       spellCheck={false}
       data-placeholder={placeholder}
+      role={edit.enabled ? "textbox" : undefined}
+      aria-multiline={edit.enabled && multiline ? true : undefined}
+      aria-label={edit.enabled ? t("ux.report.editField") : undefined}
       style={style}
       onBlur={(e) => {
-        const next = (e.currentTarget as HTMLElement).innerText.replace(/\n+$/, "");
+        const raw = (e.currentTarget as HTMLElement).innerText.replace(/\n+$/, "");
+        // A lone line break or spaces left by contentEditable count as empty.
+        const next = raw.trim() === "" ? "" : raw;
         if (next !== text) edit.set(id, next);
       }}
       onKeyDown={(e) => {
+        const el = e.currentTarget as HTMLElement;
         if (e.key === "Enter" && !multiline) {
           e.preventDefault();
-          (e.currentTarget as HTMLElement).blur();
+          el.blur();
         }
-        if (e.key === "Escape") (e.currentTarget as HTMLElement).blur();
+        // Escape abandons the edit: put the text back, then leave the field
+        // (onBlur then finds nothing changed and saves nothing).
+        if (e.key === "Escape") {
+          e.preventDefault();
+          el.innerText = text;
+          el.blur();
+        }
       }}
     >
       {text}
@@ -126,12 +139,21 @@ function Bar({ value, color }: { value: number; color: string }) {
   );
 }
 
-function HideButton({ onHide }: { onHide?: () => void }) {
+function CrossIcon({ size = 10 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 12 12" width={size} height={size} aria-hidden="true" focusable="false">
+      <path d="M3 3l6 6M9 3l-6 6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function HideButton({ onHide, label }: { onHide?: () => void; label?: string }) {
   const { t } = useT();
   if (!onHide) return null;
+  const text = label ?? t("gr.hide");
   return (
-    <button type="button" className="gr-hide gr-noexport" title={t("gr.hide")} onClick={onHide}>
-      ×
+    <button type="button" className="gr-hide gr-noexport" title={text} aria-label={text} onClick={onHide}>
+      <CrossIcon />
     </button>
   );
 }
@@ -230,7 +252,10 @@ function ProjectCard({ block, edit, fmtDate, onExcludeProject }: BlockProps & { 
   return (
     <div className="gr-glass gr-card">
       <span className="gr-accent" style={{ background: block.color }} />
-      <HideButton onHide={onExcludeProject && (() => onExcludeProject(p.id))} />
+      <HideButton
+        onHide={onExcludeProject && (() => onExcludeProject(p.id))}
+        label={t("ux.report.excludeProject")}
+      />
       <div className="gr-card-top">
         <span className="gr-pill" style={{ color: statusColor, background: `${statusColor}17` }}>
           <span className="gr-dot" style={{ background: statusColor }} />
@@ -330,6 +355,7 @@ function PageChrome({
   periodText,
   landscape = false,
   edit,
+  avail = 0,
 }: {
   children: React.ReactNode;
   index: number;
@@ -338,12 +364,23 @@ function PageChrome({
   periodText: string;
   landscape?: boolean;
   edit: EditCtx;
+  /** Width available on screen; a wider page is scaled down to it. */
+  avail?: number;
 }) {
   const { t } = useT();
-  return (
+  const w = landscape ? PAGE_H : PAGE_W;
+  const h = landscape ? PAGE_W : PAGE_H;
+  const scale = avail > 0 && avail < w ? Math.max(0.3, avail / w) : 1;
+  const page = (
     <div
       className={`gr-page gr-bg-${index % 4} ${landscape ? "gr-landscape" : ""}`}
-      style={{ width: landscape ? PAGE_H : PAGE_W, height: landscape ? PAGE_W : PAGE_H }}
+      style={{
+        width: w,
+        height: h,
+        ...(scale < 1
+          ? ({ transform: `scale(${scale})`, transformOrigin: "0 0", "--gr-inv": 1 / scale } as React.CSSProperties)
+          : null),
+      }}
     >
       <div className="gr-blob gr-blob-a" />
       <div className="gr-blob gr-blob-b" />
@@ -364,6 +401,14 @@ function PageChrome({
           {index + 1} / {total}
         </span>
       </div>
+    </div>
+  );
+  if (scale === 1) return page;
+  // The transform does not change the layout box, so a wrapper of the scaled
+  // size keeps the pages from overlapping.
+  return (
+    <div className="gr-fit" style={{ width: w * scale, height: h * scale }}>
+      {page}
     </div>
   );
 }
@@ -456,9 +501,10 @@ function PlannerPage({
                         type="button"
                         className="gr-item-hide gr-noexport"
                         title={t("gr.hide")}
+                        aria-label={t("gr.hide")}
                         onClick={() => onHide(`plan.${task.id}`)}
                       >
-                        ×
+                        <CrossIcon size={9} />
                       </button>
                       <span className="gr-dot" style={{ background: PRIORITY_COLOR[task.priority], marginTop: 5 }} />
                       <div className="gr-col-text">
@@ -501,17 +547,52 @@ function highlightCandidates(board: Board, data: ReportData): { status: Status; 
 const MAX_HIGHLIGHTS = 8;
 
 function HighlightPicker({
+  id,
   groups,
   selected,
   onChange,
   onClose,
+  toggleRef,
 }: {
+  id: string;
   groups: { status: Status; tasks: Task[] }[];
   selected: string[];
   onChange: (ids: string[]) => void;
-  onClose: () => void;
+  /** refocus: give focus back to the toggle (not after a click elsewhere). */
+  onClose: (refocus: boolean) => void;
+  toggleRef: React.RefObject<HTMLButtonElement>;
 }) {
   const { t, lang } = useT();
+  const boxRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  // On open: bring the whole picker (it opens upwards) into view and focus
+  // the first choice. Escape or a press outside it closes it.
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    box.scrollIntoView({ block: "nearest" });
+    (box.querySelector<HTMLElement>("input:not([disabled])") ?? box.querySelector<HTMLElement>("button"))?.focus({
+      preventScroll: true,
+    });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeRef.current(true);
+      }
+    };
+    const onDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (box.contains(target) || toggleRef.current?.contains(target)) return;
+      closeRef.current(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown, true);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onDown, true);
+    };
+  }, [toggleRef]);
   const toggle = (id: string) =>
     onChange(
       selected.includes(id)
@@ -521,10 +602,10 @@ function HighlightPicker({
           : selected
     );
   return (
-    <div className="gr-picker gr-noexport">
+    <div ref={boxRef} id={id} className="gr-picker gr-noexport" role="group" aria-label={t("gr.pick.open")}>
       <div className="gr-picker-head">
         <span>{t("gr.pick.title", { n: selected.length, max: MAX_HIGHLIGHTS })}</span>
-        <button type="button" className="gr-picker-btn" onClick={onClose}>
+        <button type="button" className="gr-picker-btn" onClick={() => onClose(true)}>
           {t("gr.pick.done")}
         </button>
       </div>
@@ -576,6 +657,11 @@ function Cover({
 }) {
   const { t } = useT();
   const [picking, setPicking] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const closePicker = useCallback((refocus: boolean) => {
+    setPicking(false);
+    if (refocus) toggleRef.current?.focus();
+  }, []);
   const groups = useMemo(() => highlightCandidates(board, data), [board, data]);
   const byId = useMemo(() => new Map(groups.flatMap((g) => g.tasks.map((task) => [task.id, task] as const))), [groups]);
   const chosen = highlights.map((id) => byId.get(id)).filter((x): x is Task => !!x);
@@ -619,7 +705,14 @@ function Cover({
         <div className="gr-highlights-head">
           <Ed id="cover.highlightsTitle" value={t("gr.cover.highlights")} edit={edit} className="gr-eyebrow" style={{ color: "#34C759" }} />
           {edit.enabled && (
-            <button type="button" className="gr-picker-btn gr-noexport" onClick={() => setPicking((v) => !v)}>
+            <button
+              ref={toggleRef}
+              type="button"
+              className="gr-picker-btn gr-noexport"
+              aria-expanded={picking}
+              aria-controls={picking ? "gr-highlight-picker" : undefined}
+              onClick={() => setPicking((v) => !v)}
+            >
               {t("gr.pick.open")}
             </button>
           )}
@@ -648,17 +741,29 @@ function Cover({
         )}
         {picking && (
           <HighlightPicker
+            id="gr-highlight-picker"
             groups={groups}
             selected={highlights}
             onChange={setHighlights}
-            onClose={() => setPicking(false)}
+            onClose={closePicker}
+            toggleRef={toggleRef}
           />
         )}
       </div>
 
-      <div className="gr-glass gr-note">
+      {/* The note starts empty: the instruction is only a placeholder, so it can
+          never end up in the PDF. Left empty, the card is screen-only. */}
+      <div className={`gr-glass gr-note ${(edit.get("cover.note") ?? "").trim() ? "" : "gr-noexport"}`}>
         <Ed tag="div" id="cover.noteTitle" value={t("gr.cover.noteTitle")} edit={edit} className="gr-eyebrow" style={{ color: "#007AFF" }} />
-        <Ed tag="p" id="cover.note" value={t("gr.cover.note")} edit={edit} className="gr-note-text" multiline />
+        <Ed
+          tag="p"
+          id="cover.note"
+          value=""
+          placeholder={t("gr.cover.note")}
+          edit={edit}
+          className="gr-note-text"
+          multiline
+        />
       </div>
     </div>
   );
@@ -678,6 +783,17 @@ export interface GlassReportProps {
   onDraftChange?: (hasDraft: boolean) => void;
   /** × on a project card: leave it out of this and every later report. */
   onExcludeProject?: (projectId: string) => void;
+  /** A card or planner item was hidden; `undo` brings that one back. */
+  onCardHidden?: (undo: () => void) => void;
+  /** Told how many cards are hidden this week. */
+  onHiddenCount?: (n: number) => void;
+  /** Filled with actions the controls outside the pages can call. */
+  actionsRef?: React.MutableRefObject<GlassReportActions | null>;
+}
+
+export interface GlassReportActions {
+  /** Bring back every hidden card (texts and highlights stay as they are). */
+  showHidden: () => void;
 }
 
 // Pack measured blocks onto pages; returns block ids per page. A section
@@ -709,6 +825,9 @@ export function GlassReport({
   draftKey,
   onDraftChange,
   onExcludeProject,
+  onCardHidden,
+  onHiddenCount,
+  actionsRef,
 }: GlassReportProps) {
   const { lang } = useT();
   // Start from this week's saved draft, if there is one.
@@ -784,14 +903,42 @@ export function GlassReport({
     [edits, save]
   );
   const measureEdit: EditCtx = useMemo(() => ({ ...edit, enabled: false }), [edit]);
-  const hide = useCallback(
-    (id: string) => {
-      const next = new Set(latest.current.hidden).add(id);
+  const unhide = useCallback(
+    (ids: string[] | null) => {
+      const next = new Set(latest.current.hidden);
+      if (ids === null) next.clear();
+      else ids.forEach((id) => next.delete(id));
       setHidden(next);
       save({ hidden: next });
     },
     [save]
   );
+  const hide = useCallback(
+    (id: string) => {
+      const next = new Set(latest.current.hidden).add(id);
+      setHidden(next);
+      save({ hidden: next });
+      onCardHidden?.(() => unhide([id]));
+    },
+    [save, unhide, onCardHidden]
+  );
+  useEffect(() => onHiddenCount?.(hidden.size), [hidden, onHiddenCount]);
+  if (actionsRef) actionsRef.current = { showHidden: () => unhide(null) };
+
+  // Narrow screens (the phone): scale each page down to the width available,
+  // so a whole page is visible without panning. Screen only; the PDF is built
+  // on the server from data.
+  const [avail, setAvail] = useState(0);
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const read = () => setAvail(el.clientWidth);
+    read();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Measure every block at page width and pack each run onto pages.
   useLayoutEffect(() => {
@@ -834,7 +981,7 @@ export function GlassReport({
     });
 
   const flow = (blocks: Block[], index: number) => (
-    <PageChrome key={`p${index}`} index={index} total={total} boardName={boardName} periodText={periodText} edit={edit}>
+    <PageChrome key={`p${index}`} index={index} total={total} boardName={boardName} periodText={periodText} edit={edit} avail={avail}>
       <div className="gr-content" style={{ left: PAD_X, top: HEAD, width: CONTENT_W, height: CONTENT_H }}>
         {blocks.map((b) => (
           <div key={b.id} className="gr-block">
@@ -857,7 +1004,7 @@ export function GlassReport({
       </div>
 
       <div className="gr-pages">
-        <PageChrome index={0} total={total} boardName={boardName} periodText={periodText} edit={edit}>
+        <PageChrome index={0} total={total} boardName={boardName} periodText={periodText} edit={edit} avail={avail}>
           <Cover
             board={board}
             data={data}
@@ -879,6 +1026,7 @@ export function GlassReport({
               periodText={periodText}
               landscape
               edit={edit}
+              avail={avail}
             >
               <PlannerPage
                 n={input.planner.n}
