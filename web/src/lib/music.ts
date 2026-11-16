@@ -199,6 +199,12 @@ export function setMusic(patch: MusicPatch): void {
   }
   if (!changed) return;
   state = { ...state, ...rest };
+  // YouTube could not be reached: nothing will ever start, so a click must not
+  // leave a spinner turning. Say again why (the toast has Riprova).
+  if (state.failed && (state.status === "loading" || state.status === "buffering")) {
+    state = { ...state, status: "idle", playing: false };
+    if (!("failed" in rest)) queueMicrotask(() => toast(tr("music.failed"), "error"));
+  }
   if (rest.side) writePref("music", rest.side);
   if (rest.mode) writePref("musicMode", rest.mode);
   if (rest.volume !== undefined) {
