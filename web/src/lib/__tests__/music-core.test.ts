@@ -12,6 +12,8 @@ vi.mock("../supabaseClient", () => ({
 
 import {
   __resetMusicForTests,
+  ytWindowStart,
+  YT_MAX,
   attachPlayer,
   errorCode,
   fetchExplore,
@@ -43,7 +45,11 @@ import { supabase } from "../supabaseClient";
 const tr = (n: number): Track => ({ id: `id${String(n).padStart(9, "0")}`, title: `Song ${n}`, channel: `Artist ${n}` });
 const list = (n: number) => Array.from({ length: n }, (_, i) => tr(i));
 
-/** A YouTube player that records commands; tests send its events by hand. */
+/**
+ * A YouTube player that records commands; tests send its events by hand. Like
+ * the real one, it keeps at most 200 ids, drops the ids in `drop` (ones that
+ * do not exist) from its own list, and its index counts in that list.
+ */
 function fakePlayer() {
   const log: string[] = [];
   const p = {
@@ -52,10 +58,15 @@ function fakePlayer() {
     state: S.UNSTARTED as number,
     time: 0,
     listReady: true,
+    muted: false,
+    /** A phone that refuses unMute from a script. */
+    refuseUnmute: false,
+    drop: new Set<string>(),
+    duration: 200,
     log,
     loadPlaylist(arg: unknown, index = 0, start = 0) {
       log.push(`load:${index}:${start}`);
-      if (Array.isArray(arg)) this.ids = arg.slice();
+      if (Array.isArray(arg)) this.ids = (arg as string[]).filter((id) => !this.drop.has(id)).slice(0, 200);
       else this.ids = Array.from({ length: 10 }, (_, k) => `ls${String(k).padStart(9, "0")}`);
       this.index = index;
     },
@@ -75,8 +86,14 @@ function fakePlayer() {
     },
     seekTo: (s: number) => log.push(`seek:${s}`),
     setVolume: (v: number) => log.push(`vol:${v}`),
-    mute: () => log.push("mute"),
-    unMute: () => log.push("unmute"),
+    mute() {
+      log.push("mute");
+      this.muted = true;
+    },
+    unMute() {
+      log.push("unmute");
+      if (!this.refuseUnmute) this.muted = false;
+    },
     setLoop: (on: boolean) => log.push(`loop:${on}`),
     getPlaylist() {
       return this.listReady ? this.ids.slice() : null;
@@ -90,9 +107,13 @@ function fakePlayer() {
     getCurrentTime() {
       return this.time;
     },
-    getDuration: () => 200,
+    getDuration() {
+      return this.duration;
+    },
     getVolume: () => 80,
-    isMuted: () => false,
+    isMuted() {
+      return this.muted;
+    },
     getVideoData() {
       return { video_id: this.ids[this.index], title: `YT raw ${this.ids[this.index]}`, author: "VEVO" };
     },
@@ -478,5 +499,320 @@ describe("review fixes", () => {
     expect(s.queue[s.index].id).toBe(q[2].id);
     expect(s.queue[s.index].title).toMatch(/^YT raw/);
     expect(s.queue[s.index + 1].id).toBe(tr(50).id);
+  });
+});
+
+describe("real YouTube behaviour (the 'loop playing, no sound' report)", () => {
+  /** Fake clock (timers and performance.now), with the player's tick on it. */
+  function clock() {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date", "performance"] });
+    __resetMusicForTests();
+    p = fakePlayer();
+    attachPlayer(p as unknown as YtLike);
+    p.log.length = 0;
+  }
+  afterEach(() => vi.useRealTimers());
+  const run = (ms: number) => vi.advanceTimersByTime(ms);
+  /** YouTube plays: the second moves for `ms`. */
+  function playFor(ms: number) {
+    for (let k = 0; k < ms; k += 500) {
+      p.time += 0.5;
+      run(500);
+    }
+  }
+
+  it("YouTube's list differs from the app's (a dropped id): the app follows the song YouTube really plays", () => {
+    const q = list(5);
+    p.drop.add(q[2].id); // YouTube silently drops song 2
+    music.play({ kind: "videos", label: "L", tracks: q, start: 0 });
+    ev(p, S.PLAYING);
+    p.log.length = 0;
+    music.next();
+    // YouTube's real list is not the queue: no index jump, the list is given again.
+    expect(p.log).toEqual(["load:1:0"]);
+    onYtError(150); // song 1 cannot play: on to song 2...
+    expect(getMusic().now?.id).toBe(q[2].id);
+    // ...but YouTube, without song 2, is at song 3: that is followed, not ignored.
+    expect(p.getVideoData().video_id).toBe(q[3].id);
+    ev(p, S.UNSTARTED);
+    ev(p, S.PLAYING);
+    expect(getMusic().status).toBe("playing");
+    expect(getMusic().index).toBe(3);
+    expect(getMusic().now?.title).toBe("Song 3");
+  });
+
+  it("an error on an entry ahead of the one asked for skips on from there (no dead end)", () => {
+    const q = list(6);
+    p.drop.add(q[2].id);
+    music.play({ kind: "videos", label: "L", tracks: q, start: 1 });
+    onYtError(150); // song 1 fails; app asks for 2, YouTube is at 3
+    expect(getMusic().index).toBe(2);
+    onYtError(150); // song 3 fails too
+    const s = getMusic();
+    expect(s.index).toBe(4);
+    expect(s.now?.id).toBe(q[4].id);
+    expect(s.playing).toBe(true);
+  });
+
+  it("a late event about the song the app left is still ignored", () => {
+    music.play({ kind: "videos", label: "L", tracks: list(5), start: 0 });
+    ev(p, S.PLAYING);
+    music.playAt(3);
+    p.index = 0; // YouTube still reports song 0
+    ev(p, S.PLAYING);
+    expect(getMusic().now?.title).toBe("Song 3");
+    expect(getMusic().status).toBe("loading");
+  });
+
+  it("a queue longer than 200 is given as a 200-id window holding the song", () => {
+    expect(ytWindowStart(150, 120)).toBe(0);
+    expect(ytWindowStart(250, 220)).toBe(50);
+    expect(ytWindowStart(250, 10)).toBe(10);
+    const q = list(250);
+    music.play({ kind: "videos", label: "L", tracks: q, start: 220 });
+    expect(p.ids.length).toBeLessThanOrEqual(YT_MAX);
+    expect(p.getVideoData().video_id).toBe(q[220].id);
+    ev(p, S.PLAYING);
+    expect(getMusic().index).toBe(220);
+    // A jump inside the window is a jump in YouTube's list, at its own index.
+    p.log.length = 0;
+    music.playAt(230);
+    expect(p.log).toEqual(["at:180"]);
+    ev(p, S.PLAYING);
+    expect(getMusic().index).toBe(230);
+    // A song before the window: a new window.
+    music.playAt(5);
+    expect(p.getVideoData().video_id).toBe(q[5].id);
+    // At the window's end YouTube cannot move on by itself: the next window is loaded.
+    music.playAt(204);
+    ev(p, S.PLAYING);
+    expect(p.getVideoData().video_id).toBe(q[204].id);
+  });
+
+  it("a song ended inside the window: YouTube moves on by itself, nothing is reloaded", () => {
+    clock();
+    const q = list(250);
+    music.play({ kind: "videos", label: "L", tracks: q, start: 220 });
+    ev(p, S.PLAYING);
+    p.log.length = 0;
+    ev(p, S.ENDED);
+    p.index++; // YouTube moves on
+    ev(p, S.UNSTARTED);
+    ev(p, S.PLAYING);
+    expect(p.log.filter((l) => l.startsWith("load") || l.startsWith("at"))).toEqual([]);
+    expect(getMusic().index).toBe(221);
+    expect(getMusic().status).toBe("playing");
+  });
+
+  it("ENDED without a move-on: the list is given again, then the app gives up (no forever spinner)", () => {
+    clock();
+    const q = list(3);
+    music.play({ kind: "videos", label: "L", tracks: q, start: 0 });
+    ev(p, S.PLAYING);
+    p.log.length = 0;
+    ev(p, S.ENDED); // YouTube stays at the end
+    expect(getMusic().now?.id).toBe(q[1].id);
+    expect(getMusic().status).toBe("loading");
+    run(4000);
+    expect(p.log).toContain("load:1:0");
+    p.state = S.UNSTARTED; // and nothing starts
+    run(7000);
+    const s = getMusic();
+    expect(s.playing).toBe(false);
+    expect(s.status).toBe("paused");
+    expect(s.needsTap).toBe(true);
+    expect(p.log).not.toContain("pause");
+  });
+
+  it("BUFFERING forever: one more wait, then paused with YouTube's frame; never pauses YouTube", () => {
+    clock();
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    ev(p, S.BUFFERING);
+    run(6100);
+    expect(getMusic().playing).toBe(true); // slow network: waits more
+    expect(getMusic().status).toBe("buffering");
+    run(8000);
+    let s = getMusic();
+    expect(s.playing).toBe(false);
+    expect(s.status).toBe("paused");
+    expect(s.needsTap).toBe(true);
+    expect(s.toast?.text).toBe("music.stalled");
+    expect(p.log).not.toContain("pause");
+    // Still buffering: the app does not flip back to a spinner.
+    ev(p, S.BUFFERING);
+    expect(getMusic().playing).toBe(false);
+    // A late start is followed; once the second moves the frame steps back.
+    ev(p, S.PLAYING);
+    expect(getMusic().playing).toBe(true);
+    expect(getMusic().status).toBe("playing");
+    playFor(2000);
+    s = getMusic();
+    expect(s.needsTap).toBe(false);
+    expect(p.log).not.toContain("pause");
+  });
+
+  it("autoplay refused silently (UNSTARTED): paused + frame after 6 s; Play is checked again, bounded", () => {
+    clock();
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    ev(p, S.UNSTARTED);
+    run(6100);
+    expect(getMusic().status).toBe("paused");
+    expect(getMusic().needsTap).toBe(true);
+    expect(getMusic().toast?.text).toBe("music.tapToPlay");
+    // The app's Play: sent again, and checked again (shorter), never a forever spinner.
+    p.log.length = 0;
+    music.toggle();
+    expect(p.log).toContain("play");
+    expect(getMusic().status).toBe("loading");
+    run(3100);
+    expect(getMusic().status).toBe("paused");
+    expect(getMusic().needsTap).toBe(true);
+    // The tap inside YouTube's frame: followed once it plays.
+    ev(p, S.BUFFERING);
+    expect(getMusic().playing).toBe(false);
+    ev(p, S.PLAYING);
+    playFor(1500);
+    expect(getMusic().playing).toBe(true);
+    expect(getMusic().status).toBe("playing");
+    expect(getMusic().needsTap).toBe(false);
+  });
+
+  it("PAUSED right after play (autoplay refused): paused + frame at once", () => {
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    ev(p, S.UNSTARTED);
+    ev(p, S.PAUSED);
+    const s = getMusic();
+    expect(s.playing).toBe(false);
+    expect(s.status).toBe("paused");
+    expect(s.needsTap).toBe(true);
+    expect(s.toast?.text).toBe("music.tapToPlay");
+  });
+
+  it("PAUSED right after a quick Pause then Play is the pause's echo: ignored", () => {
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    ev(p, S.PLAYING);
+    music.toggle();
+    music.toggle();
+    ev(p, S.PAUSED);
+    expect(getMusic().playing).toBe(true);
+    expect(getMusic().needsTap).toBe(false);
+  });
+
+  it("a pause pressed during buffering is honoured; no give-up later", () => {
+    clock();
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    ev(p, S.BUFFERING);
+    music.toggle();
+    expect(getMusic().playing).toBe(false);
+    run(8000); // past the start check
+    expect(getMusic().needsTap).toBe(false);
+    expect(getMusic().toast).toBeNull();
+    p.log.length = 0;
+    ev(p, S.PLAYING);
+    expect(p.log).toContain("pause");
+    expect(getMusic().playing).toBe(false);
+  });
+
+  it("starting muted: the app's sound setting wins in audio mode; refused twice, the frame is shown", () => {
+    clock();
+    __resetMusicForTests();
+    p = fakePlayer();
+    p.muted = true; // YouTube starts muted
+    attachPlayer(p as unknown as YtLike);
+    expect(p.muted).toBe(false);
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    ev(p, S.PLAYING);
+    // YouTube mutes itself again (muted autoplay) and refuses a script's unMute.
+    p.muted = true;
+    p.refuseUnmute = true;
+    p.log.length = 0;
+    playFor(1000);
+    expect(p.log).toContain("unmute");
+    expect(getMusic().muted).toBe(false);
+    playFor(1000);
+    expect(getMusic().needsTap).toBe(true);
+    expect(getMusic().toast?.text).toBe("music.tapToUnmute");
+    // The frame stays while YouTube is muted, though the second moves.
+    playFor(3000);
+    expect(getMusic().needsTap).toBe(true);
+    // The user taps unmute in the frame: it steps back.
+    p.muted = false;
+    playFor(1500);
+    expect(getMusic().needsTap).toBe(false);
+  });
+
+  it("in video mode a mute from YouTube's own controls is followed", () => {
+    clock();
+    music.setMode("video");
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    ev(p, S.PLAYING);
+    p.muted = true;
+    playFor(2000);
+    expect(getMusic().muted).toBe(true);
+  });
+
+  it("PLAYING with a frozen second: nudge, reload at that second, then give up; never pauses or destroys", () => {
+    clock();
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    p.time = 42;
+    ev(p, S.PLAYING);
+    p.log.length = 0;
+    run(12000);
+    expect(p.log).toContain("seek:42");
+    expect(getMusic().status).toBe("buffering");
+    run(11000);
+    expect(p.log).toContain("load:0:42");
+    p.state = S.PLAYING; // YouTube says PLAYING again, still stuck
+    run(11000);
+    const s = getMusic();
+    expect(s.playing).toBe(false);
+    expect(s.needsTap).toBe(true);
+    expect(p.log).not.toContain("pause");
+    expect(p.log).not.toContain("stop");
+    // It does not flip back to playing while the second stands still.
+    run(5000);
+    expect(getMusic().playing).toBe(false);
+    // A real resume is followed.
+    playFor(3000);
+    expect(getMusic().playing).toBe(true);
+    expect(getMusic().needsTap).toBe(false);
+  });
+
+  it("a YouTube list that never gives its ids stops waiting and plays as YouTube has it", () => {
+    clock();
+    p.listReady = false;
+    music.play({ kind: "list", label: "L", list: "PLxxxxxxxxxxxx" });
+    p.log.length = 0;
+    run(10500);
+    expect(p.log).toContain("play");
+    // No forever spinner: if it never starts, the app gives up.
+    run(7000);
+    expect(getMusic().status).toBe("paused");
+    expect(getMusic().needsTap).toBe(true);
+    // A later Play sends playVideo (not stuck on the adopt wait).
+    p.log.length = 0;
+    music.toggle();
+    expect(p.log).toContain("play");
+  });
+
+  it("a new play clears needsTap; the user's Pause clears it too", () => {
+    setMusic({ needsTap: true });
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    expect(getMusic().needsTap).toBe(false);
+    setMusic({ needsTap: true });
+    music.toggle();
+    expect(getMusic().needsTap).toBe(false);
+  });
+
+  it("the queue shown stays the order played after YouTube moves on by itself", () => {
+    const q = list(5);
+    p.drop.add(q[1].id);
+    music.play({ kind: "videos", label: "L", tracks: q, start: 0 });
+    ev(p, S.PLAYING);
+    ev(p, S.ENDED); // YouTube's list lacks song 1: the app gives it the queue again
+    // YouTube (without song 1) is at song 2: the app moves there, queue untouched.
+    ev(p, S.PLAYING);
+    expect(getMusic().queue.map((t) => t.id)).toEqual(q.map((t) => t.id));
+    expect(getMusic().index).toBe(2);
   });
 });

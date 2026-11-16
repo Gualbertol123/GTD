@@ -140,6 +140,11 @@ export interface MusicState {
   docked: boolean;
   /** YouTube's player API could not load (blocked or offline): retry with music.retry(). */
   failed: string | null;
+  /**
+   * YouTube refused to start from the app (a phone's autoplay rule, a wall or
+   * overlay in YouTube's frame): its frame is shown so a tap inside it starts the music.
+   */
+  needsTap: boolean;
   /** A short message ("Added to the queue"). Never shown in place of the song title. */
   toast: Toast | null;
   /** "I have YouTube Premium": the player comes from youtube.com, not youtube-nocookie.com. */
@@ -173,6 +178,7 @@ let state: MusicState = {
   tab: false,
   docked: false,
   failed: null,
+  needsTap: false,
   toast: null,
   premium: readPref("musicPremium") === "1",
   warm: false,
@@ -414,12 +420,6 @@ export function insertTracks(q: Track[], index: number, tracks: Track[], where: 
   return out;
 }
 
-function sameIds(a: string[] | null, b: Track[]): boolean {
-  if (!a || a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) if (a[i] !== b[i].id) return false;
-  return true;
-}
-
 const nowOf = (t: Track | undefined): NowPlaying | null => (t ? { id: t.id, title: t.title, author: t.channel } : null);
 
 /** The text that names a source ("Mix preferiti", an artist, a list's label). */
@@ -471,8 +471,14 @@ const S = YT_STATE;
 export const MAX_ERRORS = 5;
 
 let yt: YtLike | null = null;
-/** The ids YouTube has loaded (null: none, or a YouTube list not read yet). */
+/** The ids the app last gave YouTube (for the log; YouTube's own list is what is checked). */
 let ytIds: string[] | null = null;
+/**
+ * YouTube takes at most 200 ids: a longer queue is given as a 200-song window
+ * starting at queue entry `ytBase` (YouTube's entry k is the queue's ytBase + k).
+ */
+export const YT_MAX = 200;
+let ytBase = 0;
 /** The queue in its original order while shuffle is on. */
 let original: Track[] | null = null;
 /** The video the app asked for, until YouTube confirms it; older events are ignored. */
@@ -489,11 +495,26 @@ let playSeq = 0;
 let resumeAt = 0;
 let seekTarget: number | null = null;
 let seekAt = 0;
-let localVolAt = 0;
+let localVolAt = -1e9;
 let lastCmd = { kind: "", at: 0 };
+/** When the app last asked YouTube to pause (a PAUSED right after Play is its echo only if this is recent). */
+let lastPauseAt = -1e9;
 /** The app asked YouTube to pause and it has not confirmed yet: a late start is undone. */
 let pausePending = false;
+/** The "did it start?" check (armBlocked); undefined when none is pending. */
 let blockTimer: ReturnType<typeof setTimeout> | undefined;
+/** A song ended: did YouTube really move on to the next one? (armAdvance) */
+let advanceTimer: ReturnType<typeof setTimeout> | undefined;
+/**
+ * Videos the app has left since YouTube last confirmed a song: their late
+ * events are ignored. Any other video YouTube reports is followed (YouTube
+ * may move on by itself, past a song it cannot play).
+ */
+const leftIds = new Set<string>();
+/** YouTube says PLAYING but the second stands still: what was tried (0 none, 1 seek, 2 reload, 3 gave up). */
+let frozenStage = 0;
+/** Times YouTube was found muted by itself in audio mode (muted autoplay). */
+let muteTries = 0;
 let tickTimer: ReturnType<typeof setInterval> | undefined;
 let tickN = 0;
 let loopApplied: boolean | null = null;
@@ -543,11 +564,28 @@ function snap(): Record<string, unknown> {
     ytVideo: p ? safe(() => p.getVideoData()?.video_id ?? "", "?") : null,
     ytIndex: p ? safe(() => p.getPlaylistIndex(), -1) : null,
     ytTime: p ? Math.round(safe(() => p.getCurrentTime(), 0) || 0) : null,
+    ytList: p ? safe(() => p.getPlaylist()?.length ?? 0, 0) : null,
+    sent: ytIds ? `${ytIds.length} ids from song ${ytBase + 1}` : null,
+    needsTap: state.needsTap,
     adopting: !!adopting,
   };
 }
 
 const YT_COMMANDS = new Set(["loadPlaylist", "cuePlaylist", "playVideoAt", "playVideo", "pauseVideo", "stopVideo", "nextVideo", "previousVideo", "seekTo", "setLoop", "mute", "unMute"]);
+
+const START_COMMANDS = new Set(["loadPlaylist", "playVideoAt", "playVideo"]);
+
+/** The last tap anywhere on the page (for the log: was a command sent inside a gesture?). */
+let lastTapAt = -1e9;
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+  window.addEventListener("pointerup", () => (lastTapAt = now()), { capture: true, passive: true });
+}
+
+/** The browser's user activation (true: inside a tap) and the ms since the last tap. */
+function gesture(): { gesture: boolean | null; sinceTapMs: number } {
+  const ua = typeof navigator !== "undefined" ? (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation : undefined;
+  return { gesture: ua ? ua.isActive : null, sinceTapMs: Math.round(now() - lastTapAt) };
+}
 
 /** The player, with every command logged (getters and setVolume are not, they are too chatty). */
 function logged(p: YtLike): YtLike {
@@ -559,7 +597,9 @@ function logged(p: YtLike): YtLike {
       const name = String(key);
       return (...args: unknown[]) => {
         if (YT_COMMANDS.has(name)) {
-          const shown = args.map((a) => (Array.isArray(a) ? `[${a.length} ids, first ${String(a[0])}]` : a));
+          const shown: unknown[] = args.map((a) => (Array.isArray(a) ? `[${a.length} ids, first ${String(a[0])}]` : a));
+          // Was it sent inside a tap? Phones start media only from one.
+          if (START_COMMANDS.has(name)) shown.push(gesture());
           mlog(`→ YouTube.${name}`, shown);
         }
         return (v as (...a: unknown[]) => unknown).apply(target, args);
@@ -583,6 +623,9 @@ if (typeof window !== "undefined") {
 function cmd(kind: string): void {
   lastCmd = { kind, at: now() };
   pausePending = kind === "pause";
+  if (kind === "pause") lastPauseAt = lastCmd.at;
+  // A new command from the user: the frozen-time rescue starts over.
+  frozenStage = 0;
 }
 
 /** A start YouTube reports now is the echo of a load the app has since paused. */
@@ -596,9 +639,12 @@ export function attachPlayer(p0: YtLike): void {
   yt = p;
   mlog("player ready", { pending: state.source ? sourceLogName(state.source) : null, playing: state.playing });
   ytIds = null;
+  ytBase = 0;
   loopApplied = null;
   p.setVolume(state.volume);
+  // The app's sound setting wins: YouTube may start muted (muted autoplay).
   if (state.muted) p.mute();
+  else p.unMute();
   clearInterval(tickTimer);
   tickTimer = setInterval(tick, 500);
   if (state.failed) setMusic({ failed: null });
@@ -611,10 +657,13 @@ export function detachPlayer(): void {
   if (yt) resumeAt = safe(() => yt!.getCurrentTime(), 0) || time.time;
   yt = null;
   ytIds = null;
+  ytBase = 0;
   expectId = null;
+  leftIds.clear();
   clearInterval(tickTimer);
   clearInterval(adoptTimer);
-  clearTimeout(blockTimer);
+  clearBlock();
+  clearTimeout(advanceTimer);
 }
 
 function safe<T>(f: () => T, d: T): T {
@@ -649,22 +698,62 @@ function listOf(s: Source): string | null {
   return null;
 }
 
-/** Give YouTube the queue and start (or cue) song i. */
-function ytLoad(i: number, start = 0, cue = false): void {
+/** Where YouTube's 200-id window starts so that queue entry i is in it. */
+export function ytWindowStart(len: number, i: number): number {
+  if (len <= YT_MAX) return 0;
+  return Math.max(0, Math.min(i, len - YT_MAX));
+}
+
+/**
+ * Is YouTube's real list (getPlaylist) exactly the queue's window at ytBase,
+ * with entry i in it? Only then can it jump (playVideoAt) or move on by
+ * itself. YouTube drops ids it cannot use and keeps at most 200, so the ids
+ * the app sent are not proof.
+ */
+function ytAligned(p: YtLike, q: Track[], i: number): boolean {
+  if (i < ytBase || i >= ytBase + YT_MAX || i >= q.length) return false;
+  const real = safe(() => p.getPlaylist(), null);
+  const want = q.slice(ytBase, ytBase + YT_MAX);
+  return !!real && real.length === want.length && real.every((id, k) => id === want[k].id);
+}
+
+/** A new song is asked for: the video YouTube is on now (and the one asked before) are left behind. */
+function setExpect(id: string | null): void {
+  const cur = yt ? safe(() => yt!.getVideoData()?.video_id ?? "", "") : "";
+  if (cur && cur !== id) leftIds.add(cur);
+  if (expectId && expectId !== id) leftIds.add(expectId);
+  if (id) leftIds.delete(id);
+  expectId = id;
+  expectAt = now();
+}
+
+/**
+ * Give YouTube the queue and start (or cue) song i. `force`: load the list
+ * again even if YouTube seems to have it (it did not move on by itself).
+ */
+function ytLoad(i: number, start = 0, cue = false, force = false): void {
   const p = yt;
   const q = state.queue;
-  expectId = q[i]?.id ?? null;
-  expectAt = now();
+  setExpect(q[i]?.id ?? null);
   if (!p) {
     resumeAt = start;
     return;
   }
-  const ids = q.map((t) => t.id);
-  mlog(`load song ${i + 1}/${q.length}`, { id: expectId, title: q[i]?.title, start: Math.round(start), mode: cue ? "cue (stay paused)" : sameIds(ytIds, q) && start === 0 ? "jump in loaded list" : "load list" });
+  const jump = !cue && !force && start === 0 && ytAligned(p, q, i);
+  const base = jump ? ytBase : ytWindowStart(q.length, i);
+  const ids = q.slice(base, base + YT_MAX).map((t) => t.id);
+  mlog(`load song ${i + 1}/${q.length}`, {
+    id: expectId,
+    title: q[i]?.title,
+    start: Math.round(start),
+    mode: cue ? "cue (stay paused)" : jump ? "jump in YouTube's list" : force ? "load list again (forced)" : "load list",
+    ...(q.length > YT_MAX ? { window: `${base + 1}-${base + ids.length}` } : {}),
+  });
   noteLoad(expectId);
-  if (cue) p.cuePlaylist(ids, i, start);
-  else if (sameIds(ytIds, q) && start === 0) p.playVideoAt(i);
-  else p.loadPlaylist(ids, i, start);
+  if (cue) p.cuePlaylist(ids, i - base, start);
+  else if (jump) p.playVideoAt(i - base);
+  else p.loadPlaylist(ids, i - base, start);
+  ytBase = base;
   ytIds = ids;
   if (!cue) armBlocked();
 }
@@ -673,12 +762,25 @@ function ytLoad(i: number, start = 0, cue = false): void {
 function goTo(i: number, auto = false): void {
   const q = state.queue;
   if (i < 0 || i >= q.length) return;
-  if (!auto) errCount = 0;
+  if (!auto) {
+    errCount = 0;
+    unmuteInTap();
+  }
   cmd("play");
+  clearTimeout(advanceTimer);
   seekTarget = null;
   setTime(0, 0);
   setMusic({ index: i, now: nowOf(q[i]), playing: true, status: "loading" });
   ytLoad(i);
+}
+
+/** Inside the user's tap, YouTube may still unmute itself (a phone allows sound only from a tap). */
+function unmuteInTap(): void {
+  const p = yt;
+  if (p && !state.muted && safe(() => p.isMuted(), false)) {
+    mlog("YouTube is muted: unmuting it inside the tap");
+    p.unMute();
+  }
 }
 
 /** A YouTube list whose ids come later (mix, artist, pasted link). */
@@ -687,6 +789,7 @@ function startList(list: string, shuffle: boolean): void {
   mlog("YouTube list: waiting for its songs", { list, shuffle });
   adopting = { list, shuffle, adds };
   ytIds = null;
+  ytBase = 0;
   expectId = null;
   const p = yt;
   if (!p) return;
@@ -699,11 +802,14 @@ function startList(list: string, shuffle: boolean): void {
   adoptTimer = setInterval(() => {
     if (!adopting || now() > until) {
       clearInterval(adoptTimer);
-      // The list never told its ids: just play it as YouTube has it.
-      if (adopting && yt && state.playing) {
-        mlog("YouTube list gave no song ids in 10 s: playing it as YouTube has it", undefined, "warn");
-        adopting = null;
+      if (!adopting) return;
+      // The list never told its ids: stop waiting for them (also while paused,
+      // so a later Play sends playVideo) and play it as YouTube has it.
+      adopting = null;
+      mlog("YouTube list gave no song ids in 10 s: playing it as YouTube has it", { playing: state.playing }, "warn");
+      if (yt && state.playing) {
         yt.playVideo();
+        armBlocked();
       }
       return;
     }
@@ -733,6 +839,7 @@ function adopt(): void {
   }
   let index = Math.max(0, safe(() => p.getPlaylistIndex(), 0));
   ytIds = ids;
+  ytBase = 0;
   if (state.shuffle && q.length > 1) {
     original = q;
     ({ queue: q, index } = shuffleQueue(q, index));
@@ -773,28 +880,83 @@ function noteLoad(id: string | null): void {
 /** Stop where we are (end of the queue, or nothing can play). */
 function halt(message?: string): void {
   mlog("stop", { why: message ?? "end of the queue", ...snap() }, "warn");
-  clearTimeout(blockTimer);
+  clearBlock();
+  clearTimeout(advanceTimer);
   expectId = null;
   setMusic({ playing: false, status: "paused" });
   if (message) toast(message, "error");
 }
 
-/**
- * Autoplay refused (phones play only from a tap inside YouTube's frame): if
- * nothing has started a few seconds after a play, say so; the next tap on
- * Play tries again.
- */
-function armBlocked(ms = 6000): void {
+function clearBlock(): void {
   clearTimeout(blockTimer);
+  blockTimer = undefined;
+}
+
+/**
+ * The app stops waiting for YouTube to start: it shows paused and YouTube's
+ * own frame (needsTap), where a tap always starts the music, even on a phone
+ * that refuses a start from the app. YouTube is NOT paused: a start that
+ * arrives late is still followed (onYtState PLAYING).
+ */
+function giveUp(why: string, textKey = "music.tapToPlay"): void {
+  clearBlock();
+  mlog(`gave up waiting (${why}): showing paused and YouTube's frame to tap`, { ...snap(), ...gesture() }, "warn");
+  setMusic({ playing: false, status: "paused", needsTap: true });
+  toast(tr(textKey));
+}
+
+/**
+ * Did it start? A few seconds after a play, YouTube must be PLAYING (its
+ * PLAYING event clears this check). Still BUFFERING with the second not
+ * moving: one more wait (a slow network). Otherwise, or after that, the app
+ * gives up (giveUp): a phone's autoplay rule, a wall in YouTube's frame, or a
+ * dead network never leave a spinner turning.
+ */
+function armBlocked(ms = state.needsTap ? 3000 : 6000, retry = false): void {
+  clearBlock();
+  const p0 = yt;
+  const t0 = p0 ? safe(() => p0.getCurrentTime(), 0) || 0 : 0;
   blockTimer = setTimeout(() => {
+    blockTimer = undefined;
     const p = yt;
     if (!p || !state.playing || adopting) return;
     const s = safe(() => p.getPlayerState(), S.PLAYING);
-    if (s === S.PLAYING || s === S.BUFFERING) return;
-    mlog(`nothing started ${ms / 1000} s after play (autoplay blocked?): showing paused`, snap(), "warn");
-    setMusic({ playing: false, status: "paused" });
-    toast(tr("music.tapToPlay"));
+    // PLAYING: started (a frozen second is the watchdog's job).
+    if (s === S.PLAYING) return;
+    const t = safe(() => p.getCurrentTime(), 0) || 0;
+    if (s === S.BUFFERING) {
+      if (t > t0 + 0.1) {
+        mlog("start check: still buffering but the second moves: waiting", { t: Math.round(t) });
+        return armBlocked(8000, retry);
+      }
+      if (!retry) {
+        mlog(`start check: buffering ${ms / 1000} s with the second at ${Math.round(t)}: waiting 8 s more`, snap(), "warn");
+        return armBlocked(8000, true);
+      }
+      return giveUp("buffering with no progress", "music.stalled");
+    }
+    giveUp(`YouTube is ${ytStateName(s)} ${ms / 1000} s after play (autoplay refused?)`);
   }, ms);
+}
+
+/**
+ * A song ended and YouTube should move on to queue entry n by itself: if a
+ * few seconds later it is still at the end (or elsewhere), the list is given
+ * again (once). The PLAYING of song n, or any new command, clears this.
+ */
+function armAdvance(n: number): void {
+  clearTimeout(advanceTimer);
+  advanceTimer = setTimeout(() => {
+    advanceTimer = undefined;
+    const p = yt;
+    const want = state.queue[n]?.id;
+    if (!p || !want || expectId !== want || !state.playing || state.index !== n) return;
+    const s = safe(() => p.getPlayerState(), S.PLAYING);
+    const vid = safe(() => p.getVideoData()?.video_id ?? "", "");
+    if (s === S.PLAYING || s === S.BUFFERING || (vid === want && s !== S.ENDED)) return;
+    mlog(`YouTube did not move on to song ${n + 1} after the last one ended: loading it again`, snap(), "warn");
+    ytLoad(n, 0, false, true);
+  }, 4000);
 }
 
 /** Which queue entry YouTube is playing. */
@@ -804,8 +966,15 @@ function locate(vid: string): number {
   if (q[i]?.id === vid) return i;
   if (q[i + 1]?.id === vid) return i + 1;
   const yi = safe(() => yt?.getPlaylistIndex() ?? -1, -1);
-  if (sameIds(ytIds, q) && q[yi]?.id === vid) return yi;
-  return q.findIndex((t) => t.id === vid);
+  if (yi >= 0 && q[ytBase + yi]?.id === vid) return ytBase + yi;
+  // YouTube moved on by itself: the first such entry after the current one.
+  const after = q.findIndex((t, k) => k > i && t.id === vid);
+  return after >= 0 ? after : q.findIndex((t) => t.id === vid);
+}
+
+/** An event about a video the app has just left (a late echo of the song before): ignore it. */
+function isLeftEcho(vid: string): boolean {
+  return !!expectId && !!vid && vid !== expectId && leftIds.has(vid) && now() - expectAt < 8000;
 }
 
 /** YouTube's onStateChange. */
@@ -814,9 +983,10 @@ export function onYtState(s: number): void {
   if (!p) return;
   const vid = safe(() => p.getVideoData()?.video_id ?? "", "");
   mlog(`← YouTube ${ytStateName(s)}`, { video: vid, app: state.status, playing: state.playing, expect: expectId });
-  // An event about the song before the one asked for: ignore it.
-  if (expectId && vid && vid !== expectId && s !== S.UNSTARTED && s !== S.CUED && now() - expectAt < 8000) {
-    mlog(`  ignored: about ${vid}, the app asked for ${expectId}`);
+  // Only the song the app left is set aside; any other video is the one
+  // YouTube really plays (it may have moved past a song it could not play).
+  if (s !== S.UNSTARTED && s !== S.CUED && isLeftEcho(vid)) {
+    mlog(`  ignored: about ${vid}, which the app has left (it asked for ${expectId})`);
     return;
   }
 
@@ -826,6 +996,10 @@ export function onYtState(s: number): void {
   }
   if (s === S.UNSTARTED) {
     if (state.playing && state.status !== "loading") setMusic({ status: "loading" });
+    if (state.playing && !blockTimer && !adopting) {
+      mlog("  no start check pending while loading: arming one");
+      armBlocked();
+    }
     return;
   }
   if (s === S.BUFFERING) {
@@ -836,16 +1010,30 @@ export function onYtState(s: number): void {
         p.pauseVideo();
         return;
       }
-      // Play pressed in YouTube's frame, or a media key: the user's wish.
+      // The app gave up waiting: only a real PLAYING brings it back (no
+      // spinner again for a start that may never come).
+      if (state.needsTap) {
+        mlog("  buffering after the app gave up: waiting for PLAYING to follow it");
+        return;
+      }
+      // Play pressed in YouTube's frame, or a media key: the user's wish, checked like any start.
+      mlog("  started from YouTube's frame or a media key: following it");
       setMusic({ playing: true, status: "buffering" });
+      armBlocked();
       return;
     }
     setMusic({ status: "buffering" });
+    if (!blockTimer) {
+      mlog("  buffering with no start check pending: arming one");
+      armBlocked();
+    }
     return;
   }
   if (s === S.PLAYING) {
     expectId = null;
-    clearTimeout(blockTimer);
+    leftIds.clear();
+    clearBlock();
+    clearTimeout(advanceTimer);
     errCount = 0;
     if (adopting) adopt();
     if (!state.playing) {
@@ -855,7 +1043,8 @@ export function onYtState(s: number): void {
         setMusic({ status: "paused" });
         return;
       }
-      // Started from YouTube's frame or a media key: follow it.
+      // Started from YouTube's frame, a media key, or a late start: follow it.
+      mlog("  YouTube started on its own (frame, media key or a late start): following it");
       setMusic({ playing: true });
     }
     if (loopApplied !== state.repeat) {
@@ -867,6 +1056,7 @@ export function onYtState(s: number): void {
     let index = vid ? locate(vid) : state.index;
     let np: NowPlaying | null = state.now;
     if (index >= 0) {
+      if (index !== state.index) mlog(`  YouTube is at song ${index + 1}, not ${state.index + 1}: the app follows`);
       const t = q[index];
       // The app's title wins; a song known only by id takes YouTube's.
       if (!t.title && d.title) {
@@ -893,11 +1083,20 @@ export function onYtState(s: number): void {
   if (s === S.PAUSED) {
     pausePending = false;
     // Our own pause echoing back after a quick Play: not the user's wish.
-    if (state.playing && lastCmd.kind === "play" && now() - lastCmd.at < 900) {
+    // Only when a pause was really sent just before that Play.
+    if (state.playing && lastCmd.kind === "play" && now() - lastCmd.at < 900 && lastCmd.at - lastPauseAt < 900) {
       mlog("  ignored: echo of an earlier pause right after Play");
       return;
     }
-    if (state.playing || state.status !== "paused") setMusic({ playing: false, status: "paused" });
+    // Paused while the app was still waiting for the start: YouTube refused it
+    // (a phone's autoplay rule). Say so now, not after the start check.
+    if (state.playing && (state.status === "loading" || state.status === "buffering")) {
+      return giveUp("YouTube paused right after play (autoplay refused)");
+    }
+    if (state.playing || state.status !== "paused") {
+      mlog("  paused in YouTube (frame, media key or the system): following it");
+      setMusic({ playing: false, status: "paused" });
+    }
     return;
   }
   if (s === S.ENDED) {
@@ -915,18 +1114,20 @@ export function onYtState(s: number): void {
       setMusic({ playing: false, status: "paused" });
       return;
     }
-    mlog(`  song ended: on to ${n + 1}/${q.length}`, { id: q[n].id, youtubeMovesOnItself: sameIds(ytIds, q) });
+    // YouTube's real list is the queue's: it moves on by itself (also in a
+    // background tab). Otherwise (the queue changed, YouTube dropped or capped
+    // ids) it gets the queue again, at song n.
+    const aligned = ytAligned(p, q, n);
+    mlog(`  song ended: on to ${n + 1}/${q.length}`, { id: q[n].id, youtubeMovesOnItself: aligned });
     setTime(0, 0);
     setMusic({ index: n, now: nowOf(q[n]), status: "loading" });
-    expectId = q[n].id;
-    expectAt = now();
-    // YouTube's list is ours: it moves on by itself (also in a background
-    // tab). If the queue changed meanwhile, load the new one now.
-    if (!sameIds(ytIds, q)) {
-      const ids = q.map((t) => t.id);
-      p.loadPlaylist(ids, n);
-      ytIds = ids;
+    if (!aligned) {
+      ytLoad(n, 0, false, true);
+    } else {
+      setExpect(q[n].id);
+      armBlocked();
     }
+    armAdvance(n);
   }
 }
 
@@ -945,12 +1146,19 @@ export function onYtError(code: number): void {
   if (!p) return;
   const vid = safe(() => p.getVideoData()?.video_id ?? "", "");
   mlog(`← YouTube ERROR ${code}`, { video: vid, expect: expectId, meaning: ERROR_MEANING[code] ?? "unknown", errorsInARow: errCount + 1 }, "warn");
-  if (expectId && vid && vid !== expectId && now() - expectAt < 8000) {
+  // YouTube may have moved past the song asked for by itself (it skips ids
+  // it cannot use): an error about a later entry is an error on that entry.
+  const ahead = vid && !leftIds.has(vid) ? state.queue.findIndex((t, k) => k > state.index && t.id === vid) : -1;
+  if (expectId && vid && vid !== expectId && ahead < 0 && now() - expectAt < 8000) {
     mlog("  ignored: about a song the app has already left");
     return;
   }
   expectId = null;
   if (code === 2 || code === 153) return halt(tr("music.playerError"));
+  if (ahead >= 0) {
+    mlog(`  YouTube had moved on to song ${ahead + 1} by itself: the skip goes on from there`);
+    setMusic({ index: ahead, now: nowOf(state.queue[ahead]) });
+  }
   errCount++;
   const q = state.queue;
   if (errCount >= Math.min(MAX_ERRORS, q.length || MAX_ERRORS)) return halt(tr("music.noPlayable"));
@@ -987,36 +1195,67 @@ function tick(): void {
     if (Math.abs(t - seekTarget) < 1.5 || now() - seekAt > 1500) seekTarget = null;
   }
   if (seekTarget === null && (Math.abs(t - time.time) >= 0.25 || d !== time.duration)) setTime(t, d);
-  // YouTube's own volume controls show only in video mode; right after a
-  // change here its getters still report the old value.
-  if (state.mode === "video" && now() - localVolAt > 1500) {
-    const muted = safe(() => p.isMuted(), state.muted);
+  // Right after a change here YouTube's getters still report the old value.
+  if (now() - localVolAt <= 1500) return;
+  const muted = safe(() => p.isMuted(), state.muted);
+  if (state.mode === "video") {
+    // YouTube's own volume controls show only in video mode: the app follows them.
     const vol = safe(() => p.getVolume(), state.volume);
     const patch: Partial<MusicState> = {};
     if (muted !== state.muted) patch.muted = muted;
     if (typeof vol === "number" && !muted && vol !== state.volume) patch.volume = vol;
     if (Object.keys(patch).length) setMusic(patch);
+    return;
   }
+  // Audio mode: YouTube's controls are hidden, so the app's setting wins. A
+  // phone may start YouTube muted (muted autoplay): unmute it; if that is
+  // refused too, show YouTube's frame, where a tap turns the sound on.
+  if (muted === state.muted) {
+    muteTries = 0;
+    return;
+  }
+  if (state.muted) {
+    mlog("YouTube is not muted but the app is: muting it");
+    p.mute();
+    return;
+  }
+  // Only once it plays (a load may report muted for a moment); asked twice: the frame is shown.
+  if (state.status !== "playing" || muteTries >= 2) return;
+  muteTries++;
+  if (muteTries === 1) {
+    mlog("YouTube muted itself (muted autoplay?): unmuting it", { volume: state.volume, ...gesture() }, "warn");
+    p.setVolume(state.volume);
+    p.unMute();
+    return;
+  }
+  mlog("YouTube stays muted after unMute: showing its frame so a tap turns the sound on", snap(), "warn");
+  setMusic({ needsTap: true });
+  toast(tr("music.tapToUnmute"));
 }
 
 /**
  * Once a second: does what the app shows match what YouTube does? Logs a
  * warning when it doesn't, and puts it right where that is safe:
- * - YouTube plays but the app still shows loading (its PLAYING event was
- *   missed or set aside): the app follows YouTube.
- * - The app wants music but YouTube has stood still for a while: logged
- *   (the 6 s autoplay check shows Play again when nothing starts).
- * - YouTube says PLAYING but the second does not move: logged (ads, network).
+ * - YouTube plays (the second moves) but the app still shows loading or
+ *   paused (its PLAYING event was missed or set aside, or a late start): the
+ *   app follows YouTube. The moving second also clears needsTap.
+ * - The app wants music and no start check is pending: one is armed, so a
+ *   spinner never turns forever.
+ * - YouTube says PLAYING but the second does not move (a dead frame, network):
+ *   after 10 s a seek, after 20 s the song is loaded again at that second,
+ *   after 30 s the app gives up (paused + YouTube's frame). The player itself
+ *   is never destroyed on a timer (a long ad would be lost).
  */
 let wd = { since: 0, kind: "", lastT: -1, stillSince: 0 };
 function watchdog(p: YtLike): void {
   const ys = safe(() => p.getPlayerState(), -9);
   const t = safe(() => p.getCurrentTime(), 0) || 0;
   const tnow = now();
+  const moving = ys === S.PLAYING && wd.lastT >= 0 && Math.abs(t - wd.lastT) >= 0.05;
   let kind = "";
-  if (ys === S.PLAYING && state.status !== "playing" && state.playing) kind = "yt-playing-app-not";
+  if (moving && state.status !== "playing" && state.playing) kind = "yt-playing-app-not";
   else if (state.playing && ys !== S.PLAYING && ys !== S.BUFFERING && !adopting) kind = "app-playing-yt-not";
-  else if (ys === S.PLAYING && !state.playing && !ownPauseWanted()) kind = "yt-playing-app-paused";
+  else if (moving && !state.playing && !ownPauseWanted()) kind = "yt-playing-app-paused";
   if (kind !== wd.kind) wd = { ...wd, since: tnow, kind };
   const forMs = tnow - wd.since;
   if (kind === "yt-playing-app-not" && forMs > 1500) {
@@ -1032,12 +1271,77 @@ function watchdog(p: YtLike): void {
   } else if (kind === "app-playing-yt-not" && forMs > 8000 && Math.round(forMs / 1000) % 8 === 0) {
     mlog(`watchdog: the app wants music but YouTube is ${ytStateName(ys)} for ${Math.round(forMs / 1000)} s`, snap(), "warn");
   }
+  // Waiting for a start with no check pending (a path that did not arm one).
+  if (state.playing && state.status !== "playing" && ys !== S.PLAYING && !blockTimer && !adopting) {
+    mlog("watchdog: the app waits for YouTube with no start check pending: arming one", snap(), "warn");
+    armBlocked();
+  }
+  if (moving) {
+    frozenStage = 0;
+    // (Not while YouTube is still muted by itself: the frame is where a tap unmutes it.)
+    if (state.needsTap && !(state.mode !== "video" && !state.muted && safe(() => p.isMuted(), false))) {
+      mlog("YouTube plays and the second moves: its frame can step back");
+      setMusic({ needsTap: false });
+    }
+  }
   // The second does not move while YouTube says PLAYING.
-  if (ys === S.PLAYING && Math.abs(t - wd.lastT) < 0.05) {
+  if (ys === S.PLAYING && !moving) {
     if (!wd.stillSince) wd.stillSince = tnow;
-    else if (tnow - wd.stillSince > 5000 && Math.round((tnow - wd.stillSince) / 1000) % 5 === 0) mlog(`watchdog: YouTube says PLAYING but the time has stayed at ${Math.round(t)} s for ${Math.round((tnow - wd.stillSince) / 1000)} s (ad, network, or a blocked frame)`, snap(), "warn");
+    else {
+      const still = tnow - wd.stillSince;
+      if (still > 5000 && Math.round(still / 1000) % 5 === 0) mlog(`watchdog: YouTube says PLAYING but the time has stayed at ${Math.round(t)} s for ${Math.round(still / 1000)} s (ad, network, or a blocked frame)`, snap(), "warn");
+      // No length known yet (an ad, or still loading): a longer grace.
+      const limit = (safe(() => p.getDuration(), 0) || 0) > 0 ? 10000 : 30000;
+      if (state.playing && still > limit && frozenStage < 3) unfreeze(p, t);
+    }
   } else wd.stillSince = 0;
   wd.lastT = t;
+}
+
+/** One step of the frozen-time rescue (see watchdog). Never pauses YouTube: a late start is followed. */
+function unfreeze(p: YtLike, t: number): void {
+  wd.stillSince = now();
+  frozenStage++;
+  if (frozenStage === 1) {
+    mlog(`frozen at ${Math.round(t)} s while PLAYING: showing buffering and nudging YouTube (seek + play)`, snap(), "warn");
+    setMusic({ status: "buffering" });
+    p.seekTo(t, true);
+    p.playVideo();
+  } else if (frozenStage === 2 && state.queue.length && state.index >= 0) {
+    mlog(`still frozen at ${Math.round(t)} s: loading the song again at that second`, snap(), "warn");
+    setMusic({ status: "loading" });
+    ytLoad(state.index, t, false, true);
+  } else {
+    frozenStage = 3;
+    giveUp(`the second stayed at ${Math.round(t)} s while PLAYING`, "music.stalled");
+  }
+}
+
+/**
+ * The page comes back (phone unlocked, tab shown, restored from the
+ * back-forward cache): look at YouTube at once, so a stall is caught when the
+ * user returns rather than seconds later.
+ */
+function recheck(why: string): void {
+  const p = yt;
+  mlog(`page ${why}`, snap());
+  if (!p) return;
+  watchdog(p);
+  const ys = safe(() => p.getPlayerState(), -9);
+  if (state.playing && ys !== S.PLAYING && !blockTimer && !adopting) {
+    mlog("  the app waits for YouTube: arming a start check");
+    armBlocked();
+  }
+}
+
+if (typeof document !== "undefined" && typeof window !== "undefined" && typeof document.addEventListener === "function") {
+  document.addEventListener("visibilitychange", () => (document.visibilityState === "visible" ? recheck("visible again") : mlog("page hidden", snap())));
+  window.addEventListener("pageshow", (e) => {
+    if ((e as PageTransitionEvent).persisted) recheck("restored from the back-forward cache");
+  });
+  window.addEventListener("pagehide", (e) => mlog("page hide", { persisted: (e as PageTransitionEvent).persisted, ...snap() }));
+  document.addEventListener("freeze", () => mlog("page frozen by the browser", snap()));
+  document.addEventListener("resume", () => recheck("resumed by the browser"));
 }
 
 // ---- Commands -----------------------------------------------------------------
@@ -1048,10 +1352,11 @@ export const music = {
   open: () => setMusic({ view: "open", warm: true }),
   minimize: () => setMusic({ view: state.source ? "mini" : "closed" }),
   close: () => {
-    clearTimeout(blockTimer);
+    clearBlock();
+    clearTimeout(advanceTimer);
     cmd("pause");
     yt?.stopVideo();
-    setMusic({ view: "closed", playing: false, status: "idle" });
+    setMusic({ view: "closed", playing: false, status: "idle", needsTap: false });
   },
   /** Create the YouTube player ahead of time (pointerdown / hover on a music control). */
   warm: () => {
@@ -1069,6 +1374,11 @@ export const music = {
     resumeAt = 0;
     setTime(0, 0);
     cmd("play");
+    clearTimeout(advanceTimer);
+    unmuteInTap();
+    // A new play: YouTube's frame steps back until a start is refused again.
+    if (state.needsTap) mlog("new play: YouTube's frame steps back (needsTap off)");
+    setMusic({ needsTap: false });
     markUsed();
     // From the Music tab the tab is the player: the floating one stays as it is.
     const view = state.tab ? state.view : state.view === "closed" ? "open" : state.view;
@@ -1095,8 +1405,9 @@ export const music = {
     if (state.playing) {
       // Pause now, also while it loads (YouTube is paused again if it starts).
       cmd("pause");
-      clearTimeout(blockTimer);
-      setMusic({ playing: false, status: "paused" });
+      clearBlock();
+      clearTimeout(advanceTimer);
+      setMusic({ playing: false, status: "paused", needsTap: false });
       yt?.pauseVideo();
       return;
     }
@@ -1104,10 +1415,14 @@ export const music = {
     setMusic({ playing: true, status: "loading" });
     const p = yt;
     if (!p) return; // applied when the player is ready
+    unmuteInTap();
     const q = state.queue;
     const ys = safe(() => p.getPlayerState(), S.UNSTARTED);
-    if (q.length && state.index >= 0 && (!sameIds(ytIds, q) || ys === S.ENDED)) {
-      // The queue changed while paused (or the list ended): load it at this second.
+    const vid = safe(() => p.getVideoData()?.video_id ?? "", "");
+    const reload = q.length > 0 && state.index >= 0 && (ys === S.ENDED || vid !== q[state.index].id || !ytAligned(p, q, state.index));
+    if (reload) {
+      // The queue changed while paused, YouTube's list is not the queue, or the list ended: load it at this second.
+      mlog("  YouTube's list or song is not the app's: loading the queue again", { ytVideo: vid, ytState: ytStateName(ys) });
       ytLoad(state.index, ys === S.ENDED ? 0 : time.time);
     } else if (!q.length && adopting?.shuffle) {
       // Still reading a YouTube list: it starts when its ids are known.
@@ -1129,6 +1444,7 @@ export const music = {
         if (len > 0 && (yt?.getPlaylistIndex() ?? 0) >= len - 1) return advanceMix();
       }
       yt?.nextVideo();
+      armBlocked();
       return;
     }
     const n = nextIndex(state.index, q.length, state.repeat);
@@ -1276,6 +1592,12 @@ export function __resetMusicForTests(): void {
   errCount = 0;
   pausePending = false;
   lastCmd = { kind: "", at: 0 };
+  lastPauseAt = -1e9;
+  localVolAt = -1e9;
+  frozenStage = 0;
+  muteTries = 0;
+  wd = { since: 0, kind: "", lastT: -1, stillSince: 0 };
+  state = { ...state, needsTap: false, mode: "audio", muted: false };
   resumeAt = 0;
   seekTarget = null;
   memo.clear();
