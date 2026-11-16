@@ -743,3 +743,7 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
 p.mt-splogin { gap: 6px; font-size: 13px; }
 .mt-splogin .mt-hint { font-size: 13px; }
 .mt-splogin .mt-link { display: inline; }
+
+/* Search results header: the title and the sort control (components/MusicSearchSort.tsx) on one row when they fit. */
+.mt-reshead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 10px 0 8px; }
+.mt-reshead .mt-h2 { margin: 0; }

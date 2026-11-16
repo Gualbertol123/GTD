@@ -33,6 +33,7 @@ import {
 } from "../lib/music";
 import { usePlaylist, usePlaylists } from "../lib/musicDb";
 import { SongMenuHost, openSongMenu, songMenuProps } from "./SongMenu";
+import { HiddenNote, KindBadge, SortBar, sortable, useSortedResults } from "./MusicSearchSort";
 import {
   IconBack,
   IconChevronDown,
@@ -621,6 +622,8 @@ const MusicBrowser = memo(function MusicBrowser({ phone }: { phone: boolean }) {
   const suggReq = useLastRequest();
   const field = useRef<HTMLInputElement>(null);
   const found = useRef<HTMLDivElement>(null);
+  // Official first (or YouTube's order, or most viewed), covers hidden if asked: at once, no new request.
+  const sorted = useSortedResults(results, searched);
 
   // Suggestions while typing (the last request wins; a search drops them).
   useEffect(() => {
@@ -775,9 +778,21 @@ const MusicBrowser = memo(function MusicBrowser({ phone }: { phone: boolean }) {
         {results && (
           <div className="mp-results">
             {results.length === 0 && <div className="mp-note">{t("music.noResults")}</div>}
-            {results.map((tr, i) => (
-              <SongRow key={`${tr.id}:${i}`} tr={tr} i={i} tracks={results} label={searched} srcKey={`search:${searched}`} on={nowId === tr.id} />
+            {sortable(results) && <SortBar id="panel" res={sorted} compact />}
+            {/* Play and the queue follow the order shown. */}
+            {sorted.shown.map((tr, i) => (
+              <SongRow
+                key={`${tr.id}:${i}`}
+                tr={tr}
+                i={i}
+                tracks={sorted.shown}
+                label={searched}
+                srcKey={`search:${searched}`}
+                on={nowId === tr.id}
+                mark={tr.kind ? (tr.id === sorted.primary ? "primary" : "kind") : undefined}
+              />
             ))}
+            <HiddenNote res={sorted} className="mp-note" />
           </div>
         )}
       </div>
@@ -840,6 +855,7 @@ const SongRow = memo(function SongRow({
   on,
   queue,
   playlistId,
+  mark,
 }: {
   tr: Track;
   i: number;
@@ -850,6 +866,8 @@ const SongRow = memo(function SongRow({
   /** A row of the queue itself: a tap jumps there instead of starting a new list. */
   queue?: boolean;
   playlistId?: string;
+  /** Search results: show what it is (Ufficiale, Live, Cover…) before the channel; "primary" = the first official one. */
+  mark?: "kind" | "primary";
 }) {
   const { t } = useT();
   // A queue row: "Riproduci" in its menu jumps there (keeps the queue).
@@ -865,7 +883,10 @@ const SongRow = memo(function SongRow({
         <Cover id={tr.id} src={tr.thumb} className="mp-result__img" />
         <span className="mp-result__text">
           <b>{tr.title}</b>
-          <small>{tr.channel}</small>
+          <small>
+            {mark && <KindBadge tr={tr} primary={mark === "primary"} />}
+            {tr.channel}
+          </small>
         </span>
       </button>
       <button className="mp-result__more" aria-label={t("sm.more")} title={t("sm.more")} aria-haspopup="menu" onClick={(e) => openSongMenu(tr, ctx, e.currentTarget)}>

@@ -13,6 +13,7 @@
 
 import type { Innertube } from "youtubei.js";
 import { BUDGET_MS, NotFoundError, TtlCache, deadline, normKey } from "./http.mts";
+import { classify, parseViews, type RawResult, type TrackKind, type TrackTag } from "../../src/lib/musicSort";
 
 export interface Song {
   id: string;
@@ -98,6 +99,8 @@ function toSong(n: any): Song | null {
     str(n.author) ||
     str(n.short_byline) ||
     str(n.metadata?.metadata?.metadata_rows?.[0]?.metadata_parts?.[0]?.text) ||
+    // LockupView (YouTube's newer search layout, served to some requests): the channel is an avatar stack.
+    str(n.metadata?.metadata?.metadata_rows?.[0]?.metadata_parts?.[0]?.avatar_stack?.text) ||
     "";
   // YouTube's own 16:9 picture for the id: always there, same size everywhere.
   const thumb = `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
@@ -120,18 +123,68 @@ function songs(nodes: any[] | undefined, max = 200): Song[] {
 
 // ---- What the functions ask for ------------------------------------------------
 
+/** A search result: the song, what it is (official, live, cover…) and where YouTube put it. */
+export interface SearchSong extends Song {
+  kind: TrackKind;
+  score: number;
+  tag?: TrackTag;
+  /** YouTube's own order (0 = first): "Pertinenza" in the app. */
+  rank: number;
+  views?: number;
+}
+
+/**
+ * What YouTube says about a result's channel, before toSong tidies the name:
+ * " - Topic" (YouTube's auto-generated official audio) and VEVO stay, and the
+ * ♪ badge (BADGE_STYLE_TYPE_VERIFIED_ARTIST, "Canale ufficiale dell'artista").
+ */
+function rawOf(n: any, title: string): RawResult {
+  const a = n.author ?? {};
+  const badges: any[] = a.badges ?? [];
+  return {
+    title,
+    channel:
+      str(a.name) ||
+      str(n.short_byline) ||
+      (n.artists ?? n.authors)?.map((x: any) => x?.name).filter(Boolean).join(", ") ||
+      // LockupView: no badges reach YouTube.js, only the name (classified like the Data API's results).
+      str(n.metadata?.metadata?.metadata_rows?.[0]?.metadata_parts?.[0]?.avatar_stack?.text) ||
+      "",
+    verifiedArtist: !!a.is_verified_artist || badges.some((b) => /VERIFIED_ARTIST/.test(String(b?.style))),
+    verified: !!a.is_verified || badges.some((b) => /BADGE_STYLE_TYPE_VERIFIED$/.test(String(b?.style))),
+  };
+}
+
+/** Each result classified (lib musicSort), in YouTube's order. */
+function searchResults(nodes: any[] | undefined): SearchSong[] {
+  const out: SearchSong[] = [];
+  const seen = new Set<string>();
+  for (const n of nodes ?? []) {
+    const s = toSong(n);
+    if (!s || seen.has(s.id)) continue;
+    seen.add(s.id);
+    const c = classify(rawOf(n, s.title));
+    // Video: "9.175.434.113 visualizzazioni"; LockupView: only the short "2,1 Mld" (next to the channel).
+    const views = parseViews(str(n.view_count) || str(n.metadata?.metadata?.metadata_rows?.[0]?.metadata_parts?.[1]?.text));
+    out.push({ ...s, kind: c.kind, score: c.score, ...(c.tag ? { tag: c.tag } : {}), rank: out.length, ...(views !== undefined ? { views } : {}) });
+  }
+  return out;
+}
+
 /**
  * Songs for some words: the first page of YouTube's own search (~20, enough
  * for the list). A second page costs another full round trip (~0.5 s), so it
- * is asked for only when the first one is unusually short.
+ * is asked for only when the first one is unusually short. Every result says
+ * what it is (official video / audio, live, cover…) and its place in
+ * YouTube's order: the app sorts them (official first) without asking again.
  */
-export function searchSongs(q: string, ms?: number): Promise<Song[]> {
+export function searchSongs(q: string, ms?: number): Promise<SearchSong[]> {
   const run = async (yt: Innertube) => {
     const first = await yt.search(q, { type: "video" });
-    let found = songs(first.videos as any[]);
+    let found = searchResults(first.videos as any[]);
     if (found.length < 12 && first.has_continuation) {
       const more = await first.getContinuation().catch(() => null);
-      if (more) found = songs([...(first.videos as any[]), ...(more.videos as any[])]);
+      if (more) found = searchResults([...(first.videos as any[]), ...(more.videos as any[])]);
     }
     return found;
   };
@@ -429,6 +482,10 @@ function parseLength(text: string): number {
   return p.reduce((a, b) => a * 60 + b, 0) * 1000;
 }
 
+/** matchSong's bonus for what a candidate is (classify in lib/musicSort). */
+const KIND_BONUS: Record<TrackKind | "lyrics", number> = { official: 1.2, audio: 1.0, live: -0.7, other: 0, lyrics: -0.5, cover: -2 };
+const VARIANT = /\b(remix|lyrics?|lyric video|testo|letra|paroles)\b/i;
+
 /**
  * The YouTube video for a song known by title + artist (+ length): searches
  * "artist title", scores the first results on title words, artist and length,
@@ -438,6 +495,9 @@ export function matchSong(title: string, artist: string, ms = 0): Promise<Song |
   return cached(`match:${normKey(title)}|${normKey(artist)}|${Math.round(ms / 1000)}`, 60 * MIN, async (yt) => {
     const first = artist.split(",")[0].trim();
     const r = await yt.search(`${first} ${title}`, { type: "video" });
+    // A live or cover version asked for by name ("Song - Live") is not penalised.
+    const wanted = classify({ title, channel: "" });
+    const asked = (c: { kind: TrackKind; tag?: TrackTag }) => (wanted.kind === "live" || wanted.kind === "cover") && c.kind === wanted.kind && c.tag === wanted.tag;
     const tw = words(title);
     const aw = words(first);
     let best: { s: Song; score: number } | null = null;
@@ -452,14 +512,15 @@ export function matchSong(title: string, artist: string, ms = 0): Promise<Song |
       // Music videos often run longer than the track (intro, outro): only
       // a big difference counts, and never by much.
       if (ms && len) score -= Math.min(1.2, Math.max(0, Math.abs(len - ms) - 45000) / 60000);
-      const t = norm(s.title + " " + s.channel);
-      if (/\b(cover|karaoke|instrumental|8d|slowed|reverb|nightcore|tutorial|reaction)\b/.test(t) && !/\b(cover|karaoke|instrumental)\b/.test(norm(title))) score -= 2;
-      if (/\blive\b/.test(t) && !/\blive\b/.test(norm(title))) score -= 0.7;
-      // An official video beats a fan-made lyric video of the same song.
-      if (/\b(lyrics?|testo|letra|paroles)\b/.test(t)) score -= 0.5;
-      if (/vevo|- topic/i.test(`${s.channel} ${str(v.author?.name)}`)) score += 0.6;
-      if (/\bofficial\b|ufficiale|oficial/i.test(s.title)) score += 0.6;
-      if ((v.author?.badges ?? []).some((b: any) => /ARTIST/.test(String(b?.style)))) score += 0.8;
+      // The same rules as the search list (lib/musicSort classify): official
+      // video / audio first, covers, karaoke and edits far behind (unless that
+      // is the version asked for), live a little behind, fan lyric videos too.
+      const raw = rawOf(v, s.title);
+      const c = classify(raw);
+      if (!asked(c)) score += KIND_BONUS[c.kind === "cover" && c.tag === "lyrics" ? "lyrics" : c.kind];
+      if (raw.verifiedArtist && (c.kind === "official" || c.kind === "audio")) score += 0.2;
+      // The artist's own remix or lyric video is official, but not the song asked for.
+      if (c.kind === "official" && VARIANT.test(s.title) && !VARIANT.test(title)) score -= 0.7;
       if (!best || score > best.score) best = { s, score };
     }
     return best && best.score >= 2.5 ? best.s : null;

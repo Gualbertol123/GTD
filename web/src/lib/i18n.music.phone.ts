@@ -14,6 +14,22 @@ export const PHONE_IT: Record<string, string> = {
   "music.suggestions": "Suggerimenti",
   "music.tapVideo": "Tocca il video per avviare la musica",
   "music.premiumCookies": "Il browser deve accettare i cookie di YouTube (Safari li blocca).",
+  // Sorting search results (components/MusicSearchSort.tsx: the ♪ panel and the MUSICA tab's Search).
+  "ms.sort": "Ordina i risultati",
+  "ms.official": "Ufficiali prima",
+  "ms.relevance": "Pertinenza",
+  "ms.views": "Più visti",
+  "ms.hide": "Nascondi cover e versioni non ufficiali",
+  "ms.badgeOfficial": "Ufficiale",
+  "ms.badgeAudio": "Audio ufficiale",
+  "ms.primaryTip": "La versione ufficiale del brano",
+  "ms.live": "Live",
+  "ms.cover": "Cover",
+  "ms.edit": "Remix/Edit",
+  "ms.lyrics": "Testo",
+  "ms.unofficial": "Non ufficiale",
+  "ms.hidden": "{n} nascosti (cover e versioni non ufficiali).",
+  "ms.showAll": "Mostra tutti",
 };
 
 export const PHONE_EN: Record<string, string> = {
@@ -29,4 +45,20 @@ export const PHONE_EN: Record<string, string> = {
   "music.suggestions": "Suggestions",
   "music.tapVideo": "Tap the video to start the music",
   "music.premiumCookies": "The browser must allow YouTube's cookies (Safari blocks them).",
+  // Sorting search results (components/MusicSearchSort.tsx: the ♪ panel and the MUSICA tab's Search).
+  "ms.sort": "Sort the results",
+  "ms.official": "Official first",
+  "ms.relevance": "Relevance",
+  "ms.views": "Most viewed",
+  "ms.hide": "Hide covers and unofficial versions",
+  "ms.badgeOfficial": "Official",
+  "ms.badgeAudio": "Official audio",
+  "ms.primaryTip": "The song's official version",
+  "ms.live": "Live",
+  "ms.cover": "Cover",
+  "ms.edit": "Remix/Edit",
+  "ms.lyrics": "Lyrics",
+  "ms.unofficial": "Unofficial",
+  "ms.hidden": "{n} hidden (covers and unofficial versions).",
+  "ms.showAll": "Show all",
 };

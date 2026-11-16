@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { supabase } from "./supabaseClient";
 import { readPref, writePref } from "./prefs";
 import { refreshSpotifyToken, spotifyUserToken } from "./spotifyAuth";
+import type { TrackKind, TrackTag } from "./musicSort";
 
 // -----------------------------------------------------------------------------
 // The music player (components/MusicPlayer.tsx): what it can play, its state,
@@ -46,6 +47,14 @@ export interface Track {
   title: string;
   channel: string;
   thumb?: string;
+  // Search results only (music-search, lib/musicSort): what the result is,
+  // how likely it is the official song, YouTube's order, and its views.
+  // Never stored in a playlist (musicDb keeps id, title, channel, thumb).
+  kind?: TrackKind;
+  score?: number;
+  tag?: TrackTag;
+  rank?: number;
+  views?: number;
 }
 
 /**

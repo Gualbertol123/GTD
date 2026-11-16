@@ -23,6 +23,7 @@ const KEYS = {
   musicMode: "gtd-music-mode",
   musicVolume: "gtd-music-volume",
   musicPremium: "gtd-music-premium",
+  musicSort: "gtd-music-sort",
   mTab: "gtd-m-tab",
   mBoardCol: "gtd-m-board-col",
 } as const;

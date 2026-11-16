@@ -14,10 +14,17 @@
 //
 // First choice is YouTube.js (lib/ytjs.mts): YouTube's own search, no key and
 // no quota. Only if that fails does it use the Data API below (100 units).
+//
+// A search for words also says what each result is — kind: official | audio |
+// live | cover | other, a score, and rank (YouTube's order) — so the app can
+// put the official song first, or hide covers, without asking again
+// (src/lib/musicSort.ts). The Data API path classifies from the channel name
+// and title only (it has no badges and no view counts).
 // -----------------------------------------------------------------------------
 
 import { cacheFor, codeOf, fail, gate, isTimeout, json, msLeft } from "../lib/http.mts";
 import { artistTop, searchSongs } from "../lib/ytjs.mts";
+import { classify } from "../../src/lib/musicSort";
 
 const KEY = process.env.YOUTUBE_API_KEY ?? "";
 
@@ -94,12 +101,20 @@ export default async (req: Request): Promise<Response> => {
   const data = (await res.json()) as { items?: ApiItem[] };
   const tracks = (data.items ?? [])
     .filter((it) => it.id?.videoId)
-    .map((it) => ({
-      id: it.id!.videoId!,
-      title: decode(it.snippet?.title ?? ""),
-      channel: decode(it.snippet?.channelTitle ?? ""),
-      thumb: it.snippet?.thumbnails?.medium?.url ?? it.snippet?.thumbnails?.default?.url ?? "",
-    }));
+    .map((it, rank) => {
+      const title = decode(it.snippet?.title ?? "");
+      const raw = decode(it.snippet?.channelTitle ?? "");
+      const track = {
+        id: it.id!.videoId!,
+        title,
+        // "Artist - Topic" is the official audio: classified as such, shown as the artist (as YouTube.js does).
+        channel: raw.replace(/\s+-\s+Topic$/, ""),
+        thumb: it.snippet?.thumbnails?.medium?.url ?? it.snippet?.thumbnails?.default?.url ?? "",
+      };
+      if (channelId) return track;
+      const c = classify({ title, channel: raw });
+      return { ...track, kind: c.kind, score: c.score, ...(c.tag ? { tag: c.tag } : {}), rank };
+    });
   // The same words give the same songs for a while: let the browser reuse it.
   return json(200, { tracks, via: "api" }, cacheFor(600));
 };

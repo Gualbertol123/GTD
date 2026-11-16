@@ -157,6 +157,20 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
   pages (play, shuffle, rename by clicking the title, reorder, remove,
   delete), *In riproduzione* with the queue, and a player bar with seek,
   shuffle, repeat, volume and the music / video switch.
+- **Search results, official first:** every search result is classified on
+  the server (`classify` in `src/lib/musicSort.ts`, shared with `matchSong`):
+  *official* (the artist's own channel — YouTube's ♪ "Official Artist
+  Channel" badge with the channel named in the title, VEVO, or the channel
+  being the artist named first), *official audio* ("- Topic", "Official
+  Audio"), *live*, *cover* (covers, karaoke, lyric uploads, remixes and
+  slowed / 8D / loop edits, fan uploads) or *other*. The Search page and the ♪
+  panel sort them instantly, no new request: **Ufficiali prima** (default;
+  YouTube's order inside each group, an official video of another song or by
+  another act goes with the rest), **Pertinenza** (YouTube's order), **Più
+  visti** (when YouTube.js gave view counts), plus **Nascondi cover e versioni
+  non ufficiali**. Both choices are kept per browser (`gtd-music-sort`). The
+  first official result has an *Ufficiale* badge; play and the queue follow
+  the order shown.
 - **Team playlists:** stored in Supabase (`music_playlists`, migration 018),
   shared by everyone on the team and live-updated; **+** on any song adds it
   to a playlist or a new one. Also playable from the ♪ panel and on a phone.

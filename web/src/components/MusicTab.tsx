@@ -60,6 +60,7 @@ import {
 } from "../lib/musicDb";
 import { countryName, isFail, parseView, rowKeys, viewSub, type View } from "../lib/musicTabRoute";
 import { Cover, ModeSwitch, PlayButton, PremiumToggle, Progress, TapHint } from "./MusicPlayer";
+import { HiddenNote, KindBadge, SortBar, sortable, useSortedResults } from "./MusicSearchSort";
 import { openSongMenu, playlistErrorText, songMenuProps, type SongMenuCtx } from "./SongMenu";
 import {
   IconBack,
@@ -1049,6 +1050,8 @@ function Search({ initial, go }: { initial?: string; go: Go }) {
   const [sugs, setSugs] = useState<string[]>([]);
   const [showSugs, setShowSugs] = useState(false);
   const [active, setActive] = useState(-1);
+  // Official first (or YouTube's order, or most viewed), covers hidden if asked: at once, no new request.
+  const sorted = useSortedResults(res?.tracks, res?.query ?? "");
 
   // Suggestions while typing (free), a moment after the last key; an older
   // answer never replaces a newer one.
@@ -1177,8 +1180,13 @@ function Search({ initial, go }: { initial?: string; go: Go }) {
       {res &&
         (res.tracks.length ? (
           <>
-            <h2 className="mt-h2 mt-h2--small">{t("mt.results", { q: res.query })}</h2>
-            <TrackTable tracks={res.tracks} label={res.query} srcKey={`search:${res.query.toLowerCase()}`} />
+            <div className="mt-reshead">
+              <h2 className="mt-h2 mt-h2--small">{t("mt.results", { q: res.query })}</h2>
+              {sortable(res.tracks) && <SortBar id="tab" res={sorted} />}
+            </div>
+            {/* Play and the queue follow the order shown. */}
+            <TrackTable tracks={sorted.shown} label={res.query} srcKey={`search:${res.query.toLowerCase()}`} primaryId={sorted.primary} marks />
+            <HiddenNote res={sorted} className="mt-hint" />
           </>
         ) : (
           <p className="mt-hint">{t("music.noResults")}</p>
@@ -2024,7 +2032,22 @@ function IconPencil({ size = 18 }: { size?: number }) {
  * A list of songs. It follows only which song is on and whether it plays, and
  * each row is memoised: a song change re-renders two rows.
  */
-const TrackTable = memo(function TrackTable({ tracks, label, srcKey, playlistId }: { tracks: Track[]; label: string; srcKey: string; playlistId?: string }) {
+const TrackTable = memo(function TrackTable({
+  tracks,
+  label,
+  srcKey,
+  playlistId,
+  marks,
+  primaryId,
+}: {
+  tracks: Track[];
+  label: string;
+  srcKey: string;
+  playlistId?: string;
+  /** Search results: each row says what it is (Ufficiale, Live, Cover…); `primaryId` gets the strong badge. */
+  marks?: boolean;
+  primaryId?: string | null;
+}) {
   const { t } = useT();
   const nowId = useMusicSel((s) => s.now?.id ?? null);
   const playing = useMusicSel((s) => s.playing);
@@ -2041,7 +2064,20 @@ const TrackTable = memo(function TrackTable({ tracks, label, srcKey, playlistId 
         {tracks.map((tr, i) => {
           const on = nowId === tr.id;
           return (
-            <TrackRow key={keys[i]} tr={tr} i={i} last={i === tracks.length - 1} on={on} eq={on && playing} tracks={tracks} label={label} srcKey={srcKey} playlistId={playlistId} play={play} />
+            <TrackRow
+              key={keys[i]}
+              tr={tr}
+              i={i}
+              last={i === tracks.length - 1}
+              on={on}
+              eq={on && playing}
+              tracks={tracks}
+              label={label}
+              srcKey={srcKey}
+              playlistId={playlistId}
+              play={play}
+              mark={marks && tr.kind ? (tr.id === primaryId ? "primary" : "kind") : undefined}
+            />
           );
         })}
       </div>
@@ -2060,6 +2096,7 @@ const TrackRow = memo(function TrackRow({
   srcKey,
   playlistId,
   play,
+  mark,
 }: {
   tr: Track;
   i: number;
@@ -2071,6 +2108,7 @@ const TrackRow = memo(function TrackRow({
   srcKey: string;
   playlistId?: string;
   play: (i: number) => void;
+  mark?: "kind" | "primary";
 }) {
   const { t } = useT();
   const ctx: MenuCtx = { list: { tracks, label, index: i, key: srcKey }, playlistId };
@@ -2101,7 +2139,10 @@ const TrackRow = memo(function TrackRow({
         <Cover id={tr.id} src={tr.thumb} className="mt-img40" />
         <span>
           <b>{title}</b>
-          <small>{tr.channel}</small>
+          <small>
+            {mark && <KindBadge tr={tr} primary={mark === "primary"} />}
+            {tr.channel}
+          </small>
         </span>
       </span>
       <span className="mt-tr__act">
