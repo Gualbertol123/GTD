@@ -218,6 +218,11 @@ html[data-skin="glass"] body {
 html[data-skin="glass"] .min-h-screen.bg-\[\#F5F3EF\] {
   background: transparent;
 }
+/* …nor must the login, startup-check and loading screens (navy in Classic):
+   they sit on the same wallpaper the app shows a moment later. */
+html[data-skin="glass"] .min-h-screen.bg-\[\#0A1931\] {
+  background: transparent;
+}
 
 /* ---------------------------------------------------------------------------
    2. Typography — Apple's label hierarchy.
@@ -421,6 +426,28 @@ html[data-skin="glass"] .bg-\[\#112040\] {
 html[data-skin="glass"] .bg-\[\#0A1931\]:not(header):not(.min-h-screen) .text-\[\#C9A96E\],
 html[data-skin="glass"] .bg-\[\#0A1931\]:not(header):not(.min-h-screen).text-\[\#C9A96E\] {
   color: var(--on-accent);
+}
+
+/* Glass light: the header is a bright sheet, so the controls drawn white-on-navy
+   for Classic (the music button, the blur dot) and the logo's "G" flip to the
+   label colours. Placed after the rule above, which it must beat at equal
+   specificity. The appearance group keeps its own !important overrides. */
+html[data-skin="glass"][data-appearance="light"] header .bg-\[\#0A1931\] .text-\[\#C9A96E\] {
+  color: var(--label);
+}
+html[data-skin="glass"][data-appearance="light"] header .text-white {
+  color: var(--label);
+}
+html[data-skin="glass"][data-appearance="light"] header .text-white\/50 {
+  color: var(--label-2);
+}
+html[data-skin="glass"][data-appearance="light"] header .border-white\/35,
+html[data-skin="glass"][data-appearance="light"] header .border-white\/30,
+html[data-skin="glass"][data-appearance="light"] header .border-white\/20 {
+  border-color: rgba(60, 60, 67, 0.2);
+}
+html[data-skin="glass"][data-appearance="light"] header .bg-white\/10 {
+  background-color: rgba(120, 120, 128, 0.12);
 }
 
 /* The gold accent becomes systemOrange. */

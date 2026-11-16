@@ -63,7 +63,14 @@ export function PersonalNotes({ board, me, send }: Props) {
     <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-4 space-y-3">
       <div className="flex items-baseline justify-between gap-2 flex-wrap">
         <h4 className="font-trajan text-[12px] uppercase tracking-widest text-[#0A1931]">
-          📝 {t("notes.title")}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"
+            className="inline-block align-[-2px] mr-1.5">
+            <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+            <path d="M14 3v6h6" />
+            <path d="M8 13h8M8 17h5" />
+          </svg>
+          {t("notes.title")}
         </h4>
         <span className="text-[11px] text-[#8A8A8A]">{t("notes.privacy")}</span>
       </div>

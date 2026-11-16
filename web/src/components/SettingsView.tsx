@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Board, Op } from "../lib/types";
 import { DEFAULT_LOGIN_DAYS } from "../lib/constants";
 import { changeTeamPassword, signOutDevice, outcomeKey } from "../lib/auth";
@@ -13,34 +13,92 @@ import {
 
 interface Props {
   board: Board;
-  send: (op: Op) => void;
+  send: (op: Op, onError?: (message: string) => void) => void;
 }
+
+type SaveStatus = "idle" | "saved" | "failed";
+
+// Feedback next to the button that saved. send() is optimistic and only
+// reports failure, so "Saved" shows at once and turns into the red "Not
+// saved" message if the server later refuses the write.
+function useSaveStatus(send: Props["send"]) {
+  const [status, setStatus] = useState<SaveStatus>("idle");
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const run = (ops: Op[]) => {
+    clearTimeout(timer.current);
+    setStatus("saved");
+    let failed = false;
+    for (const op of ops)
+      send(op, () => {
+        failed = true;
+        clearTimeout(timer.current);
+        setStatus("failed");
+      });
+    timer.current = setTimeout(() => {
+      if (!failed) setStatus("idle");
+    }, 2000);
+  };
+  return { status, run, reset: () => setStatus("idle") };
+}
+
+function SaveNote({ status }: { status: SaveStatus }) {
+  const { t } = useT();
+  return (
+    <span role="status" aria-live="polite" className="text-[12px]">
+      {status === "saved" && <span className="text-[#065F46]">{t("settings.saved")}</span>}
+      {status === "failed" && <span className="text-[#DC2626]">{t("notes.failed")}</span>}
+    </span>
+  );
+}
+
+// Inline "Sure? Yes / No" for actions that cannot be undone.
+function ConfirmInline({ text, onYes, onNo }: { text: string; onYes: () => void; onNo: () => void }) {
+  const { t } = useT();
+  const yesRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => yesRef.current?.focus(), []);
+  return (
+    <span className="inline-flex items-center gap-2 flex-wrap text-[12px]">
+      <span className="text-[#DC2626]">{text}</span>
+      <button ref={yesRef} type="button" onClick={onYes} className="h-8 px-3 rounded-full font-semibold text-[#DC2626] border border-[#FECACA] hover:bg-[#FEF2F2]">
+        {t("task.yes")}
+      </button>
+      <button type="button" onClick={onNo} className="h-8 px-3 rounded-full font-semibold text-[#6B6B6B] border border-[#E8E6E1]">
+        {t("task.no")}
+      </button>
+    </span>
+  );
+}
+
+const capLabel = "text-[11px] uppercase tracking-wide text-[#8A8A8A]";
 
 export function SettingsView({ board, send }: Props) {
   const { t } = useT();
-  const [days, setDays] = useState(String(board.loginDays ?? DEFAULT_LOGIN_DAYS));
-  const [saved, setSaved] = useState(false);
+  const savedDays = board.loginDays ?? DEFAULT_LOGIN_DAYS;
+  const [days, setDays] = useState(String(savedDays));
   const [imgErr, setImgErr] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<null | "logo" | "favicon" | "logout">(null);
+  const logoSave = useSaveStatus(send);
+  const faviconSave = useSaveStatus(send);
+  const daysSave = useSaveStatus(send);
 
   const logoInput = useRef<HTMLInputElement>(null);
   const faviconInput = useRef<HTMLInputElement>(null);
-
-  const flashSaved = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
-  };
 
   const upload = async (file: File | undefined, kind: "logo" | "favicon") => {
     if (!file) return;
     setImgErr(null);
     try {
       const dataUrl = await processImage(file, kind);
-      send(kind === "logo" ? { type: "setBranding", logoUrl: dataUrl } : { type: "setBranding", faviconUrl: dataUrl });
-      flashSaved();
+      if (kind === "logo") logoSave.run([{ type: "setBranding", logoUrl: dataUrl }]);
+      else faviconSave.run([{ type: "setBranding", faviconUrl: dataUrl }]);
     } catch (e) {
       setImgErr(e instanceof ImageError && e.code === "big" ? t("settings.imageTooBig") : t("settings.imageBad"));
     }
   };
+
+  const normDays = Math.max(1, Math.min(365, parseInt(days, 10) || DEFAULT_LOGIN_DAYS));
+  const daysUnchanged = normDays === savedDays;
 
   const input =
     "w-full h-10 rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[13px] outline-none focus:border-[#C9A96E]";
@@ -50,12 +108,6 @@ export function SettingsView({ board, send }: Props) {
   return (
     <div className="max-w-[640px] mx-auto space-y-4">
       <h2 className="font-trajan text-[16px] uppercase tracking-widest text-[#0A1931]">{t("settings.title")}</h2>
-
-      {saved && (
-        <div className="text-[12px] text-[#065F46] bg-[#ECFDF5] border border-[#A7F3D0] rounded-lg px-3 py-2">
-          {t("settings.saved")}
-        </div>
-      )}
 
       {/* Branding */}
       <section className="bg-white rounded-[14px] border border-[#E8E6E1] p-5 space-y-4">
@@ -75,16 +127,26 @@ export function SettingsView({ board, send }: Props) {
           <div className="min-w-0">
             <div className="text-[12px] font-semibold text-[#0A1931]">{t("settings.logo")}</div>
             <div className="text-[11px] text-[#8A8A8A]">{t("settings.logoHint", { mb: INPUT_MAX_MB })}</div>
-            <div className="flex gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
               <input ref={logoInput} type="file" accept={LOGO_ACCEPT} hidden onChange={(e) => upload(e.target.files?.[0], "logo")} />
               <button onClick={() => logoInput.current?.click()} className={`${smallBtn} bg-[#0A1931] text-[#C9A96E] border-[#0A1931]`}>
                 {t("settings.upload")}
               </button>
-              {board.logoUrl && (
-                <button onClick={() => send({ type: "setBranding", logoUrl: null })} className={`${smallBtn} bg-white text-[#DC2626] border-[#FECACA]`}>
+              {board.logoUrl && (confirm === "logo" ? (
+                <ConfirmInline
+                  text={t("ux.shell.confirmRemoveLogo")}
+                  onYes={() => {
+                    setConfirm(null);
+                    logoSave.run([{ type: "setBranding", logoUrl: null }]);
+                  }}
+                  onNo={() => setConfirm(null)}
+                />
+              ) : (
+                <button onClick={() => setConfirm("logo")} className={`${smallBtn} bg-white text-[#DC2626] border-[#FECACA]`}>
                   {t("settings.remove")}
                 </button>
-              )}
+              ))}
+              <SaveNote status={logoSave.status} />
             </div>
           </div>
         </div>
@@ -101,58 +163,138 @@ export function SettingsView({ board, send }: Props) {
           <div className="min-w-0">
             <div className="text-[12px] font-semibold text-[#0A1931]">{t("settings.favicon")}</div>
             <div className="text-[11px] text-[#8A8A8A]">{t("settings.faviconHint", { mb: INPUT_MAX_MB })}</div>
-            <div className="flex gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
               <input ref={faviconInput} type="file" accept={FAVICON_ACCEPT} hidden onChange={(e) => upload(e.target.files?.[0], "favicon")} />
               <button onClick={() => faviconInput.current?.click()} className={`${smallBtn} bg-[#0A1931] text-[#C9A96E] border-[#0A1931]`}>
                 {t("settings.upload")}
               </button>
-              {board.faviconUrl && (
-                <button onClick={() => send({ type: "setBranding", faviconUrl: null })} className={`${smallBtn} bg-white text-[#DC2626] border-[#FECACA]`}>
+              {board.faviconUrl && (confirm === "favicon" ? (
+                <ConfirmInline
+                  text={t("ux.shell.confirmRemoveFavicon")}
+                  onYes={() => {
+                    setConfirm(null);
+                    faviconSave.run([{ type: "setBranding", faviconUrl: null }]);
+                  }}
+                  onNo={() => setConfirm(null)}
+                />
+              ) : (
+                <button onClick={() => setConfirm("favicon")} className={`${smallBtn} bg-white text-[#DC2626] border-[#FECACA]`}>
                   {t("settings.remove")}
                 </button>
-              )}
+              ))}
+              <SaveNote status={faviconSave.status} />
             </div>
           </div>
         </div>
 
-        {imgErr && <div className="text-[11px] text-[#DC2626]">{imgErr}</div>}
+        {imgErr && <div role="alert" className="text-[11px] text-[#DC2626]">{imgErr}</div>}
       </section>
+
+      <SubtitleSection board={board} send={send} input={input} saveBtn={saveBtn} />
 
       {/* Access */}
       <section className="bg-white rounded-[14px] border border-[#E8E6E1] p-5 space-y-3">
         <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#C9A96E]">{t("settings.access")}</h3>
         <TeamPasswordForm input={input} saveBtn={saveBtn} />
-        <label className="block">
-          <span className="text-[11px] uppercase tracking-wide text-[#8A8A8A]">{t("settings.loginDuration")}</span>
-          <div className="flex gap-2 mt-1">
-            <input type="number" min={1} max={365} value={days} onChange={(e) => setDays(e.target.value)} className={input} />
-            <button
-              onClick={() => {
-                const n = Math.max(1, Math.min(365, parseInt(days, 10) || DEFAULT_LOGIN_DAYS));
-                setDays(String(n));
-                send({ type: "setAccess", loginDays: n });
-                flashSaved();
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (daysUnchanged) return;
+            setDays(String(normDays));
+            daysSave.run([{ type: "setAccess", loginDays: normDays }]);
+          }}
+        >
+          <label htmlFor="settings-login-days" className={capLabel}>{t("settings.loginDuration")}</label>
+          <div className="flex items-center gap-2 mt-1 flex-wrap sm:flex-nowrap">
+            <input
+              id="settings-login-days"
+              type="number"
+              min={1}
+              max={365}
+              value={days}
+              onChange={(e) => {
+                setDays(e.target.value);
+                daysSave.reset();
               }}
-              className={saveBtn}
+              className={input}
+            />
+            <button
+              type="submit"
+              disabled={daysUnchanged}
+              title={daysUnchanged ? t("ux.shell.unchanged") : undefined}
+              className={`${saveBtn} disabled:opacity-50`}
             >
               {t("settings.save")}
             </button>
           </div>
-        </label>
+          <div className="mt-1 min-h-[18px]"><SaveNote status={daysSave.status} /></div>
+        </form>
 
-        <button
-          onClick={async () => {
-            await signOutDevice();
-            window.location.reload();
-          }}
-          className="h-10 px-4 rounded-full text-[12px] font-semibold text-[#DC2626] border border-[#FECACA] hover:bg-[#FEF2F2]"
-        >
-          {t("settings.logoutNow")}
-        </button>
+        {confirm === "logout" ? (
+          <ConfirmInline
+            text={t("ux.shell.confirmLogout")}
+            onYes={async () => {
+              await signOutDevice();
+              window.location.reload();
+            }}
+            onNo={() => setConfirm(null)}
+          />
+        ) : (
+          <button
+            onClick={() => setConfirm("logout")}
+            className="h-10 px-4 rounded-full text-[12px] font-semibold text-[#DC2626] border border-[#FECACA] hover:bg-[#FEF2F2]"
+          >
+            {t("settings.logoutNow")}
+          </button>
+        )}
       </section>
 
       <p className="text-[11px] text-[#8A8A8A]">{t("settings.migrationNote")}</p>
     </div>
+  );
+}
+
+// The header subtitle in both languages (also editable in the header itself).
+function SubtitleSection({ board, send, input, saveBtn }: { board: Board; send: Props["send"]; input: string; saveBtn: string }) {
+  const { t } = useT();
+  const [it, setIt] = useState(board.subtitleIt ?? "");
+  const [en, setEn] = useState(board.subtitleEn ?? "");
+  const save = useSaveStatus(send);
+  const ops: Op[] = [];
+  if (it.trim() !== (board.subtitleIt ?? "").trim()) ops.push({ type: "setSubtitle", lang: "it", text: it.trim() });
+  if (en.trim() !== (board.subtitleEn ?? "").trim()) ops.push({ type: "setSubtitle", lang: "en", text: en.trim() });
+
+  return (
+    <section className="bg-white rounded-[14px] border border-[#E8E6E1] p-5">
+      <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#C9A96E] mb-3">
+        {t("settings.subtitleSection")}
+      </h3>
+      <form
+        className="space-y-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (ops.length) save.run(ops);
+        }}
+      >
+        <div>
+          <label htmlFor="settings-sub-it" className={capLabel}>{t("settings.subtitleIt")}</label>
+          <input id="settings-sub-it" value={it} placeholder={t("app.subtitle")}
+            onChange={(e) => { setIt(e.target.value); save.reset(); }} className={`${input} mt-1`} />
+        </div>
+        <div>
+          <label htmlFor="settings-sub-en" className={capLabel}>{t("settings.subtitleEn")}</label>
+          <input id="settings-sub-en" value={en} placeholder={t("app.subtitle")}
+            onChange={(e) => { setEn(e.target.value); save.reset(); }} className={`${input} mt-1`} />
+        </div>
+        <div className="flex items-center gap-3 pt-1">
+          <button type="submit" disabled={ops.length === 0} title={ops.length === 0 ? t("ux.shell.unchanged") : undefined}
+            className={`${saveBtn} disabled:opacity-50`}>
+            {t("settings.save")}
+          </button>
+          <SaveNote status={save.status} />
+        </div>
+      </form>
+    </section>
   );
 }
 
@@ -194,30 +336,47 @@ function TeamPasswordForm({ input, saveBtn }: { input: string; saveBtn: string }
     setMsg(null);
   };
 
+  const cap = "text-[10px] uppercase tracking-wide text-[#A8A29E]";
+
   return (
-    <div className="block">
-      <span className="text-[11px] uppercase tracking-wide text-[#8A8A8A]">{t("settings.teamPassword")}</span>
+    <form
+      className="block"
+      aria-labelledby="team-pwd-title"
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+    >
+      <span id="team-pwd-title" className={capLabel}>{t("settings.teamPassword")}</span>
       <div className="space-y-2 mt-1">
-        <input type="password" autoComplete="current-password" value={cur} onChange={onChange(setCur)}
-          placeholder={t("settings.pwdCurrent")} className={input} />
-        <input type="password" autoComplete="new-password" value={np} onChange={onChange(setNp)}
-          placeholder={t("settings.pwdNew")} className={input} />
-        <div className="flex gap-2">
-          <input type="password" autoComplete="new-password" value={np2} onChange={onChange(setNp2)}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
-            placeholder={t("settings.pwdConfirm")} className={input} />
-          <button onClick={submit} disabled={busy || !cur || !np || !np2} className={`${saveBtn} disabled:opacity-60`}>
-            {busy ? "…" : t("settings.save")}
-          </button>
+        <div>
+          <label htmlFor="team-pwd-cur" className={cap}>{t("settings.pwdCurrent")}</label>
+          <input id="team-pwd-cur" type="password" autoComplete="current-password" value={cur} onChange={onChange(setCur)}
+            className={`${input} mt-0.5`} />
+        </div>
+        <div>
+          <label htmlFor="team-pwd-new" className={cap}>{t("settings.pwdNew")}</label>
+          <input id="team-pwd-new" type="password" autoComplete="new-password" value={np} onChange={onChange(setNp)}
+            className={`${input} mt-0.5`} />
+        </div>
+        <div>
+          <label htmlFor="team-pwd-new2" className={cap}>{t("settings.pwdConfirm")}</label>
+          <div className="flex gap-2 mt-0.5">
+            <input id="team-pwd-new2" type="password" autoComplete="new-password" value={np2} onChange={onChange(setNp2)}
+              className={input} />
+            <button type="submit" disabled={busy || !cur || !np || !np2} className={`${saveBtn} disabled:opacity-60`}>
+              {busy ? "…" : t("settings.save")}
+            </button>
+          </div>
         </div>
       </div>
       <p className="text-[11px] text-[#A8A29E] mt-1">{t("settings.pwdHint")}</p>
       {msg && (
-        <p className={`text-[12px] mt-1 ${msg.ok ? "text-[#065F46]" : "text-[#DC2626]"}`}>
+        <p role={msg.ok ? "status" : "alert"} className={`text-[12px] mt-1 ${msg.ok ? "text-[#065F46]" : "text-[#DC2626]"}`}>
           {t(msg.key)}
           {msg.detail && <span className="block opacity-70 mt-0.5 text-[11px]">{msg.detail}</span>}
         </p>
       )}
-    </div>
+    </form>
   );
 }

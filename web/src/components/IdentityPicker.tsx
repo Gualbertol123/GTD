@@ -20,6 +20,7 @@ export function IdentityPicker({ members }: { members: string[] }) {
       <select
         value={valid ? me : ""}
         onChange={(e) => setMe(e.target.value)}
+        aria-label={t("reflection.me")}
         className="bg-transparent text-[12px] text-[#E6EDF8] outline-none cursor-pointer max-w-[110px]"
       >
         <option value="" className="text-[#0A1931]">

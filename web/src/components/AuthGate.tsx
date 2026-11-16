@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase, SESSION_STORAGE_KEY } from "../lib/supabaseClient";
-import { isTeamEmailConfigured } from "../lib/supabaseConfig";
+import { isTeamEmailConfigured, TEAM_EMAIL } from "../lib/supabaseConfig";
 import { signInTeam, signOutDevice, outcomeKey, checkSession, AUTH_CHECK_EVENT } from "../lib/auth";
 import { readAuthExp, clearLoginState } from "../lib/prefs";
 import { useT } from "../lib/i18n";
+import { clearReflDrafts } from "./DailyReflection";
 
 // The team login. The password is checked by Supabase Auth — the browser
 // never downloads it — and the database refuses everything to a visitor who is
@@ -34,7 +35,7 @@ function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
 }
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [state, setState] = useState<GateState>("checking");
   const [pwd, setPwd] = useState("");
   const [busy, setBusy] = useState(false);
@@ -72,6 +73,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT" && alive) {
         clearLoginState();
+        clearReflDrafts();
         setState("out");
       }
     });
@@ -123,10 +125,27 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     };
   }, [state]);
 
+  // The page language follows the IT/EN switch (screen readers, spell-check,
+  // hyphenation). Lives here because this wraps every screen, login included.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+  // Outside the app the browser tab says what this screen is; inside, App names the tab.
+  useEffect(() => {
+    if (state !== "in") document.title = `${t("auth.title")} · Team GTD`;
+  }, [state, t]);
+
   if (state === "in") return <>{children}</>;
 
   if (state === "checking") {
-    return <div className="min-h-screen bg-[#0A1931]" />;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-[#0A1931]" role="status" aria-live="polite">
+        <div className="w-14 h-14 rounded-full border-2 border-[#C9A96E] flex items-center justify-center animate-pulse">
+          <span className="font-trajan text-[#C9A96E] text-[20px]">G</span>
+        </div>
+        <p className="text-[12px] text-[#8BA1C2]">{t("auth.checking")}</p>
+      </div>
+    );
   }
 
   const submit = async () => {
@@ -158,9 +177,26 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         {!isTeamEmailConfigured ? (
           <p className="text-[12px] text-[#DC2626]">{t("auth.noEmail")}</p>
         ) : (
-          <>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              submit();
+            }}
+          >
+            {/* The account name, so password managers pair and offer to save the login. */}
+            <input
+              type="text"
+              name="username"
+              autoComplete="username"
+              value={TEAM_EMAIL}
+              readOnly
+              tabIndex={-1}
+              aria-hidden="true"
+              className="sr-only"
+            />
             <input
               type="password"
+              name="password"
               autoFocus
               autoComplete="current-password"
               value={pwd}
@@ -168,26 +204,28 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                 setPwd(e.target.value);
                 setErr(null);
               }}
-              onKeyDown={(e) => e.key === "Enter" && submit()}
+              aria-label={t("auth.password")}
+              aria-invalid={!!err}
+              aria-describedby={err ? "auth-err" : undefined}
               placeholder={t("auth.password")}
               className={`w-full h-11 rounded-full bg-[#F5F3EF] border px-4 text-[14px] text-center outline-none ${
                 err ? "border-[#DC2626]" : "border-[#E8E6E1] focus:border-[#C9A96E]"
               }`}
             />
             {err && (
-              <p className="text-[11px] text-[#DC2626] mt-2">
+              <p id="auth-err" role="alert" className="text-[11px] text-[#DC2626] mt-2">
                 {t(err.key)}
                 {err.detail && <span className="block opacity-70 mt-0.5">{err.detail}</span>}
               </p>
             )}
             <button
-              onClick={submit}
+              type="submit"
               disabled={busy || !pwd}
               className="mt-4 w-full h-11 rounded-full bg-[#0A1931] text-[#C9A96E] text-[13px] font-semibold tracking-wide hover:bg-[#112040] disabled:opacity-60"
             >
               {busy ? t("auth.checking") : t("auth.enter")}
             </button>
-          </>
+          </form>
         )}
       </div>
     </div>

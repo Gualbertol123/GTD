@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { useBoard } from "./lib/useBoard";
 import { TABS, type TabId } from "./lib/constants";
 import { useT } from "./lib/i18n";
@@ -30,7 +30,7 @@ const MobileApp = lazy(() => import("./mobile/MobileApp").then((m) => ({ default
 
 export default function App() {
   const { board, conn, error, send } = useBoard();
-  const { t } = useT();
+  const { t, lang } = useT();
   const layout = useLayout();
   // The tab lives in the URL (#/board, #/projects/<id>, …) so the browser's
   // Back and Forward move between tabs. Addresses from the phone layout are
@@ -51,6 +51,18 @@ export default function App() {
   });
 
   const members = board?.members ?? [];
+  const mainRef = useRef<HTMLElement>(null);
+
+  // The browser tab, history and Back/Forward entries name the section you
+  // are on (both layouts: the phone's addresses map to the same tabs).
+  const boardName = board?.boardName?.trim() || "Team GTD";
+  // The phone names its own sections (Oggi, Altro › Riflessione, …).
+  const phoneKey = route.tab === "more" && route.sub ? `m.page.${route.sub}` : `m.tab.${route.tab}`;
+  const phoneLabel = t(phoneKey);
+  const section = layout.mobile && phoneLabel !== phoneKey ? phoneLabel : t(`tabs.${tab}`);
+  useEffect(() => {
+    document.title = board ? `${section} · ${boardName}` : t("app.loadingTitle");
+  }, [section, lang, boardName, !!board, t]);
 
   // Apply the custom favicon (shared) to this tab.
   const faviconUrl = board?.faviconUrl;
@@ -110,6 +122,18 @@ export default function App() {
   return (
     <ProjectsProvider value={projectsValue}>
     <div className="min-h-screen bg-[#F5F3EF] text-[#0A1931] pb-16">
+      {/* First stop for the keyboard: straight past the header and the tabs. */}
+      <a
+        href="#main"
+        onClick={(e) => {
+          // A plain #main would change the hash route; move focus instead.
+          e.preventDefault();
+          mainRef.current?.focus();
+        }}
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-full focus:bg-[#C9A96E] focus:text-[#0A1931] focus:text-[13px] focus:font-semibold focus:shadow-lg"
+      >
+        {t("ux.shell.skipToContent")}
+      </a>
       {/* On a phone showing the desktop layout by choice: the way back. */}
       {layout.choice === "desktop" && window.matchMedia?.("(max-width: 767px)").matches && (
         <button
@@ -137,14 +161,20 @@ export default function App() {
       />
 
       {/* Tabs */}
-      <div className="max-w-[1500px] mx-auto px-4 mt-4">
+      <nav aria-label={t("ux.shell.tabsNav")} className="max-w-[1500px] mx-auto px-4 mt-4">
         <div className="flex flex-wrap gap-2">
           {TABS.map((tb) => {
             const active = tab === tb.id;
             return (
               <button
                 key={tb.id}
-                onClick={() => setTab(tb.id)}
+                aria-current={active ? "page" : undefined}
+                onClick={(e) => {
+                  setTab(tb.id);
+                  // Keyboard activation (detail 0) carries on into the new
+                  // section; a mouse click leaves focus and scroll alone.
+                  if (e.detail === 0) requestAnimationFrame(() => mainRef.current?.focus({ preventScroll: true }));
+                }}
                 onPointerDown={tb.id === "music" ? music.warm : undefined}
                 className={`px-4 h-9 rounded-full text-[12px] font-semibold tracking-wide transition-colors border ${
                   active
@@ -157,9 +187,9 @@ export default function App() {
             );
           })}
         </div>
-      </div>
+      </nav>
 
-      <div className="max-w-[1500px] mx-auto px-4 mt-4">
+      <main id="main" ref={mainRef} tabIndex={-1} className="max-w-[1500px] mx-auto px-4 mt-4 outline-none">
         {tab === "board" && (
           <BoardView
             board={board}
@@ -191,7 +221,7 @@ export default function App() {
         )}
         {tab === "settings" && <SettingsView board={board} send={send} />}
         {tab === "music" && <MusicTab />}
-      </div>
+      </main>
 
       {mailOpen && <MailModal board={board} onClose={() => setMailOpen(false)} />}
 
