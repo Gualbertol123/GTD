@@ -80,7 +80,8 @@ export interface ReportDoc {
     subtitle: string;
     tiles: { value: string; label: string; color: string }[];
     highlights: { title: string; items: { text: string; done: boolean; color: string }[] } | null;
-    note: { title: string; text: string };
+    /** The "In sintesi" card; null when its text is empty (nothing to print). */
+    note: { title: string; text: string } | null;
   };
   before: DocSection[];
   planner: { eyebrow: string; title: string; count: string; color: string; columns: DocColumn[] };
@@ -209,7 +210,7 @@ export function buildReportDoc({ root, board, data, input, hidden, highlights, e
       subtitle: txt("cover.subtitle"),
       tiles: tileKeys.map((k, i) => ({ value: txt(`${k}.v`), label: txt(`${k}.k`), color: tileColors[i] })),
       highlights: hl.length ? { title: txt("cover.highlightsTitle"), items: hl } : null,
-      note: { title: txt("cover.noteTitle"), text: txt("cover.note") },
+      note: txt("cover.note").trim() ? { title: txt("cover.noteTitle"), text: txt("cover.note") } : null,
     },
     before: sections(input.before),
     planner: {

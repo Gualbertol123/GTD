@@ -531,18 +531,20 @@ function Cover({ doc }: { doc: ReportDoc }) {
             )
           )
         : null,
-      // Summary, at the foot of the page.
+      // Summary, at the foot of the page (only when it was written).
       h(View, { style: { flex: 1 } }),
-      h(
-        Glass,
-        null,
-        h(
-          View,
-          { style: { paddingVertical: 15, paddingHorizontal: 18 } },
-          h(Text, { style: { fontSize: 8.25, fontWeight: 700, letterSpacing: 0.75, color: "#007AFF" } }, c.note.title.toUpperCase()),
-          h(Text, { style: { marginTop: 6, fontSize: 10.5, lineHeight: 1.55, color: INK2 } }, c.note.text)
-        )
-      )
+      c.note
+        ? h(
+            Glass,
+            null,
+            h(
+              View,
+              { style: { paddingVertical: 15, paddingHorizontal: 18 } },
+              h(Text, { style: { fontSize: 8.25, fontWeight: 700, letterSpacing: 0.75, color: "#007AFF" } }, c.note.title.toUpperCase()),
+              h(Text, { style: { marginTop: 6, fontSize: 10.5, lineHeight: 1.55, color: INK2 } }, c.note.text)
+            )
+          )
+        : null
     ),
     h(Footer, { doc, w: A4.w })
   );
