@@ -167,6 +167,15 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
   200 songs, deleted / private videos skipped) as an ordinary team playlist.
   YouTube's auto-generated *Mix* lists (`RD…`) and private lists can't be read.
   Server side: `netlify/functions/music-playlist.mts` (same key and login).
+- **Importa da Spotify (Importa page, green button):** paste a public Spotify
+  playlist or album link (or paste it in the normal link field). The app reads
+  its songs from Spotify's public embed page (no Spotify account, no key; a
+  playlist's first 100 songs, an album's all — `netlify/lib/spotify.mts`),
+  finds each one on YouTube with YouTube.js, preferring official videos
+  (`matchSong` in `netlify/lib/ytjs.mts`, 10 songs per call, with a progress
+  bar), then plays it or saves it as a team playlist; songs not found are
+  listed. Unofficial like YouTube.js: if Spotify changes that page, the import
+  says so. Function: `netlify/functions/music-spotify.mts`.
 - On a phone the music stops when the screen locks or the app goes to the
   background (a limit of YouTube embeds on iOS / Android).
 
@@ -430,6 +439,8 @@ prova_sito_GTD/
     ├── netlify/functions/music-search.mts ← GET → YouTube search for the music player (team login only; YOUTUBE_API_KEY)
     ├── netlify/functions/music-playlist.mts ← GET → read / find YouTube playlists for Importa (same rules)
     ├── netlify/functions/music-browse.mts ← GET → suggestions, radio, charts, trends, artists (YouTube.js)
+    ├── netlify/functions/music-spotify.mts ← GET a Spotify playlist/album, POST → match its songs on YouTube
+    ├── netlify/lib/spotify.mts          ← reads a public Spotify playlist/album (embed page)
     ├── netlify/lib/ytjs.mts             ← YouTube.js wrapper: every result shape → { id, title, channel, thumb }
     ├── netlify/lib/teamAuth.mts  ← the functions' shared "is this the team login?" check
     ├── netlify/lib/reportPdf.mts ← the PDF layout (@react-pdf/renderer)

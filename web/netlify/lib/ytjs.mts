@@ -281,3 +281,60 @@ export function musicArtist(id: string): Promise<{ name: string; thumb: string; 
     };
   });
 }
+
+// ---- Matching a song from elsewhere (Spotify import) ----------------------------
+
+const norm = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\(.*?\)|\[.*?\]/g, " ")
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const words = (s: string) => new Set(norm(s).split(" ").filter((w) => w.length > 1 && !["feat", "ft", "the", "official", "video", "audio", "lyrics", "testo", "remastered", "remaster"].includes(w)));
+
+function parseLength(text: string): number {
+  const p = text.split(":").map(Number);
+  if (p.some(isNaN)) return 0;
+  return p.reduce((a, b) => a * 60 + b, 0) * 1000;
+}
+
+/**
+ * The YouTube video for a song known by title + artist (+ length): searches
+ * "artist title", scores the first results on title words, artist and length,
+ * and prefers official uploads over covers, karaoke, live and lyric versions.
+ */
+export function matchSong(title: string, artist: string, ms = 0): Promise<Song | null> {
+  return withClient(async (yt) => {
+    const first = artist.split(",")[0].trim();
+    const r = await yt.search(`${first} ${title}`, { type: "video" });
+    const tw = words(title);
+    const aw = words(first);
+    let best: { s: Song; score: number } | null = null;
+    for (const v of (r.videos as any[]).slice(0, 8)) {
+      const s = toSong(v);
+      if (!s) continue;
+      const hay = words(`${s.title} ${s.channel}`);
+      const titleHit = [...tw].filter((w) => hay.has(w)).length / Math.max(1, tw.size);
+      const artistHit = [...aw].filter((w) => hay.has(w)).length / Math.max(1, aw.size);
+      let score = titleHit * 3 + artistHit * 2;
+      const len = parseLength(str(v.length_text ?? v.duration?.text ?? ""));
+      // Music videos often run longer than the track (intro, outro): only
+      // a big difference counts, and never by much.
+      if (ms && len) score -= Math.min(1.2, Math.max(0, Math.abs(len - ms) - 45000) / 60000);
+      const t = norm(s.title + " " + s.channel);
+      if (/\b(cover|karaoke|instrumental|8d|slowed|reverb|nightcore|tutorial|reaction)\b/.test(t) && !/\b(cover|karaoke|instrumental)\b/.test(norm(title))) score -= 2;
+      if (/\blive\b/.test(t) && !/\blive\b/.test(norm(title))) score -= 0.7;
+      // An official video beats a fan-made lyric video of the same song.
+      if (/\b(lyrics?|testo|letra|paroles)\b/.test(t)) score -= 0.5;
+      if (/vevo|- topic/i.test(`${s.channel} ${str(v.author?.name)}`)) score += 0.6;
+      if (/\bofficial\b|ufficiale|oficial/i.test(s.title)) score += 0.6;
+      if ((v.author?.badges ?? []).some((b: any) => /ARTIST/.test(String(b?.style)))) score += 0.8;
+      if (!best || score > best.score) best = { s, score };
+    }
+    return best && best.score >= 2.5 ? best.s : null;
+  });
+}

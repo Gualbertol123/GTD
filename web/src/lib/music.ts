@@ -389,3 +389,74 @@ export async function playRadio(t: { id: string; title: string }, label: string)
   music.play({ kind: "videos", label: `${label} · ${t.title}`, tracks: r.tracks, start: 0 });
   return null;
 }
+
+// ---- Importa da Spotify ------------------------------------------------------
+
+export interface SpotifySong {
+  title: string;
+  artist: string;
+  ms: number;
+}
+export interface SpotifyList {
+  kind: "playlist" | "album";
+  id: string;
+  name: string;
+  owner: string;
+  cover: string;
+  songs: SpotifySong[];
+}
+
+/** Is this a Spotify playlist / album link? */
+export function isSpotifyLink(s: string): boolean {
+  return /open\.spotify\.com\/(?:intl-[a-z-]+\/)?(?:embed\/)?(playlist|album)\/[A-Za-z0-9]{22}|^spotify:(playlist|album):[A-Za-z0-9]{22}$/.test(s.trim());
+}
+
+async function spotifyCall<T>(init: { url?: string; songs?: SpotifySong[] }): Promise<T | { error: string }> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { error: "login" };
+  try {
+    const res = init.url
+      ? await fetch(`/.netlify/functions/music-spotify?url=${encodeURIComponent(init.url)}`, { headers: { Authorization: `Bearer ${token}` } })
+      : await fetch(`/.netlify/functions/music-spotify`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ songs: init.songs }),
+        });
+    const body = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
+    if (!body || typeof body !== "object") return { error: "no-functions" };
+    if (!res.ok || body.error) return { error: body.error ?? `HTTP ${res.status}` };
+    return body;
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/** A public Spotify playlist (first 100 songs) or album: name, cover, songs. */
+export function fetchSpotify(url: string) {
+  return spotifyCall<SpotifyList>({ url: url.trim() });
+}
+
+/**
+ * Finds each song on YouTube, 10 per call, two calls at a time; `progress`
+ * is told how many are done. Returns one Track or null per song, in order.
+ */
+export async function matchSpotify(songs: SpotifySong[], progress: (done: number) => void, cancelled: () => boolean): Promise<(Track | null)[]> {
+  const out: (Track | null)[] = new Array(songs.length).fill(null);
+  const batches: number[] = [];
+  for (let i = 0; i < songs.length; i += 10) batches.push(i);
+  let done = 0;
+  const worker = async () => {
+    while (batches.length && !cancelled()) {
+      const start = batches.shift()!;
+      const part = songs.slice(start, start + 10);
+      let r = await spotifyCall<{ matches: (Track | null)[] }>({ songs: part });
+      if ("error" in r) r = await spotifyCall<{ matches: (Track | null)[] }>({ songs: part }); // one retry
+      if (!("error" in r)) r.matches.forEach((m, i) => (out[start + i] = m));
+      done += part.length;
+      progress(done);
+    }
+  };
+  await Promise.all([worker(), worker()]);
+  return out;
+}

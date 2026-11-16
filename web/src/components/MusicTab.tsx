@@ -9,7 +9,10 @@ import {
   fetchMusicArtist,
   fetchSuggestions,
   fetchYtPlaylist,
+  fetchSpotify,
   findYtPlaylists,
+  isSpotifyLink,
+  matchSpotify,
   getMusic,
   music,
   playlistIdFrom,
@@ -20,6 +23,7 @@ import {
   type ChartArtist,
   type ChartList,
   type Track,
+  type SpotifyList,
   type YtPlaylist,
 } from "../lib/music";
 import {
@@ -76,6 +80,7 @@ type View =
   | { kind: "home" }
   | { kind: "search" }
   | { kind: "import" }
+  | { kind: "spotify"; url?: string }
   | { kind: "yt"; list: string }
   | { kind: "artist"; name: string }
   | { kind: "martist"; id: string; name: string }
@@ -122,7 +127,7 @@ export function MusicTab() {
             <IconSearch size={22} /> {t("mt.search")}
           </button>
           <button
-            className={`mt-nav${view.kind === "import" || view.kind === "yt" ? " is-on" : ""}`}
+            className={`mt-nav${view.kind === "import" || view.kind === "yt" || view.kind === "spotify" ? " is-on" : ""}`}
             onClick={() => setView({ kind: "import" })}
           >
             <IconImport size={22} /> {t("mt.import")}
@@ -168,6 +173,7 @@ export function MusicTab() {
         {view.kind === "home" && <Home go={setView} playlists={playlists} />}
         {view.kind === "search" && <Search playlists={playlists} />}
         {view.kind === "import" && <ImportPage go={setView} />}
+        {view.kind === "spotify" && <SpotifyPage key={view.url ?? ""} initial={view.url} playlists={playlists} available={available} go={setView} />}
         {view.kind === "yt" && (
           <YtPlaylistPage key={view.list} list={view.list} playlists={playlists} available={available} go={setView} />
         )}
@@ -672,10 +678,21 @@ function ImportPage({ go }: { go: (v: View) => void }) {
         <p className="mt-hint" style={{ margin: "6px 0 0" }}>{t("mt.importIntro")}</p>
       </div>
 
+      <button className="mt-spotify" onClick={() => go({ kind: "spotify" })}>
+        <span className="mt-spotify__icon" aria-hidden="true">
+          <IconImport size={22} />
+        </span>
+        <span>
+          <b>{t("sp.button")}</b>
+          <small>{t("sp.buttonHint")}</small>
+        </span>
+      </button>
+
       <form
         className="mt-search mt-search--static"
         onSubmit={(e) => {
           e.preventDefault();
+          if (isSpotifyLink(link)) return go({ kind: "spotify", url: link.trim() });
           const list = playlistIdFrom(link);
           if (!list) return setLinkError(true);
           setLinkError(false);
@@ -745,6 +762,175 @@ function ListCards({ lists, go }: { lists: YtPlaylist[]; go: (v: View) => void }
           <small>{l.channel || "YouTube"}</small>
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Importa da Spotify: paste a Spotify playlist or album link, the app reads
+ * its songs, finds each one on YouTube (progress bar), then plays it or saves
+ * it as a team playlist. Songs not found are listed.
+ */
+function SpotifyPage({
+  initial,
+  playlists,
+  available,
+  go,
+}: {
+  initial?: string;
+  playlists: Playlist[];
+  available: boolean;
+  go: (v: View) => void;
+}) {
+  const { t } = useT();
+  const { me } = useMe();
+  const st = useMusic();
+  const [link, setLink] = useState(initial ?? "");
+  const [phase, setPhase] = useState<"idle" | "reading" | "matching" | "done">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [list, setList] = useState<SpotifyList | null>(null);
+  const [done, setDone] = useState(0);
+  const [matches, setMatches] = useState<(Track | null)[]>([]);
+  const [saving, setSaving] = useState(false);
+  const alive = useRef(true);
+  useEffect(
+    () => () => {
+      alive.current = false;
+    },
+    []
+  );
+
+  const start = async (url: string) => {
+    if (!isSpotifyLink(url)) return setError("bad-link");
+    setError(null);
+    setList(null);
+    setMatches([]);
+    setDone(0);
+    setPhase("reading");
+    const r = await fetchSpotify(url);
+    if (!alive.current) return;
+    if ("error" in r) {
+      setPhase("idle");
+      return setError(r.error);
+    }
+    setList(r);
+    setPhase("matching");
+    const found = await matchSpotify(r.songs, (n) => alive.current && setDone(n), () => !alive.current);
+    if (!alive.current) return;
+    setMatches(found);
+    setPhase("done");
+  };
+
+  // A link handed over from the Import page starts straight away.
+  useEffect(() => {
+    if (initial) void start(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const tracks = matches.filter((m): m is Track => !!m);
+  const missing = list ? list.songs.filter((_, i) => phase === "done" && !matches[i]) : [];
+  const label = list?.name ?? "Spotify";
+  const saved = list && playlists.find((p) => p.name === list.name && p.tracks[0]?.id === tracks[0]?.id);
+  const playingThis = st.source?.kind === "videos" && st.source.label === label && st.playing;
+  const errorText =
+    error === "bad-link" ? t("sp.badLink") : error === "not-found" ? t("sp.notFound") : error === "no-functions" ? t("music.noKey") : error ? t("sp.failed") : null;
+
+  return (
+    <div className="mt-page">
+      <button className="mt-link" onClick={() => go({ kind: "import" })}>
+        <IconBack size={15} /> {t("mt.import")}
+      </button>
+      <div className="mt-hero mt-hero--artist mt-hero--spotify">
+        {list?.cover ? <Cover src={list.cover} className="mt-hero__img" /> : <span className="mt-hero__img mt-spotify__big" aria-hidden="true"><IconImport size={56} /></span>}
+        <div>
+          <small>{list ? t(list.kind === "album" ? "sp.album" : "sp.playlist") : t("sp.button")}</small>
+          <h1>{list?.name ?? t("sp.title")}</h1>
+          <small>{list ? `${list.owner} · ${t("mt.songs").replace("{n}", String(list.songs.length))}` : t("sp.intro")}</small>
+        </div>
+      </div>
+
+      <form
+        className="mt-search mt-search--static"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void start(link);
+        }}
+      >
+        <span aria-hidden="true" className="mt-search__icon">
+          <IconLink size={20} />
+        </span>
+        <input value={link} onChange={(e) => setLink(e.target.value)} placeholder={t("sp.linkPh")} aria-label={t("sp.linkPh")} />
+        <button type="submit" className="mt-pill mt-pill--solid" disabled={!link.trim() || phase === "reading" || phase === "matching"}>
+          {t("sp.go")}
+        </button>
+      </form>
+      {errorText && <div className="mp-note">{errorText}</div>}
+      {phase === "idle" && !list && <p className="mt-hint">{t("sp.how")}</p>}
+
+      {phase === "reading" && <div className="mt-spin mt-spin--block" />}
+      {phase === "matching" && list && (
+        <div className="mt-progress" role="progressbar" aria-valuemin={0} aria-valuemax={list.songs.length} aria-valuenow={done}>
+          <div className="mt-progress__label">{t("sp.matching").replace("{n}", String(done)).replace("{m}", String(list.songs.length))}</div>
+          <div className="mt-progress__bar">
+            <span style={{ width: `${list.songs.length ? (done / list.songs.length) * 100 : 0}%` }} />
+          </div>
+        </div>
+      )}
+
+      {phase === "done" && list && (
+        <>
+          <div className="mt-actions">
+            <button
+              className="mt-play mt-play--big"
+              disabled={!tracks.length}
+              aria-label={t("music.play")}
+              onClick={() => (playingThis ? music.toggle() : music.play({ kind: "videos", label, tracks, start: 0 }))}
+            >
+              {playingThis ? <IconPause size={24} /> : <IconPlay size={24} />}
+            </button>
+            {saved ? (
+              <button className="mt-pill" onClick={() => go({ kind: "playlist", id: saved.id })}>
+                <IconCheck size={16} /> {t("mt.saved")}
+              </button>
+            ) : (
+              <button
+                className="mt-pill mt-pill--solid"
+                disabled={!available || saving || !tracks.length}
+                onClick={async () => {
+                  setSaving(true);
+                  try {
+                    const p = await createPlaylist(list.name, me, tracks);
+                    go({ kind: "playlist", id: p.id });
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+              >
+                {saving ? "…" : (
+                  <>
+                    <IconPlus size={16} /> {t("mt.saveTeam")}
+                  </>
+                )}
+              </button>
+            )}
+            <span className="mt-hint">{t("sp.found").replace("{n}", String(tracks.length)).replace("{m}", String(list.songs.length))}</span>
+          </div>
+          {list.kind === "playlist" && list.songs.length >= 100 && <p className="mt-hint">{t("sp.first100")}</p>}
+          {tracks.length > 0 && <TrackTable tracks={tracks} label={label} playlists={playlists} />}
+          {missing.length > 0 && (
+            <details className="mt-missing">
+              <summary>{t("sp.missing").replace("{n}", String(missing.length))}</summary>
+              <ul>
+                {missing.map((s, i) => (
+                  <li key={i}>
+                    {s.artist} — {s.title}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
+      )}
     </div>
   );
 }

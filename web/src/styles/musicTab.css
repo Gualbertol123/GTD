@@ -478,3 +478,44 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
 .mt-tr:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: -2px; }
 /* The "now playing" bars in the track number column */
 .mi-eq { color: var(--mt-gold); }
+
+/* Importa da Spotify ----------------------------------------------------------- */
+.mt-spotify {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  text-align: left;
+  color: #fff !important;
+  /* green glass */
+  background: radial-gradient(120% 140% at 0% 0%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 45%),
+    linear-gradient(135deg, rgba(30, 215, 96, 0.9), rgba(16, 140, 70, 0.9)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 10px 28px rgba(16, 140, 70, 0.35);
+  transition: filter 0.15s ease;
+}
+.mt-spotify:hover { filter: brightness(1.06); }
+.mt-spotify b { display: block; font-size: 16px; font-weight: 800; }
+.mt-spotify small { display: block; font-size: 13px; opacity: 0.9; margin-top: 2px; }
+.mt-spotify__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.1));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.mt-hero--spotify { background: linear-gradient(160deg, rgba(30, 215, 96, 0.55), rgba(16, 60, 40, 0.2) 70%, transparent); }
+.mt-spotify__big { display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #1ed760, #108c46); }
+.mt-progress { margin: 22px 0; }
+.mt-progress__label { font-size: 14px; color: var(--mt-text-2); margin-bottom: 8px; }
+.mt-progress__bar { height: 8px; border-radius: 4px; background: var(--mt-box-2); box-shadow: inset 0 0 0 1px var(--mt-line); overflow: hidden; }
+.mt-progress__bar span { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #1ed760, #d4b47a); transition: width 0.3s ease; }
+.mt-missing { margin-top: 18px; color: var(--mt-text-2); font-size: 14px; }
+.mt-missing summary { cursor: pointer; font-weight: 700; color: var(--mt-text); }
+.mt-missing ul { margin: 8px 0 0 18px; list-style: disc; }
+.mt-missing li { margin: 3px 0; }
