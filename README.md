@@ -180,7 +180,11 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
   background (a limit of YouTube embeds on iOS / Android).
 
 **Setup (once):**
-1. Supabase → SQL Editor: run `supabase/migration-018-music-playlists.sql`.
+1. Supabase → SQL Editor: run `supabase/migration-018-music-playlists.sql`,
+   then `supabase/migration-019-music-playlist-rpc.sql` (playlist edits made
+   one step at a time in the database, so teammates editing the same playlist
+   don't lose each other's songs; before it runs the app falls back to saving
+   the whole list).
 2. Netlify → Site configuration → Environment variables: add
    `YOUTUBE_API_KEY` = your YouTube Data API v3 key, then redeploy. (Optional
    since YouTube.js: it is now only the fallback when YouTube.js fails.) The key is
@@ -390,12 +394,15 @@ SQL files in `supabase/`:
   changes. Re-runnable.
 - `migration-018-music-playlists.sql` — adds `music_playlists` (the music
   player's team playlists, §1e). Additive, re-runnable.
+- `migration-019-music-playlist-rpc.sql` — adds `music_playlist_append`,
+  `_insert`, `_remove`, `_move` and `_rename`, so concurrent playlist edits no
+  longer overwrite each other. Adds functions only; run after 018. Re-runnable.
 - `migration-012-auth-step2-lockdown.sql` — **real login, step 2.** Closes all
   tables to the anon key, hides `reflection_access`, deletes the clear-text
   password columns. Run only after the new site is live and you have logged in
   with it. See §11.
 
-Migrations 002–011, 013 and 015–018 are additive and safe on live data; run any you haven't yet.
+Migrations 002–011, 013 and 015–019 are additive and safe on live data; run any you haven't yet.
 012 changes access rules (not data) and must follow the order in §11. The
 app degrades gracefully before they're applied (settings can't save, reflections
 stay empty, tasks stay single-assignee) thanks to tolerant reads and fallbacks —
@@ -425,7 +432,8 @@ prova_sito_GTD/
 │   ├── migration-015-projects-v2.sql         ← project details + notes, tasks.project_id
 │   ├── migration-016-project-board-mode.sql  ← how project tasks reach the BOARD, step order
 │   ├── migration-017-subtask-functions.sql   ← subtasks changed one at a time (no lost edits)
-│   └── migration-018-music-playlists.sql     ← the music player's team playlists
+│   ├── migration-018-music-playlists.sql     ← the music player's team playlists
+│   └── migration-019-music-playlist-rpc.sql  ← playlist edits one step at a time (no lost songs)
 ├── .github/workflows/ci.yml      ← on every push / PR: npm test + production build
 ├── menu/                        ← the canteen menu: monthly PDF → web/src/data/menu.json (§8)
 │   ├── menu_from_pdf.py
