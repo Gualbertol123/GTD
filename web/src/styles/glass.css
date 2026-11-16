@@ -744,3 +744,51 @@ html[data-skin="glass"]
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+
+/* ---------------------------------------------------------------------------
+   11. Hover repaints stay off the blur.
+   Even with one blur per stack (section 10), anything that repaints INSIDE a
+   blurred surface — a button's hover rim, a card's hover border, a field —
+   made Chrome repaint that surface's layer and redraw its blur in tiles, and
+   the tile edges showed as thin straight lines (Chrome only; measured: hovering
+   the board repainted blurred layers 71 times). Each control inside a glass
+   surface gets its own compositing layer, so its repaints never touch the
+   blurred layer behind it. will-change: opacity (not transform) so fixed
+   popups inside keep the viewport as their containing block.
+   --------------------------------------------------------------------------- */
+html[data-skin="glass"]:not([data-blur="off"])
+  :is(
+    header,
+    .bg-white,
+    .bg-\[\#FAF9F6\],
+    .bg-\[\#FBF6EC\],
+    .bg-\[\#FFFBF2\],
+    .bg-\[\#F0EDE8\],
+    .bg-\[\#EFECE6\]
+  )
+  :is(button, a[href], input, select, textarea, [draggable="true"]) {
+  will-change: opacity;
+}
+
+/* Glass buttons that are a blurred surface themselves (the tab pills): their
+   hover rim is drawn on a separate layer that only fades in, so hovering never
+   repaints the blurred button (the outline of section 7 would). */
+html[data-skin="glass"]:not([data-blur="off"]) button.bg-white:not(:disabled):hover {
+  outline-color: transparent;
+  border-color: var(--rim); /* the app's hover border would repaint the blur too */
+}
+html[data-skin="glass"]:not([data-blur="off"]) button.bg-white::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px var(--rim-top);
+  opacity: 0;
+  transition: opacity 160ms ease;
+  will-change: opacity;
+  z-index: 2;
+}
+html[data-skin="glass"]:not([data-blur="off"]) button.bg-white:not(:disabled):hover::after {
+  opacity: 1;
+}
