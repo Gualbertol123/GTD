@@ -1223,6 +1223,59 @@ def("S13", "Re-renders per second while playing, on the Search results page (50 
   };
 });
 
+def("S14", "Song stuck mid-play (dead stream connection): rescue ladder resumes the same song at the same second", async ({ page }) => {
+  await openMusic(page);
+  await playAllTrends(page);
+  await sleep(3000);
+  const before = await page.evaluate(() => ({ cur: window.__fake.current(), players: window.__fake.players.length }));
+  const id0 = before.cur.id;
+  await page.evaluate(() => window.__fake.stallCurrent());
+  const start = Date.now();
+  // The point the song froze at, as the stuck player reports it.
+  await sleep(1000);
+  const frozenAt = await page.evaluate(() => window.__fake.current()?.time ?? null);
+  let uiShowedPaused = false;
+  let needsTapShown = false;
+  let recoveredMs = null;
+  let after = null;
+  while (Date.now() - start < 45000) {
+    await sleep(250);
+    const o = await page.evaluate(() => {
+      const st = window.__music?.state?.() ?? {};
+      return { cur: window.__fake.current(), players: window.__fake.players.length, playing: st.playing, needsTap: st.needsTap };
+    });
+    if (o.playing === false) uiShowedPaused = true;
+    if (o.needsTap) needsTapShown = true;
+    if (o.cur && o.cur.state === 1) {
+      // PLAYING again and the second moves.
+      await sleep(600);
+      const o2 = await page.evaluate(() => window.__fake.current());
+      if (o2 && o2.state === 1 && o2.time > o.cur.time) {
+        recoveredMs = Date.now() - start;
+        after = { ...o2, players: o.players };
+        break;
+      }
+    }
+  }
+  const steps = await page.evaluate(() => (window.__music?.log ?? []).filter((e) => e.ev.startsWith("rescue step")).map((e) => e.ev.slice(0, 22)));
+  // Where the player was asked to go on: the start second of the app's last load (its [music] log).
+  const resumedFrom = await page.evaluate(() => {
+    const l = (window.__music?.log ?? []).filter((e) => e.ev.startsWith("load song"));
+    const d = l.length ? l[l.length - 1].data : null;
+    return d && typeof d.start === "number" ? d.start : null;
+  });
+  return {
+    recovered: recoveredMs !== null,
+    recoveredMs,
+    sameSong: after ? after.id === id0 : false,
+    resumeOffsetSec: resumedFrom !== null && frozenAt !== null ? Math.round((resumedFrom - frozenAt) * 10) / 10 : null,
+    newPlayer: after ? after.players > before.players : false,
+    rescueSteps: steps.length,
+    uiShowedPaused,
+    needsTapShown,
+  };
+});
+
 // ---- Runner -------------------------------------------------------------------------------
 
 function median(nums) {
@@ -1322,6 +1375,17 @@ function hardChecks(result) {
   if (ran("S3")) {
     const r = every("S3", "buffering.pressHonoured", (x) => x === true);
     add("S3", "pause pressed while buffering is honoured", r.ok, r.detail);
+  }
+  if (ran("S14")) {
+    for (const [k, name, pred] of [
+      ["recovered", "song stuck mid-play: plays on by itself", (x) => x === true],
+      ["sameSong", "song stuck mid-play: the same song", (x) => x === true],
+      ["resumeOffsetSec", "song stuck mid-play: resumes within 3 s of where it stopped", (x) => typeof x === "number" && Math.abs(x) <= 3],
+      ["uiShowedPaused", "song stuck mid-play: never shown as paused", (x) => x === false],
+    ]) {
+      const r = every("S14", k, pred);
+      add("S14", name, r.ok, r.detail);
+    }
   }
   if (ran("S8")) {
     const r = every("S8", "play.queueMatchesPlayed", (x) => x === true);
@@ -1430,6 +1494,10 @@ const HEADLINE = [
   ["S12", "retryWorks", "YouTube back: Retry plays", "yes"],
   ["S13", "fibersPerSec", "Playing on 50 search results: renders/s", "lower"],
   ["S13", "commitsPerSec", "Playing on 50 search results: commits/s", "lower"],
+  ["S14", "recovered", "Song stuck mid-play: plays on by itself", "yes"],
+  ["S14", "recoveredMs", "Song stuck mid-play: music back after (ms)", "lower"],
+  ["S14", "sameSong", "Song stuck mid-play: same song", "yes"],
+  ["S14", "uiShowedPaused", "Song stuck mid-play: UI showed paused", "no"],
 ];
 function frac(v) {
   const m = typeof v === "string" && v.match(/^(\d+)\/(\d+)$/);

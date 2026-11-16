@@ -168,3 +168,15 @@ call is counted as failed, and its YouTube.js error is shown. Node's fetch goes
 through the sandbox proxy with `NODE_USE_ENV_PROXY=1` (Node ≥ 22.21). The
 numbers depend on the network and on YouTube, so compare runs made close
 together.
+
+## S14: a song stuck mid-play
+
+`window.__fake.stallCurrent()` makes the current fake player's connection die. It stays BUFFERING with the second frozen, whatever it is asked. A new player (a rebuild) works normally.
+
+S14 plays a song, kills its connection, and checks four things:
+- the music comes back by itself;
+- it is the same song;
+- it resumes within 3 s of where it froze;
+- the UI never shows paused in the meantime.
+
+S14 also reports `recoveredMs`, how long the silence lasted. It is part of `npm run perf:music:check`.

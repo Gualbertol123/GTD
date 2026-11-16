@@ -28,6 +28,20 @@
     if (log.length > 20000) log.splice(0, 5000);
   }
   F.rec = rec;
+  /**
+   * The current player's connection gets stuck: BUFFERING with the second
+   * frozen, whatever it is asked (seek, play, reload). A NEW player (a
+   * rebuild) works normally — like a dead stream connection.
+   */
+  F.stallCurrent = function () {
+    var p = F.players[F.players.length - 1];
+    if (!p) return false;
+    p._clear();
+    if (p.state === S.PLAYING) p.time = p.getCurrentTime();
+    p.stuck = true;
+    p._emit(S.BUFFERING);
+    return true;
+  };
   F.current = function () {
     var p = F.players[F.players.length - 1];
     if (!p) return null;
@@ -100,6 +114,8 @@
     this.timers = [];
   };
   P._emit = function (state) {
+    // A stuck connection (F.stallCurrent): this player never reaches PLAYING again.
+    if (this.stuck && state === S.PLAYING) state = S.BUFFERING;
     if (state === S.PLAYING) this.playingSince = performance.now();
     if (this.state === S.PLAYING && state !== S.PLAYING) this.time = this.getCurrentTime();
     this.state = state;
