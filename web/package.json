@@ -11,6 +11,7 @@
     "test": "vitest run",
     "typecheck": "tsc -b && tsc -p netlify/tsconfig.json",
     "perf:music": "node scripts/perf/run.mjs",
+    "perf:music:check": "node scripts/perf/run.mjs --check --label check --reps 1 --only S2,S3,S4,S8,S9",
     "perf:fns": "node scripts/perf/fns.mjs"
   },
   "dependencies": {

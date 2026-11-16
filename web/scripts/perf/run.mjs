@@ -5,7 +5,8 @@
 //   node scripts/perf/run.mjs --label baseline         build, serve, measure
 //   node scripts/perf/run.mjs --label after --no-build reuse the last build
 //   node scripts/perf/run.mjs --only S2,S4 --reps 1    a subset, once
-//   node scripts/perf/run.mjs --compare baseline after before/after table
+//   node scripts/perf/run.mjs --compare baseline-v2 after  clean before/after table (--all: every field)
+//   node scripts/perf/run.mjs --check                  smoke: S2,S3,S4,S8,S9 once, exit 1 on a hard-check failure
 //
 // Everything outside the app is mocked (lib/mocks.mjs): Supabase, the Netlify
 // music functions, and a deliberately SLOW fake YouTube IFrame API
@@ -17,6 +18,8 @@ import { spawn, execSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
+import { createServer } from "node:net";
 import { installMocks, TRENDS, PLAYLISTS, cat } from "./lib/mocks.mjs";
 
 const require = createRequire(import.meta.url);
@@ -25,10 +28,13 @@ const { chromium, devices } = require("playwright");
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_WEB = join(HERE, "..", "..");
 let WEB = DEFAULT_WEB; // --web <dir>: build from another checkout (e.g. a frozen baseline)
-const OUT = join(HERE, ".build", "dist");
+// The build dir: one per checkout (--web), so a run against another checkout
+// (or another agent's run) cannot swap the files being served. --out overrides.
+let OUT = null;
 const RESULTS = join(HERE, "results");
-const PORT = 4179;
-const BASE = `http://localhost:${PORT}`;
+// 4179, or the next free port up to 4199 (another run may hold 4179).
+let PORT = 4179;
+let BASE = `http://localhost:${PORT}`;
 
 // =============================================================================
 // SELECTORS — all in one place. Prefer roles / aria-labels / text (IT + EN),
@@ -53,9 +59,13 @@ export const SEL = {
   playerReady: '.mp[data-ready="true"]',
   bar: "footer.mt-bar",
   barTitle: "footer.mt-bar .mt-bar__song b",
-  barPlayBtn: "footer.mt-bar .mt-bar__controls .mt-play",
+  // The bar's main play/pause button (CSS, for the DOM recorder): the old
+  // .mt-play, or any bar button labelled play/pause (PlayButton).
+  barPlayBtn:
+    'footer.mt-bar .mt-bar__controls .mt-play, footer.mt-bar button[aria-label="Pausa"], footer.mt-bar button[aria-label="Riproduci"], footer.mt-bar button[aria-label="Pause"], footer.mt-bar button[aria-label="Play"]',
   nowTitle: ".mt-now .mt-now__title",
   queueFirst: ".mt-now .mt-queue .mt-qitem b",
+  queueItems: ".mt-now .mt-queue .mt-qitem b",
   barPlayPause: { within: "footer.mt-bar", role: "button", name: PLAY },
   barNext: { within: "footer.mt-bar", role: "button", name: /^(Successivo|Next)$/ },
   barShuffle: { within: "footer.mt-bar", role: "button", name: /^(Casuale|Shuffle)$/ },
@@ -65,13 +75,20 @@ export const SEL = {
   dockSlot: ".mt-now .mt-now__video",
   playerFrame: ".mp",
   sideSearch: { within: ".mt-side", role: "button", name: /(Cerca|Search)$/ },
-  searchInput: { within: ".mt-main", role: "textbox", name: /^(Cerca|Search)$/ },
+  // A textbox before, a combobox in wave 2: matched by its label.
+  searchInput: '.mt-main input[aria-label="Cerca"], .mt-main input[aria-label="Search"]',
   suggestions: '.mt-main [role="listbox"] [role="option"]',
-  searchSpinner: ".mt-main .mt-search .mt-spin",
+  searchSpinner: ".mt-main .mt-search .mt-spin, .mt-main .mt-search .mt-search__spin, .mt-main .mt-search [aria-busy=\"true\"]",
   tableRows: ".mt-main .mt-table .mt-tr:not(.mt-tr--head)",
   tableRowTitle: ".mt-tr__title b",
+  // The "⋯" button on a row / card (wave 2) that opens the song menu.
+  rowMenuButton: { role: "button", name: /^(Altre azioni|More actions|⋯|…|Altro|Altre opzioni|Opzioni|Menu|More|More options|Options)\b/i },
+  // Notices / toasts anywhere (role=status pill, the old in-player notice).
+  statusAny: '[role="status"], .mp-toast, .mp-failed',
+  // "YouTube can't be reached" (S12) and its Retry.
+  retryButton: { role: "button", name: /^(Riprova|Retry|Try again)$/i },
   // --- song menu
-  songMenu: '[role="menu"].song-menu',
+  songMenu: '[role="menu"].song-menu, [role="menu"]',
   menuPlayNext: { within: '[role="menu"]', role: "menuitem", name: /^(Riproduci dopo|Play next)$/ },
   // --- ♪ panel (floating player)
   panel: ".mp.mp--open",
@@ -87,7 +104,11 @@ export const SEL = {
   mobileMusicRow: { role: "button", name: /^(Musica|Music)\b/ },
 };
 // Text that is a status, not a song (the "can't play here" notice etc.).
-const NOTICE_RE = /(riproducibile|cannot play|skipping|passo al successivo)/i;
+const NOTICE_RE = /(riproducibile|cannot play|can't play|skipping|passo al successivo|coda è finita|queue (is|has) (over|ended|finished)|non è partita|didn't start)/i;
+// "YouTube can't be reached" (S12).
+const API_FAIL_RE = /(raggiungibile|cannot be reached|can't be reached|unreachable|non risponde|not responding)/i;
+const PLAY_LABEL_RE = /^(Riproduci|Play)$/;
+const PAUSE_LABEL_RE = /^(Pausa|Pause)$/;
 // =============================================================================
 
 function escapeRe(s) {
@@ -103,7 +124,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // ---- CLI ----------------------------------------------------------------------------
 
 const argv = process.argv.slice(2);
-const args = { label: "run", build: true, reps: 3, only: null, compare: null, headed: false };
+const args = { label: null, build: true, reps: null, only: null, compare: null, all: false, check: false, headed: false };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (a === "--label") args.label = argv[++i];
@@ -112,11 +133,24 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === "--reps") args.reps = Number(argv[++i]) || 1;
   else if (a === "--only") args.only = argv[++i].split(",").map((s) => s.trim().toUpperCase());
   else if (a === "--compare") args.compare = [argv[++i], argv[++i]];
+  else if (a === "--all") args.all = true;
+  else if (a === "--out") OUT = resolve(argv[++i]);
+  else if (a === "--check") args.check = true;
   else if (a === "--help" || a === "-h") {
-    console.log("usage: node scripts/perf/run.mjs [--label NAME] [--web DIR] [--no-build] [--reps N] [--only S1,S2] | --compare A B");
+    console.log("usage: node scripts/perf/run.mjs [--label NAME] [--web DIR] [--no-build] [--reps N] [--only S1,S2] [--check] | --compare A B [--all]");
     process.exit(0);
   }
 }
+// --check: the fast smoke mode (npm run perf:music:check). Exits 1 when a hard check fails.
+export const CHECK_ONLY = ["S2", "S3", "S4", "S8", "S9"];
+if (args.check) {
+  args.reps ??= 1;
+  args.only ??= CHECK_ONLY;
+  args.label ??= "check";
+}
+OUT ??= join(HERE, ".build", WEB === DEFAULT_WEB ? "dist" : `dist-${createHash("sha1").update(WEB).digest("hex").slice(0, 8)}`);
+args.reps ??= 3;
+args.label ??= "run";
 
 // ---- Build + preview ---------------------------------------------------------------------
 
@@ -129,7 +163,21 @@ function build() {
   });
 }
 
+function portFree(port) {
+  return new Promise((res) => {
+    const srv = createServer();
+    srv.once("error", () => res(false));
+    srv.listen({ port, host: "localhost" }, () => srv.close(() => res(true)));
+  });
+}
 async function startPreview() {
+  for (let p = 4179; p <= 4199; p++)
+    if (await portFree(p)) {
+      PORT = p;
+      break;
+    }
+  BASE = `http://localhost:${PORT}`;
+  if (PORT !== 4179) console.error(`[perf] port 4179 busy, using ${PORT}`);
   const p = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort", "--outDir", OUT], {
     cwd: WEB,
     detached: true,
@@ -312,15 +360,82 @@ async function playAllTrends(page) {
   await loc(page, SEL.playAll).first().click();
   await waitPlayingId(page, TRENDS[0].id);
 }
-/** A track-table row's play button only shows on hover. */
+/**
+ * Play one song of a track table. The old table plays on the hover button or
+ * a double-click; wave 2 plays on a single click. A single click is tried
+ * first only when there is no play button; if the fake player gets no
+ * command within 400 ms, it falls back to a double-click.
+ */
 async function playTableRow(page, title) {
   const row = page.locator(SEL.tableRows).filter({ hasText: title }).first();
   await row.hover();
   const btn = row.getByRole("button", { name: SEL.songPlayButton(title).name }).first();
   if (await btn.isVisible().catch(() => false)) return btn.click();
-  // No visible play button (layout changed): a double-click plays in every version.
-  await row.locator(SEL.tableRowTitle).first().dblclick();
+  const n = (await fakeLog(page)).length;
+  const cell = row.locator(SEL.tableRowTitle).first();
+  await cell.click();
+  await sleep(400);
+  const cmds = (await fakeLog(page)).slice(n).filter((e) => e.cmd);
+  const pending = await page.evaluate(() => !!document.querySelector('[aria-busy="true"]'));
+  if (!cmds.length && !pending) await cell.dblclick();
 }
+/** Click a song's play button (by its "Riproduci <title>" name); else click its row / card. */
+async function clickSong(page, title, within = ".mt-main") {
+  const btn = loc(page, SEL.songPlayButton(title, within)).first();
+  if (await btn.count()) return btn.click();
+  return page.locator(`${within} .mt-trow, ${within} .mt-tr, ${within} .mt-card`).filter({ hasText: title }).first().click();
+}
+/** Open the song menu of a row: right-click (old + new), else its "⋯" button (wave 2). */
+async function openRowMenu(page, row) {
+  await row.click({ button: "right" });
+  try {
+    await page.locator(SEL.songMenu).first().waitFor({ timeout: 1500 });
+    return "contextmenu";
+  } catch {}
+  await page.keyboard.press("Escape").catch(() => {});
+  await row.hover();
+  await row.getByRole(SEL.rowMenuButton.role, { name: SEL.rowMenuButton.name }).first().click();
+  await page.locator(SEL.songMenu).first().waitFor({ timeout: 3000 });
+  return "button";
+}
+/** The bar's main button: label, busy look (spinner / aria-busy) and icon. */
+const btnWatch = () => ({
+  label: { sel: SEL.barPlayBtn, kind: "attr", attr: "aria-label" },
+  busy: { sel: SEL.barPlayBtn, kind: "busy" },
+  icon: { sel: SEL.barPlayBtn, kind: "icon" },
+});
+/** Visible feedback on the main button: first change of its label, busy look or icon. */
+const buttonFeedback = (rec, t0) => firstChange(rec, t0, ["label", "busy", "icon"]);
+/** The spinner: ms until it shows after t0 (null = never), and ms shown during [t0, end]. */
+function spinnerStats(rec, t0, end = rec.now) {
+  const tl = timeline(rec, "busy");
+  let ms = 0;
+  for (let i = 0; i < tl.length; i++) {
+    const a = Math.max(tl[i].t, t0);
+    const b = Math.min(i + 1 < tl.length ? tl[i + 1].t : end, end);
+    if (b > a && tl[i].v === true) ms += b - a;
+  }
+  return { appearMs: r0(firstWhen(rec, "busy", (v) => v === true, t0)), shownMs: Math.round(ms) };
+}
+/** ms the fake player was PLAYING during [from, to]. */
+function playingTime(log, from, to) {
+  let ms = 0;
+  let on = null;
+  for (const e of log) {
+    if (e.state === undefined) continue;
+    if (e.t > to) break;
+    const t = Math.max(e.t, from);
+    if (e.state === 1) {
+      if (on === null) on = t;
+    } else if (on !== null) {
+      ms += Math.max(0, t - on);
+      on = null;
+    }
+  }
+  if (on !== null) ms += to - on;
+  return Math.round(ms);
+}
+const STATE_NAME = { 1: "PLAYING", 2: "PAUSED", 3: "BUFFERING", 0: "ENDED", 5: "CUED", [-1]: "UNSTARTED" };
 function fakeAfter(log, t0) {
   return log.filter((e) => e.t >= t0);
 }
@@ -336,6 +451,8 @@ const titleWatch = () => ({
   bar: { sel: SEL.barTitle, kind: "text" },
   now: { sel: SEL.nowTitle, kind: "text" },
   play: { sel: SEL.barPlayBtn, kind: "attr", attr: "aria-label" },
+  busy: { sel: SEL.barPlayBtn, kind: "busy" },
+  toast: { sel: SEL.statusAny, kind: "anytext" },
 });
 
 // =============================================================================
@@ -403,7 +520,7 @@ def("S1", "Open MUSICA tab (from the board)", async ({ page, reqs }) => {
 async function measurePlayClick(page, tr, rowIndex) {
   const watch = { ...titleWatch(), row: { sel: SEL.trendRowN(rowIndex), kind: "class" } };
   await arm(page, watch);
-  await loc(page, SEL.songPlayButton(tr.title)).first().click();
+  await clickSong(page, tr.title);
   let playingOk = true;
   try {
     await waitPlayingId(page, tr.id, 9000);
@@ -428,6 +545,8 @@ async function measurePlayClick(page, tr, rowIndex) {
     rowHighlightMs: r0(firstWhen(rec, "row", (v) => /is-on/.test(v ?? ""), t0)),
     // 0 = the button already said "Pausa" (the previous song) while the new one buffers.
     pauseIconMs: r0(firstWhen(rec, "play", (v) => /^(Pausa|Pause)$/.test(v ?? ""), t0)),
+    // The bar button's spinner / aria-busy while the song loads (null = never shown).
+    spinnerMs: spinnerStats(rec, t0).appearMs,
     commandMs: r0(firstCmd(log, t0)),
     playingMs: playing ? r0(playing.t - t0) : null,
     playingIdCorrect: !!playing && playing.id === tr.id && playingOk,
@@ -452,51 +571,96 @@ def("S2", "Click play on a trending song (cold, then while another plays)", asyn
   return out;
 });
 
+// Each part starts from a known player state (set up, not measured), so a
+// wrong result in one part cannot shift the next. Feedback = the first change
+// of the bar button's aria-label, busy look (aria-busy / spinner) or icon.
 def("S3", "Toggle pause/play while BUFFERING and while PLAYING", async ({ page }) => {
   await openMusic(page);
   const tr = TRENDS[1];
-  await loc(page, SEL.songPlayButton(tr.title)).first().click();
+  const btn = () => loc(page, SEL.barPlayPause).first();
+  const label = () => page.locator(SEL.barPlayBtn).first().getAttribute("aria-label").catch(() => null);
+  const out = {};
+  // 1) While buffering (the song was clicked and is not audible yet): the user presses the main button.
+  await clickSong(page, tr.title);
   await waitFake(page, `return cur && cur.state === 3 && cur.id === ${JSON.stringify(tr.id)};`, 6000);
-  // 1) While buffering: the user presses the main button.
-  await arm(page, titleWatch());
-  const labelBefore = await page.locator(SEL.barPlayBtn).getAttribute("aria-label");
-  await loc(page, SEL.barPlayPause).first().click();
-  await sleep(2600);
+  await arm(page, { ...btnWatch(), toast: { sel: SEL.statusAny, kind: "anytext" } });
+  out["buffering.labelShown"] = await label();
+  await btn().click();
+  await sleep(2600); // past the longest buffering (2 s)
   let rec = await collect(page);
   let log = await fakeLog(page);
   const cmdsBuf = fakeAfter(log, rec.t0).filter((e) => e.cmd).map((e) => e.cmd);
   const afterBuf = await fakeNow(page);
-  const out = {
-    "buffering.labelShown": labelBefore,
-    "buffering.feedbackMs": r0(firstChange(rec, rec.t0, ["play"])),
+  let sp = spinnerStats(rec, rec.t0);
+  Object.assign(out, {
+    "buffering.feedbackMs": r0(buttonFeedback(rec, rec.t0)),
+    "buffering.labelAfter": rec.last.label ?? "",
+    "buffering.spinnerShownMs": sp.shownMs,
     "buffering.commandSent": cmdsBuf.join(",") || "none",
-    "buffering.stateAfter": { 1: "PLAYING", 2: "PAUSED", 3: "BUFFERING", [-1]: "UNSTARTED" }[afterBuf?.state] ?? String(afterBuf?.state),
+    "buffering.stateAfter": STATE_NAME[afterBuf?.state] ?? String(afterBuf?.state),
     // The user pressed while it was not yet audible: did it end up paused (the intent) or playing?
     "buffering.pressHonoured": afterBuf?.state === 2,
-  };
-  // 2) While playing: pause.
-  await waitPlayingId(page, tr.id, 6000).catch(() => {});
-  await sleep(1000);
-  await arm(page, titleWatch());
-  await loc(page, SEL.barPlayPause).first().click();
-  await page.waitForFunction((sel) => /^(Riproduci|Play)$/.test(document.querySelector(sel)?.getAttribute("aria-label") ?? ""), SEL.barPlayBtn, { timeout: 4000 }).catch(() => {});
-  await sleep(300);
-  rec = await collect(page);
-  log = await fakeLog(page);
-  out["pause.feedbackMs"] = r0(firstChange(rec, rec.t0, ["play"]));
-  out["pause.commandMs"] = r0(firstCmd(log, rec.t0, ["pauseVideo"]));
-  out["pause.pausedMs"] = r0(firstState(log, rec.t0, 2)?.t - rec.t0);
-  // 3) While paused: play.
-  await sleep(500);
-  await arm(page, titleWatch());
-  await loc(page, SEL.barPlayPause).first().click();
-  await page.waitForFunction((sel) => /^(Pausa|Pause)$/.test(document.querySelector(sel)?.getAttribute("aria-label") ?? ""), SEL.barPlayBtn, { timeout: 5000 }).catch(() => {});
-  await sleep(300);
-  rec = await collect(page);
-  log = await fakeLog(page);
-  out["resume.feedbackMs"] = r0(firstChange(rec, rec.t0, ["play"]));
-  out["resume.commandMs"] = r0(firstCmd(log, rec.t0, ["playVideo"]));
-  out["resume.playingMs"] = r0(firstState(log, rec.t0, 1)?.t - rec.t0);
+    // Audio heard anyway after the press (a blip before the pause still counts).
+    "buffering.playedAnywayMs": playingTime(log, rec.t0, rec.now),
+  });
+
+  // 2) While PLAYING: pause. Set-up: get the song playing whatever part 1 left.
+  let ok = true;
+  try {
+    const c = await fakeNow(page);
+    if (c?.state !== 1) {
+      if (PLAY_LABEL_RE.test((await label()) ?? "")) await btn().click();
+      await waitPlayingId(page, tr.id, 6000);
+    }
+    await sleep(1000);
+  } catch {
+    ok = false;
+  }
+  out["pause.startState"] = ok ? "PLAYING" : "not PLAYING";
+  if (ok) {
+    await arm(page, btnWatch());
+    await btn().click();
+    await page.waitForFunction((sel) => /^(Riproduci|Play)$/.test(document.querySelector(sel)?.getAttribute("aria-label") ?? ""), SEL.barPlayBtn, { timeout: 4000 }).catch(() => {});
+    await sleep(300);
+    rec = await collect(page);
+    log = await fakeLog(page);
+    out["pause.feedbackMs"] = r0(buttonFeedback(rec, rec.t0));
+    out["pause.commandMs"] = r0(firstCmd(log, rec.t0, ["pauseVideo"]));
+    out["pause.pausedMs"] = r0(firstState(log, rec.t0, 2)?.t - rec.t0);
+    out["pause.labelAfter"] = rec.last.label ?? "";
+  }
+
+  // 3) While PAUSED: play. Set-up: the player paused and the button offering Play.
+  ok = true;
+  try {
+    const c = await fakeNow(page);
+    if (c?.state !== 2) {
+      if (PAUSE_LABEL_RE.test((await label()) ?? "")) await btn().click();
+      await waitFake(page, "return cur && cur.state === 2;", 4000);
+    }
+    await page.waitForFunction((sel) => /^(Riproduci|Play)$/.test(document.querySelector(sel)?.getAttribute("aria-label") ?? ""), SEL.barPlayBtn, { timeout: 3000 });
+    await sleep(500);
+  } catch {
+    ok = false;
+  }
+  out["resume.startState"] = ok ? "PAUSED" : "not PAUSED";
+  if (ok) {
+    await arm(page, btnWatch());
+    await btn().click();
+    await waitFake(page, "return cur && cur.state === 1;", 5000).catch(() => {});
+    await page.waitForFunction((sel) => /^(Pausa|Pause)$/.test(document.querySelector(sel)?.getAttribute("aria-label") ?? ""), SEL.barPlayBtn, { timeout: 3000 }).catch(() => {});
+    await sleep(300);
+    rec = await collect(page);
+    log = await fakeLog(page);
+    const playing = firstState(log, rec.t0, 1);
+    sp = spinnerStats(rec, rec.t0, playing ? playing.t : rec.now);
+    out["resume.feedbackMs"] = r0(buttonFeedback(rec, rec.t0));
+    out["resume.commandMs"] = r0(firstCmd(log, rec.t0, ["playVideo"]));
+    out["resume.playingMs"] = r0(playing?.t - rec.t0);
+    out["resume.spinnerMs"] = sp.appearMs;
+    out["resume.spinnerShownMs"] = sp.shownMs;
+    out["resume.labelAfter"] = rec.last.label ?? "";
+  }
   return out;
 });
 
@@ -541,6 +705,8 @@ def("S4", "Next ×3 quickly", async ({ page }) => {
     finalPlayer: cur?.title ?? "",
     titlesShownDuring: shown.size,
     staleTitleShownMs: wrong.ms,
+    // How long the title of the song playing before the first Next stays on screen after it.
+    staleTitleMs: r0(firstWhen(rec, "bar", (v) => v !== rec.initial.bar, t0) ?? rec.now - t0),
     commits: d.commits,
     inpMaxMs: d.inpMaxMs,
   };
@@ -671,6 +837,39 @@ def("S7", "Search: type 'tiziano' char by char, then submit", async ({ page, req
   };
 });
 
+// Correctness is judged by what PLAYS (the fake's PLAYING ids after each
+// Next) against the queue the app SHOWS. YouTube's internal list is not the
+// judge: the app may sync it only at the next song boundary.
+// Legacy fields (kept so baseline.json still compares; not in the clean
+// table): shuffle.fakeShuffled, shuffle.queueNextMatchesPlayer,
+// shuffle.playerNext, enqueue.playerNextIsEnqueued,
+// enqueue.queueNextMatchesPlayer, enqueue.playerShuffle.
+const TITLE_TO_ID = new Map([...PLAYLISTS.flatMap((p) => p.tracks), ...TRENDS].map((t) => [t.title, t.id]));
+async function queueShown(page) {
+  return (await page.locator(SEL.queueItems).allTextContents().catch(() => [])).map((s) => s.trim());
+}
+/** Press Next and return the id of the next song that reaches PLAYING (an unplayable one is skipped by the app). */
+async function nextAndWaitPlaying(page, prevId, timeout = 10000) {
+  const from = await page.evaluate(() => performance.now());
+  await loc(page, SEL.barNext).first().click();
+  try {
+    await page.waitForFunction(
+      ([from, prev]) => window.__fake.log.some((e) => e.t >= from && e.state === 1 && e.id !== prev),
+      [from, prevId],
+      { timeout, polling: 50 }
+    );
+  } catch {
+    return null;
+  }
+  return (await fakeLog(page)).find((e) => e.t >= from && e.state === 1 && e.id !== prevId)?.id ?? null;
+}
+/** The shown queue minus the songs that cannot play (they never reach PLAYING). */
+function playableTitles(titles) {
+  return titles.filter((t) => {
+    const id = TITLE_TO_ID.get(t);
+    return !id || !cat.isBad(id);
+  });
+}
 def("S8", "Shuffle on, then 'Riproduci dopo' via the song menu", async ({ page }) => {
   await openMusic(page);
   const pl = PLAYLISTS[0];
@@ -690,10 +889,17 @@ def("S8", "Shuffle on, then 'Riproduci dopo' via the song menu", async ({ page }
     "shuffle.appNext": q1 ?? "",
     "shuffle.playerNext": fakeNext1 ?? "",
   };
-  // Right-click song #10 of the table → "Riproduci dopo".
+  // What actually plays on Next after shuffle: the song the queue shows next?
+  const shownAfterShuffle = playableTitles(await queueShown(page));
+  const idS = await nextAndWaitPlaying(page, c1?.id);
+  const playedS = idS ? cat.titleFor(idS) : null;
+  out["shuffle.nextPlayed"] = playedS ?? "(nothing)";
+  out["shuffle.nextPlaysShownNext"] = !!playedS && playedS === shownAfterShuffle[0];
+  await sleep(1000);
+
+  // Song #10 of the table → "Riproduci dopo" (right-click menu, or the "⋯" button).
   const target = pl.tracks[10];
-  await page.locator(SEL.tableRows).nth(10).click({ button: "right" });
-  await page.locator(SEL.songMenu).waitFor({ timeout: 3000 });
+  const how = await openRowMenu(page, page.locator(SEL.tableRows).nth(10));
   await arm(page, { ...titleWatch(), q: { sel: SEL.queueFirst, kind: "text" } });
   const logLen = (await fakeLog(page)).length;
   await loc(page, SEL.menuPlayNext).first().click();
@@ -702,7 +908,7 @@ def("S8", "Shuffle on, then 'Riproduci dopo' via the song menu", async ({ page }
   const log = (await fakeLog(page)).slice(logLen);
   const c2 = await fakeNow(page);
   const fakeNext2 = c2?.order && c2.order[c2.index + 1] ? cat.titleFor(c2.order[c2.index + 1]) : null;
-  const shuffleOn = (await page.locator(SEL.barShuffleCss).first().getAttribute("aria-pressed")) === "true";
+  const shuffleOn = (await page.locator(SEL.barShuffleCss).first().getAttribute("aria-pressed").catch(() => null)) === "true";
   // Interruption: time the music was not PLAYING after the enqueue.
   let gap = 0;
   let downAt = null;
@@ -714,7 +920,9 @@ def("S8", "Shuffle on, then 'Riproduci dopo' via the song menu", async ({ page }
       downAt = null;
     }
   }
+  if (downAt !== null) gap += rec.now - downAt;
   Object.assign(out, {
+    "enqueue.menuOpenedBy": how,
     "enqueue.feedbackMs": r0(firstChange(rec, rec.t0)),
     "enqueue.commands": log.filter((e) => e.cmd).map((e) => e.cmd).join(","),
     "enqueue.playbackGapMs": r0(gap),
@@ -725,11 +933,26 @@ def("S8", "Shuffle on, then 'Riproduci dopo' via the song menu", async ({ page }
     "enqueue.shuffleButtonOn": shuffleOn,
     "enqueue.playerShuffle": !!c2?.shuffle,
   });
-  // Next: does the enqueued song play?
-  await loc(page, SEL.barNext).first().click();
-  await waitFake(page, `return cur && cur.state === 1 && cur.id === ${JSON.stringify(target.id)};`, 6000).catch(() => {});
-  const c3 = await fakeNow(page);
-  out["next.playsEnqueued"] = c3?.id === target.id;
+  // Next ×3, each after the previous song plays: is the order played the order shown?
+  await waitFake(page, "return cur && cur.state === 1;", 6000).catch(() => {});
+  const shown = playableTitles(await queueShown(page));
+  const played = [];
+  let prev = (await fakeNow(page))?.id;
+  for (let i = 0; i < 3; i++) {
+    const id = await nextAndWaitPlaying(page, prev);
+    if (!id) break;
+    played.push(cat.titleFor(id));
+    prev = id;
+    await sleep(600);
+  }
+  const k = Math.min(3, shown.length);
+  const afterEnqueueOk = k > 0 && played.length >= k && played.slice(0, k).every((t, i) => t === shown[i]);
+  out["next.playsEnqueued"] = played[0] === target.title;
+  out["play.queueShown"] = shown.slice(0, 3).join(" / ");
+  out["play.order"] = played.join(" / ") || "(nothing)";
+  out["play.afterEnqueueMatchesQueue"] = afterEnqueueOk;
+  // The new verdict (used by the compare table and --check): queue shown == order played, after shuffle AND after the enqueue.
+  out["play.queueMatchesPlayed"] = out["shuffle.nextPlaysShownNext"] && afterEnqueueOk;
   return out;
 });
 
@@ -743,21 +966,32 @@ async function errorCase(page, click, watchMs) {
   const t0 = rec.t0;
   const errs = log.filter((e) => e.error);
   const firstErr = errs[0];
-  const skip = firstErr ? log.find((e) => e.t > firstErr.t && (e.cmd === "nextVideo" || e.cmd === "playVideoAt" || e.cmd === "loadPlaylist")) : null;
+  const SKIP = ["nextVideo", "playVideoAt", "loadPlaylist", "loadVideoById", "cuePlaylist", "cueVideoById"];
+  const skip = firstErr ? log.find((e) => e.t > firstErr.t && SKIP.includes(e.cmd)) : null;
   const playing = log.find((e) => e.state === 1);
   const cur = await fakeNow(page);
+  const label = rec.last.play ?? "";
+  // The notice anywhere: the toast pill (role=status), the old in-player notice, or the title.
+  const inTitle = firstWhen(rec, "bar", (v) => NOTICE_RE.test(v ?? ""), t0);
+  const inToast = firstWhen(rec, "toast", (v) => NOTICE_RE.test(v ?? ""), t0);
+  const notice = [inTitle, inToast].filter((x) => x != null);
+  const isPlaying = cur?.state === 1;
   return {
     errorAtMs: firstErr ? r0(firstErr.t - t0) : null,
-    noticeShownMs: r0(firstWhen(rec, "bar", (v) => NOTICE_RE.test(v ?? ""), t0)),
+    noticeShownMs: notice.length ? r0(Math.min(...notice)) : null,
+    noticeWhere: inToast != null && inTitle != null ? "toast+title" : inToast != null ? "toast" : inTitle != null ? "title" : "none",
     skipCommandAfterErrorMs: skip && firstErr ? r0(skip.t - firstErr.t) : null,
     recoveredPlayingMs: playing ? r0(playing.t - t0) : null,
     errors: errs.length,
     nextCommands: log.filter((e) => e.cmd === "nextVideo").length,
     loop: errs.length > 3,
-    endState: { 1: "PLAYING", 2: "PAUSED", 3: "BUFFERING", 0: "ENDED", 5: "CUED", [-1]: "UNSTARTED" }[cur?.state] ?? String(cur?.state),
+    endState: STATE_NAME[cur?.state] ?? String(cur?.state),
     barAtEnd: rec.last.bar ?? "",
-    barMatchesPlayer: (rec.last.bar ?? "") === (cur?.state === 1 ? cur.title : "(nothing playing)"),
-    playLabelAtEnd: rec.last.play ?? "",
+    // The bar agrees with the player: when a song plays, its title and a Pause
+    // button; when nothing plays, a button that offers Play (whatever title is shown).
+    barMatchesPlayer: isPlaying ? (rec.last.bar ?? "") === cur.title && PAUSE_LABEL_RE.test(label) : PLAY_LABEL_RE.test(label),
+    playLabelAtEnd: label,
+    spinnerAtEnd: rec.last.busy === true,
   };
 }
 
@@ -765,7 +999,7 @@ def("S9", "A song that fails (onError 150): skip, time, loops", async ({ page })
   await openMusic(page);
   const out = {};
   // a) trend #6 fails, #7 plays
-  const a = await errorCase(page, () => loc(page, SEL.songPlayButton(TRENDS[5].title)).first().click(), 6000);
+  const a = await errorCase(page, () => clickSong(page, TRENDS[5].title), 6000);
   for (const [k, v] of Object.entries(a)) out[`one.${k}`] = v;
   // b) playlist "Errori": songs 1 and 2 fail, 3 plays
   const pl = PLAYLISTS[2];
@@ -776,7 +1010,7 @@ def("S9", "A song that fails (onError 150): skip, time, loops", async ({ page })
   // c) the LAST song of the list fails (nothing to skip to)
   const last = pl.tracks.at(-1);
   const c = await errorCase(page, () => playTableRow(page, last.title), 6000);
-  for (const k of ["errorAtMs", "noticeShownMs", "errors", "nextCommands", "endState", "barAtEnd", "barMatchesPlayer", "playLabelAtEnd"]) out[`lastInList.${k}`] = c[k];
+  for (const k of ["errorAtMs", "noticeShownMs", "noticeWhere", "errors", "nextCommands", "endState", "barAtEnd", "barMatchesPlayer", "playLabelAtEnd", "spinnerAtEnd"]) out[`lastInList.${k}`] = c[k];
   return out;
 });
 
@@ -815,7 +1049,10 @@ def(
     await input.press("Enter");
     await page.locator(SEL.panelResults).nth(2).waitFor({ timeout: 8000 });
     await sleep(500);
-    const target = page.locator(SEL.panelResults).nth(2);
+    const row = page.locator(SEL.panelResults).nth(2);
+    // Wave 2: the row is div.mp-result > button.mp-result__main + button.mp-result__more; press the main part.
+    const main = row.locator(".mp-result__main");
+    const target = (await main.count()) ? main.first() : row;
     await target.scrollIntoViewIfNeeded();
     const box = await target.boundingBox();
     const cdp = await page.context().newCDPSession(page);
@@ -838,7 +1075,7 @@ def(
     const ev = await page.evaluate(() => ({ clicks: window.__clicksAfter, ctx: window.__ctxAfter }));
     out["longPress.menuOpened"] = rec2.last.menu === true;
     out["longPress.menuMs"] = r0(firstWhen(rec2, "menu", (v) => v === true, rec2.t0));
-    out["longPress.alsoPlayed"] = log2.some((e) => e.cmd === "loadPlaylist" || e.cmd === "playVideoAt");
+    out["longPress.alsoPlayed"] = log2.some((e) => ["loadPlaylist", "playVideoAt", "loadVideoById"].includes(e.cmd));
     out["longPress.clickEventsAfterRelease"] = ev.clicks;
     out["longPress.contextmenuEvents"] = ev.ctx;
     return out;
@@ -883,6 +1120,109 @@ def("S11", "Scroll the MUSICA page with Video mode on (dock)", async ({ page }) 
   };
 });
 
+/** Is a "YouTube can't be reached" message, and a Retry button, shown to the user right now? */
+async function apiFailShown(page) {
+  return page.evaluate((src) => {
+    const re = new RegExp(src, "i");
+    const shown = window.__shown;
+    let error = false;
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) if (re.test(n.textContent || "") && shown(n.parentElement)) {
+      error = true;
+      break;
+    }
+    const retry = [...document.querySelectorAll("button")].some((b) => /^(Riprova|Retry|Try again)$/i.test((b.getAttribute("aria-label") || b.textContent || "").trim()) && shown(b));
+    return { error, retry };
+  }, API_FAIL_RE.source);
+}
+
+def("S12", "YouTube API unreachable (iframe_api aborted): error + Retry within 13 s, Retry works", async ({ page }) => {
+  // page.route wins over the context's iframe_api mock until it is removed.
+  const API = "https://www.youtube.com/iframe_api*";
+  await page.route(API, (r) => r.abort("internetdisconnected"));
+  await openBoard(page);
+  await sleep(1000);
+  const tTab = Date.now();
+  await loc(page, SEL.tabMusic).first().click();
+  await page.locator(SEL.musicRoot).waitFor({ timeout: 10000 });
+  await waitTrends(page);
+  // The user tries to play a song.
+  await clickSong(page, TRENDS[0].title);
+  const tPlay = Date.now();
+  let errorAt = null;
+  let retryAt = null;
+  while (Date.now() - tTab < 13000 && (errorAt === null || retryAt === null)) {
+    const s = await apiFailShown(page);
+    if (s.error && errorAt === null) errorAt = Date.now();
+    if (s.retry && retryAt === null) retryAt = Date.now();
+    await sleep(100);
+  }
+  const busyAt13 = await page.evaluate((sel) => {
+    const b = document.querySelector(sel);
+    return !!b && (b.getAttribute("aria-busy") === "true" || !!b.querySelector('[class*="spin"], [class*="busy"]'));
+  }, SEL.barPlayBtn);
+  const labelAt13 = await page.locator(SEL.barPlayBtn).first().getAttribute("aria-label").catch(() => null);
+  const out = {
+    errorShownMs: errorAt === null ? null : errorAt - tTab,
+    retryShownMs: retryAt === null ? null : retryAt - tTab,
+    errorAfterPlayClickMs: errorAt === null ? null : Math.max(0, errorAt - tPlay),
+    errorAndRetryWithin13s: errorAt !== null && retryAt !== null,
+    // Still "loading" with nothing ever going to play.
+    spinnerStuck: busyAt13,
+    playLabel: labelAt13 ?? "",
+  };
+  // YouTube is back: Retry.
+  await page.unroute(API);
+  const retry = loc(page, SEL.retryButton);
+  let retryWorks = false;
+  let retryPlayingMs = null;
+  if (await retry.first().isVisible().catch(() => false)) {
+    const t = Date.now();
+    await retry.first().click();
+    // Retry restarts the song if the app kept it; else the user presses play again.
+    let playing = await waitFake(page, "return cur && cur.state === 1;", 8000).then(() => true, () => false);
+    if (!playing && (await page.evaluate(() => !!(window.YT && window.YT.Player)))) {
+      await clickSong(page, TRENDS[0].title).catch(() => {});
+      playing = await waitFake(page, "return cur && cur.state === 1;", 8000).then(() => true, () => false);
+    }
+    retryWorks = playing;
+    if (playing) retryPlayingMs = Date.now() - t;
+  }
+  out.retryWorks = retryWorks;
+  out.retryPlayingMs = retryPlayingMs;
+  // Without a Retry button: does pressing play again recover?
+  if (!out.errorAndRetryWithin13s) {
+    await clickSong(page, TRENDS[1].title).catch(() => {});
+    out.playAgainWorks = await waitFake(page, "return cur && cur.state === 1;", 8000).then(() => true, () => false);
+  }
+  return out;
+});
+
+def("S13", "Re-renders per second while playing, on the Search results page (50 results)", async ({ page, reqs }) => {
+  await openMusic(page);
+  await playAllTrends(page);
+  await loc(page, SEL.sideSearch).first().click();
+  const input = loc(page, SEL.searchInput).first();
+  await input.waitFor({ timeout: 5000 });
+  await input.fill("tiziano 50");
+  await input.press("Enter");
+  await page.waitForFunction((sel) => document.querySelectorAll(sel).length > 0, SEL.tableRows, { timeout: 8000 });
+  await page.keyboard.press("Escape").catch(() => {});
+  await sleep(1500);
+  const rows = await page.locator(SEL.tableRows).count();
+  const cur = await fakeNow(page);
+  const st = await steady(page, reqs, "search");
+  return {
+    resultsShown: rows,
+    playing: cur?.state === 1,
+    commitsPerSec: st["search.commitsPerSec"],
+    fibersPerSec: st["search.fibersPerSec"],
+    longTasks: st["search.longTasks"],
+    requests: st["search.requests"],
+    topRenders: st["search.topRenders"],
+  };
+});
+
 // ---- Runner -------------------------------------------------------------------------------
 
 function median(nums) {
@@ -916,22 +1256,249 @@ function cell(v) {
   if (v === null || v === undefined) return "—";
   return String(v).replace(/\|/g, "\\|").replace(/\n/g, " ");
 }
+
+// ---- Click → visible feedback (every control measured) ---------------------------------
+// [scenario, key, control]. Pass = visible feedback within FEEDBACK_MS in
+// every rep; no feedback at all is a fail.
+const FEEDBACK_MS = 100;
+const FEEDBACK = [
+  ["S1", "shellMs", "Open MUSICA"],
+  ["S2", "cold.feedbackMs", "Play a song (cold)"],
+  ["S2", "warm.feedbackMs", "Play a song (another playing)"],
+  ["S3", "buffering.feedbackMs", "Pause while buffering"],
+  ["S3", "pause.feedbackMs", "Pause while playing"],
+  ["S3", "resume.feedbackMs", "Play while paused"],
+  ["S4", "feedbackFirstClickMs", "Next"],
+  ["S7", "submitSpinnerMs", "Search submit"],
+  ["S8", "enqueue.feedbackMs", "Riproduci dopo"],
+  ["S10", "tap.feedbackMs", "Phone: tap Tendenze"],
+];
+function runVals(result, id, key) {
+  return (result.runs?.[id] ?? []).filter((r) => !r.na).map((r) => r[key]);
+}
+/** "k/n" reps within the limit, or null when the scenario did not run. */
+function feedbackPass(result, id, key, limit = FEEDBACK_MS) {
+  const v = runVals(result, id, key);
+  if (!v.length) return null;
+  return `${v.filter((x) => typeof x === "number" && x <= limit).length}/${v.length}`;
+}
+function feedbackTable(result) {
+  const lines = ["", `#### Click → visible feedback ≤ ${FEEDBACK_MS} ms`, "", "| Scenario | Control | Median ms | Pass |", "|---|---|---|---|"];
+  for (const [id, key, name] of FEEDBACK) {
+    const p = feedbackPass(result, id, key);
+    if (p === null) continue;
+    lines.push(`| ${id} | ${name} (${key}) | ${cell(result.summary[id]?.[key] ?? "never")} | ${allOf(p) ? "pass" : "FAIL"} ${p} |`);
+  }
+  return lines.join("\n");
+}
+const allOf = (frac) => typeof frac === "string" && /^(\d+)\/(\d+)$/.test(frac) && frac.split("/")[0] === frac.split("/")[1] && frac.split("/")[1] !== "0";
+
+// ---- Hard checks (npm run perf:music:check) ----------------------------------------------
+const CHECK_FEEDBACK_MS = 150;
+function hardChecks(result) {
+  const ran = (id) => (result.runs?.[id] ?? []).length > 0;
+  const out = [];
+  const add = (id, name, ok, detail) => out.push({ id, name, ok, detail });
+  for (const sc of result.scenarios) {
+    const na = (result.runs[sc.id] ?? []).filter((r) => r.na);
+    if (na.length) add(sc.id, "scenario ran", false, na[0].na);
+  }
+  // ok: true / false, or null when the field was not measured (an older result).
+  const every = (id, key, pred) => {
+    const v = runVals(result, id, key);
+    if (!v.length || v.every((x) => x === undefined)) return { ok: null, detail: "not measured" };
+    return { ok: v.every(pred), detail: v.map((x) => cell(x)).join(", ") };
+  };
+  for (const [id, key, name] of FEEDBACK) {
+    if (!["S2", "S3", "S4", "S8"].includes(id) || !ran(id)) continue;
+    const r = every(id, key, (x) => typeof x === "number" && x <= CHECK_FEEDBACK_MS);
+    add(id, `${name}: feedback ≤ ${CHECK_FEEDBACK_MS} ms`, r.ok, r.detail);
+  }
+  if (ran("S2"))
+    for (const k of ["cold.wrongSongShownMs", "warm.wrongSongShownMs"]) {
+      const r = every("S2", k, (x) => x === 0);
+      add("S2", `wrong song shown = 0 ms (${k.split(".")[0]})`, r.ok, r.detail);
+    }
+  if (ran("S3")) {
+    const r = every("S3", "buffering.pressHonoured", (x) => x === true);
+    add("S3", "pause pressed while buffering is honoured", r.ok, r.detail);
+  }
+  if (ran("S8")) {
+    const r = every("S8", "play.queueMatchesPlayed", (x) => x === true);
+    add("S8", "queue shown = order played", r.ok, r.detail);
+  }
+  if (ran("S9")) {
+    for (const c of ["one", "twoInARow"]) {
+      const r = every("S9", `${c}.loop`, (x) => x === false);
+      add("S9", `no skip loop (${c})`, r.ok, r.detail);
+    }
+    const l = every("S9", "lastInList.errors", (x) => typeof x === "number" && x <= 3);
+    add("S9", "no skip loop (lastInList)", l.ok, l.detail);
+    const m = every("S9", "lastInList.barMatchesPlayer", (x) => x === true);
+    add("S9", "last song failed: nothing plays and the button offers Play", m.ok, m.detail);
+    const sp = every("S9", "lastInList.spinnerAtEnd", (x) => x !== true);
+    add("S9", "last song failed: no endless spinner", sp.ok, sp.detail);
+  }
+  return out;
+}
+const okText = (ok) => (ok === null ? "not measured" : ok ? "pass" : "FAIL");
+function checksTable(checks) {
+  const lines = ["", "#### Hard checks", "", "| Scenario | Check | Result | Values |", "|---|---|---|---|"];
+  for (const c of checks) lines.push(`| ${c.id} | ${cell(c.name)} | ${okText(c.ok)} | ${cell(c.detail)} |`);
+  return lines.join("\n");
+}
+
 function markdown(result) {
   const lines = [`### Music UI perf — ${result.label} (${result.date}, ${result.git}, reps=${result.reps}, medians)`, "", "| Scenario | Metric | Value |", "|---|---|---|"];
   for (const sc of result.scenarios) {
     const s = result.summary[sc.id];
     let first = true;
     for (const [k, v] of Object.entries(s)) {
-      lines.push(`| ${first ? `**${sc.id}** ${sc.title}` : ""} | ${k} | ${cell(v)} |`);
+      lines.push(`| ${first ? `**${sc.id}** ${sc.title}` : ""} | ${k}${LEGACY.has(`${sc.id} ${k}`) ? " †" : ""} | ${cell(v)} |`);
       first = false;
     }
   }
+  lines.push("", "† legacy field, kept to compare with older results; not used by the compare table or --check.");
+  lines.push(feedbackTable(result));
+  lines.push(checksTable(hardChecks(result)));
   return lines.join("\n");
 }
+
+// ---- Before / after ---------------------------------------------------------------------
+// Fields kept only so old results still load; the compare table uses the newer ones.
+const LEGACY = new Set([
+  "S8 shuffle.fakeShuffled",
+  "S8 shuffle.queueNextMatchesPlayer",
+  "S8 shuffle.playerNext",
+  "S8 enqueue.playerNextIsEnqueued",
+  "S8 enqueue.queueNextMatchesPlayer",
+  "S8 enqueue.playerShuffle",
+  "S4 staleTitleShownMs",
+]);
+// The clean table: [scenario, key, what, better]. better: "lower" | "higher"
+// for numbers; "yes" / "no" for k/n booleans (which answer is the good one).
+const HEADLINE = [
+  ["S0", "commits", "Idle board: commits in 5 s", "lower"],
+  ["S1", "shellMs", "Open MUSICA: page shown (ms)", "lower"],
+  ["S1", "trendsMs", "Open MUSICA: trends shown (ms)", "lower"],
+  ["S1", "playerReadyMs", "Open MUSICA: player ready (ms)", "lower"],
+  ["S1", "requests", "Open MUSICA: requests", "lower"],
+  ["S1", "fibersRendered", "Open MUSICA: components rendered", "lower"],
+  ["S2", "cold.feedbackMs", "Play (cold): feedback (ms)", "lower"],
+  ["S2", "cold.playingMs", "Play (cold): audio starts (ms)", "lower"],
+  ["S2", "cold.wrongSongShownMs", "Play (cold): wrong song shown (ms)", "lower"],
+  ["S2", "warm.feedbackMs", "Play (another playing): feedback (ms)", "lower"],
+  ["S2", "warm.playingMs", "Play (another playing): audio starts (ms)", "lower"],
+  ["S2", "warm.wrongSongShownMs", "Play (another playing): wrong song shown (ms)", "lower"],
+  ["S3", "buffering.feedbackMs", "Pause while buffering: feedback (ms)", "lower"],
+  ["S3", "buffering.pressHonoured", "Pause while buffering: honoured", "yes"],
+  ["S3", "pause.feedbackMs", "Pause while playing: feedback (ms)", "lower"],
+  ["S3", "resume.feedbackMs", "Play while paused: feedback (ms)", "lower"],
+  ["S3", "resume.playingMs", "Play while paused: audio (ms)", "lower"],
+  ["S4", "feedbackFirstClickMs", "Next ×3: feedback (ms)", "lower"],
+  ["S4", "staleTitleMs", "Next ×3: old title stays (ms)", "lower"],
+  ["S4", "settledPlayingMs", "Next ×3: audio of the last (ms)", "lower"],
+  ["S4", "finalShownMatchesPlayer", "Next ×3: title = song playing", "yes"],
+  ["S5", "tab.fibersPerSec", "Playing, MUSICA tab: renders/s", "lower"],
+  ["S5", "panel.fibersPerSec", "Playing, ♪ panel: renders/s", "lower"],
+  ["S5", "board.fibersPerSec", "Playing, board: renders/s", "lower"],
+  ["S6", "fibersRendered", "Volume drag: components rendered", "lower"],
+  ["S6", "setVolumeCommands", "Volume drag: player commands", "lower"],
+  ["S6", "inpMaxMs", "Volume drag: worst input (ms)", "lower"],
+  ["S7", "suggestRequests", "Search typing: suggest requests", "lower"],
+  ["S7", "typingFibers", "Search typing: components rendered", "lower"],
+  ["S7", "staleSuggestions", "Search typing: stale suggestions", "lower"],
+  ["S7", "submitResultsMs", "Search submit: results (ms)", "lower"],
+  ["S8", "enqueue.feedbackMs", "Riproduci dopo: feedback (ms)", "lower"],
+  ["S8", "enqueue.playbackGapMs", "Riproduci dopo: music interrupted (ms)", "lower"],
+  ["S8", "next.playsEnqueued", "Riproduci dopo: Next plays it", "yes"],
+  ["S8", "play.queueMatchesPlayed", "Shuffle + enqueue: queue shown = order played", "yes"],
+  ["S9", "one.noticeShownMs", "Failing song: notice (ms)", "lower"],
+  ["S9", "one.recoveredPlayingMs", "Failing song: next one plays (ms)", "lower"],
+  ["S9", "twoInARow.recoveredPlayingMs", "Two failing: a song plays (ms)", "lower"],
+  ["S9", "twoInARow.loop", "Two failing: skip loop", "no"],
+  ["S9", "lastInList.barMatchesPlayer", "Last song fails: bar = player", "yes"],
+  ["S10", "tap.feedbackMs", "Phone tap: feedback (ms)", "lower"],
+  ["S10", "tap.playingMs", "Phone tap: audio (ms)", "lower"],
+  ["S10", "longPress.menuOpened", "Phone long-press: menu", "yes"],
+  ["S10", "longPress.alsoPlayed", "Phone long-press: also played", "no"],
+  ["S11", "commitsPerScrollEvent", "Scroll (video docked): commits/event", "lower"],
+  ["S11", "fibersRendered", "Scroll: components rendered", "lower"],
+  ["S11", "dockMismatchPx", "Scroll: video off its slot (px)", "lower"],
+  ["S12", "errorAndRetryWithin13s", "YouTube unreachable: error + Retry ≤ 13 s", "yes"],
+  ["S12", "errorShownMs", "YouTube unreachable: error shown (ms)", "lower"],
+  ["S12", "retryWorks", "YouTube back: Retry plays", "yes"],
+  ["S13", "fibersPerSec", "Playing on 50 search results: renders/s", "lower"],
+  ["S13", "commitsPerSec", "Playing on 50 search results: commits/s", "lower"],
+];
+function frac(v) {
+  const m = typeof v === "string" && v.match(/^(\d+)\/(\d+)$/);
+  return m && +m[2] ? +m[1] / +m[2] : null;
+}
+function verdict(a, b, better, key) {
+  const isFb = FEEDBACK.some(([, k]) => k === key);
+  if (better === "yes" || better === "no") {
+    const fa = frac(a);
+    const fb = frac(b);
+    if (fa === null || fb === null) return fb === null ? "—" : "new";
+    if (fa === fb) return "same";
+    return (fb > fa) === (better === "yes") ? "better" : "worse";
+  }
+  // A missing feedback time means "no feedback seen": the worst.
+  const na = typeof a === "number" ? a : isFb && a === null ? Infinity : null;
+  const nb = typeof b === "number" ? b : isFb && b === null ? Infinity : null;
+  if (nb === null) return "—";
+  if (na === null) return "new";
+  if (na === nb) return "same";
+  if (!isFinite(na) || !isFinite(nb)) return (nb < na) === (better === "lower") ? "better" : "worse";
+  const tol = Math.max(Math.abs(na) * 0.1, /Ms$/.test(key) ? 20 : 0.01);
+  if (Math.abs(nb - na) <= tol) return "same";
+  return (nb < na) === (better === "lower") ? "better" : "worse";
+}
+function loadResult(name) {
+  const f = existsSync(name) ? name : join(RESULTS, `${name}.json`);
+  return JSON.parse(readFileSync(f, "utf8"));
+}
 function compare(a, b) {
-  const A = JSON.parse(readFileSync(join(RESULTS, `${a}.json`), "utf8"));
-  const B = JSON.parse(readFileSync(join(RESULTS, `${b}.json`), "utf8"));
-  const lines = [`### Music UI perf — ${a} → ${b}`, "", `| Scenario | Metric | ${a} | ${b} | Δ |`, "|---|---|---|---|---|"];
+  const A = loadResult(a);
+  const B = loadResult(b);
+  const head = `### Music UI perf — ${A.label} (${A.git}, reps=${A.reps}) → ${B.label} (${B.git}, reps=${B.reps}), medians`;
+  if (args.all) return head + "\n\n" + compareAll(A, B);
+  const fbCol = (r, id, key) => {
+    if (!FEEDBACK.some(([i, k]) => i === id && k === key)) return "";
+    const p = feedbackPass(r, id, key);
+    return p === null ? "—" : allOf(p) ? "pass" : "fail";
+  };
+  const lines = [head, "", `| Scenario | Metric | ${A.label} | ${B.label} | Verdict | ≤${FEEDBACK_MS} ms |`, "|---|---|---|---|---|---|"];
+  let prev = null;
+  for (const [id, key, what, better] of HEADLINE) {
+    const sa = A.summary[id];
+    const sb = B.summary[id];
+    if (!sa && !sb) continue;
+    const va = sa?.na && !(key in sa) ? `n/a` : sa?.[key];
+    const vb = sb?.na && !(key in sb) ? `n/a` : sb?.[key];
+    const isFb = FEEDBACK.some(([, k]) => k === key);
+    const show = (s, v) => (!s ? "not run" : v === null && isFb ? "never" : cell(v));
+    const fa = fbCol(A, id, key);
+    const fbb = fbCol(B, id, key);
+    lines.push(`| ${id === prev ? "" : `**${id}**`} | ${what} | ${show(sa, va)} | ${show(sb, vb)} | ${verdict(va, vb, better, key)} | ${fa || fbb ? `${fa || "—"} → ${fbb || "—"}` : ""} |`);
+    prev = id;
+  }
+  // Hard checks, side by side.
+  const ca = new Map(hardChecks(A).map((c) => [`${c.id} ${c.name}`, c.ok]));
+  const cb = hardChecks(B);
+  if (cb.length) {
+    lines.push("", `#### Hard checks (${B.label}; ${A.label} in brackets)`, "", "| Scenario | Check | Result |", "|---|---|---|");
+    for (const c of cb) {
+      const o = ca.get(`${c.id} ${c.name}`);
+      lines.push(`| ${c.id} | ${cell(c.name)} | ${okText(c.ok)}${o === undefined ? "" : ` (${okText(o)})`} |`);
+    }
+  }
+  lines.push("", "Verdict: numbers within 10% (and 20 ms) count as the same. `--all` prints every field.");
+  return lines.join("\n");
+}
+function compareAll(A, B) {
+  const lines = [`| Scenario | Metric | ${A.label} | ${B.label} | Δ |`, "|---|---|---|---|---|"];
   const ids = [...new Set([...Object.keys(A.summary), ...Object.keys(B.summary)])];
   for (const id of ids) {
     const sa = A.summary[id] ?? {};
@@ -941,10 +1508,11 @@ function compare(a, b) {
       const va = sa[k];
       const vb = sb[k];
       const delta = typeof va === "number" && typeof vb === "number" ? (vb - va > 0 ? "+" : "") + Math.round((vb - va) * 100) / 100 : va === vb ? "" : "changed";
-      lines.push(`| ${first ? `**${id}**` : ""} | ${k} | ${cell(va)} | ${cell(vb)} | ${delta} |`);
+      lines.push(`| ${first ? `**${id}**` : ""} | ${k}${LEGACY.has(`${id} ${k}`) ? " †" : ""} | ${cell(va)} | ${cell(vb)} | ${delta} |`);
       first = false;
     }
   }
+  lines.push("", "† legacy field (not used by the clean table).");
   return lines.join("\n");
 }
 
@@ -956,6 +1524,12 @@ async function withTimeout(p, ms, what) {
 async function main() {
   if (args.compare) {
     console.log(compare(...args.compare));
+    return;
+  }
+  // results/baseline.json is the committed reference: never overwritten.
+  if (args.label === "baseline" && existsSync(join(RESULTS, "baseline.json")) && !argv.includes("--force-baseline")) {
+    console.error("[perf] results/baseline.json is the committed reference; pick another --label (e.g. baseline-v2).");
+    process.exitCode = 2;
     return;
   }
   if (args.build || !existsSync(join(OUT, "index.html"))) build();
@@ -995,6 +1569,11 @@ async function main() {
   writeFileSync(file, JSON.stringify(result, null, 2));
   console.log(markdown(result));
   console.error(`[perf] wrote ${file}`);
+  if (args.check) {
+    const failed = hardChecks(result).filter((c) => c.ok !== true); // "not measured" fails too
+    console.error(failed.length ? `[perf] check FAILED: ${failed.length} hard check(s)\n` + failed.map((c) => `  ${c.id} ${c.name}: ${c.detail}`).join("\n") : "[perf] check passed");
+    if (failed.length) process.exitCode = 1;
+  }
 }
 
 function gitRev() {

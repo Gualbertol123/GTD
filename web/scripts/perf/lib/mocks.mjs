@@ -65,8 +65,10 @@ export const PLAYLISTS = (() => {
 
 export function searchTracks(q) {
   // Results 0–3 play (S10 long-presses one), the rest as the hash says.
+  // A query with the word "50" gets 50 results (S13), any other 40.
   const k = q.toLowerCase().trim();
-  return [...Array.from({ length: 4 }, (_, i) => pick(`search:${k}`, false, i)), ...ids(`search:${k}`, 36)].map(track);
+  const n = /(^|\s)50(\s|$)/.test(k) ? 50 : 40;
+  return [...Array.from({ length: 4 }, (_, i) => pick(`search:${k}`, false, i)), ...ids(`search:${k}`, n - 4)].map(track);
 }
 function chartsOf(country) {
   return {

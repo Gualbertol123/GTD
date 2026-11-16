@@ -104,16 +104,41 @@
   window.addEventListener("scroll", function () { window.__scrolls++; }, { capture: true, passive: true });
 
   // ---- DOM recorder ------------------------------------------------------------
+  // Shown to the user: has a box, is not hidden by CSS / opacity, and is not
+  // inside an aria-hidden subtree.
+  function shown(el) {
+    if (!el || !el.getClientRects().length) return false;
+    var r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return false;
+    if (el.closest('[aria-hidden="true"]')) return false;
+    if (el.checkVisibility && !el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return false;
+    return true;
+  }
+  window.__shown = shown;
   function readOne(w) {
     var el;
     try {
       if (w.kind === "count") return document.querySelectorAll(w.sel).length;
+      // The text of every match, joined (toasts, status lines…).
+      if (w.kind === "anytext")
+        return Array.prototype.map
+          .call(document.querySelectorAll(w.sel), function (e) { return (e.textContent || "").trim(); })
+          .filter(Boolean)
+          .join(" | ");
       el = document.querySelector(w.sel);
     } catch (e) {
       return null;
     }
     if (w.kind === "exists") return !!el;
     if (!el) return null;
+    // A play button's "busy" look: aria-busy, an is-busy class, or a spinner inside.
+    if (w.kind === "busy")
+      return el.getAttribute("aria-busy") === "true" || /\bis-busy\b/.test(String(el.className && el.className.baseVal !== undefined ? el.className.baseVal : el.className)) || !!el.querySelector('[class*="spin"], [class*="busy"]');
+    // The button's icon (its first svg's markup), so a play ↔ pause flip is seen.
+    if (w.kind === "icon") {
+      var svg = el.querySelector("svg");
+      return svg ? svg.innerHTML : "";
+    }
     if (w.kind === "visible") return el.getClientRects().length > 0;
     if (w.kind === "attr") return el.getAttribute(w.attr);
     if (w.kind === "class") return el.className && el.className.baseVal !== undefined ? el.className.baseVal : el.className;
