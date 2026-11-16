@@ -178,6 +178,23 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
   says so. Function: `netlify/functions/music-spotify.mts`.
 - On a phone the music stops when the screen locks or the app goes to the
   background (a limit of YouTube embeds on iOS / Android).
+- **Every control answers at once.**
+  - The app keeps the queue itself, in the order songs will play, shuffle included. YouTube only receives the ids, so the song shown, the queue and the highlighted row always agree.
+  - Play, pause, next and a song click change the screen immediately. A ring spins on the play button until YouTube confirms the song is playing, and a pause pressed while it buffers is honoured.
+  - Messages appear in a small pill and never replace the song title.
+  - A song YouTube refuses is skipped straight away. Playback stops after 5 refusals in a row or a full lap of the list.
+  - If YouTube can't be reached (an ad-blocker or the network), the player says so and offers *Riprova*.
+  - The 500 ms position update redraws only the seek bar.
+- **Every song has a ⋯ button** for the song menu, alongside right-click and long-press.
+  - A single click plays the song, and Enter / Space work from the keyboard.
+  - Removing a song or deleting a playlist can be undone for a few seconds.
+  - New names are typed in place; there are no browser pop-ups.
+  - The MUSICA tab's pages are in the address (`#/music/search/…`, `#/music/playlist/…`), so Back returns to the previous music page.
+- **Server:**
+  - A team-login check is remembered for 5 minutes per login.
+  - Answers are kept in memory for a while (search 10 min, charts 1 h, …), and every call has a time limit.
+  - Errors come back as short codes, shown in Italian or English.
+- **Measuring it:** `npm run perf:music` in `web/` drives the app in a headless browser, using a deliberately slow fake YouTube player and a mocked Supabase. `npm run perf:music:check` is the quick pass/fail version. `npm run perf:fns` times the four functions cold and warm. See `web/scripts/perf/README.md`.
 
 **Setup (once):**
 1. Supabase → SQL Editor: run `supabase/migration-018-music-playlists.sql`,
