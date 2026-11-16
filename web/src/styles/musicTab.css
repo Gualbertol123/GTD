@@ -695,3 +695,35 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
 .mt input[type="range"].mt-volume:focus-visible::-webkit-slider-thumb,
 .mt input[type="range"].mt-volume:active::-webkit-slider-thumb { opacity: 1; }
 .mt input[type="range"].mt-volume:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.55); outline-offset: 2px; border-radius: 12px; }
+
+/* YouTube wants a tap (needsTap, music only): the caption under the frame on
+   the Now playing slot, and a callout just above the bar (it takes no room
+   from the song) that brings that slot into view. */
+.mt-bar { position: relative; }
+.mt-now__tap { margin-top: 8px; border-radius: 8px; box-shadow: none; }
+.mt-taphint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: absolute;
+  z-index: 7;
+  left: 12px;
+  bottom: calc(100% + 10px);
+  white-space: nowrap;
+  min-height: 34px;
+  padding: 6px 14px;
+  border-radius: 17px;
+  background: var(--mt-blue);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  color: #fff !important;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: left;
+  animation: mt-tap-pulse 1.6s ease-in-out infinite;
+}
+.mt-taphint svg { flex-shrink: 0; }
+.mt-taphint:hover { filter: brightness(1.1); }
+.mt-taphint:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+@keyframes mt-tap-pulse { 50% { box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 0 4px rgba(10, 132, 255, 0.35); } }
+@media (prefers-reduced-motion: reduce) { .mt-taphint { animation: none; } }

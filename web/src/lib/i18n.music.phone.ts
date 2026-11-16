@@ -12,6 +12,8 @@ export const PHONE_IT: Record<string, string> = {
   "music.plEmpty": "Questa playlist è vuota.",
   "music.back": "Indietro",
   "music.suggestions": "Suggerimenti",
+  "music.tapVideo": "Tocca il video per avviare la musica",
+  "music.premiumCookies": "Il browser deve accettare i cookie di YouTube (Safari li blocca).",
 };
 
 export const PHONE_EN: Record<string, string> = {
@@ -25,4 +27,6 @@ export const PHONE_EN: Record<string, string> = {
   "music.plEmpty": "This playlist is empty.",
   "music.back": "Back",
   "music.suggestions": "Suggestions",
+  "music.tapVideo": "Tap the video to start the music",
+  "music.premiumCookies": "The browser must allow YouTube's cookies (Safari blocks them).",
 };

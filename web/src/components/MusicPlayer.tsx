@@ -91,6 +91,8 @@ declare global {
 
 const API_URL = "https://www.youtube.com/iframe_api";
 const API_TIMEOUT_MS = 12000;
+/** A player whose onReady has not come by then is dropped (blocked embed, wall, broken frame): Retry makes a new one. */
+const READY_TIMEOUT_MS = 15000;
 
 let apiPromise: Promise<YTNamespace> | null = null;
 /** YouTube's IFrame API script, once. A failure or a timeout can be retried. */
@@ -131,6 +133,9 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
   const side = useMusicSel((s) => s.side);
   const failed = useMusicSel((s) => s.failed);
   const premium = useMusicSel((s) => s.premium);
+  // YouTube refused a start from the app (a phone's rule, a wall in its frame):
+  // its frame is shown, tappable, until the music plays.
+  const needsTap = useMusicSel((s) => s.needsTap);
   // Made the first time it is needed: a panel or the tab opened, something
   // played, or a music control about to be used (music.warm).
   const wanted = useMusicSel((s) => s.view !== "closed" || s.tab || s.warm || !!s.source);
@@ -206,11 +211,31 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
     frame.allow = "autoplay; encrypted-media; picture-in-picture";
     frame.title = "YouTube";
     box.appendChild(frame);
-    mlog("creating the YouTube player", { host: ytHost });
+    const r = frame.getBoundingClientRect();
+    mlog("creating the YouTube player", { host: ytHost, w: Math.round(r.width), h: Math.round(r.height), display: getComputedStyle(root.current ?? box).display });
+    const t0 = performance.now();
+    // No onReady in time: drop this player, so the spinner stops and Retry
+    // (music.retry clears `failed`, the effect below runs create again) makes a new one.
+    const readyTimer = setTimeout(() => {
+      if (player.current !== p || !mounted.current) return;
+      mlog("player made but never ready: dropped, Retry shown", { ms: Math.round(performance.now() - t0) }, "warn");
+      player.current = null;
+      creating.current = false;
+      try {
+        p.destroy();
+      } catch {
+        /* already gone */
+      }
+      host.current?.querySelectorAll("iframe").forEach((f) => f.remove());
+      setReady(false);
+      setMusic({ failed: "player" });
+    }, READY_TIMEOUT_MS);
     const p: YTPlayer = new YT.Player(frame, {
       events: {
         onReady: () => {
+          clearTimeout(readyTimer);
           if (player.current !== p) return;
+          mlog("player ready", { ms: Math.round(performance.now() - t0) });
           setReady(true);
           attachPlayer(p);
         },
@@ -272,15 +297,33 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
   // On the phone the page is told when the small player covers its bottom
   // (<html data-music="mini" | "mini-video" | "open">), so mobile.css can pad
   // the screens and the last card can be scrolled out from under it.
+  // While YouTube's frame waits for a tap, the small player is as tall as in video mode.
+  const tall = !audio || needsTap;
   useEffect(() => {
     if (!mobile) return;
     const html = document.documentElement;
-    const v = view === "mini" ? (audio ? "mini" : "mini-video") : view === "open" ? "open" : "";
+    const v = view === "mini" ? (tall ? "mini-video" : "mini") : view === "open" ? "open" : "";
     if (v) html.dataset.music = v;
     else delete html.dataset.music;
-  }, [mobile, view, audio]);
-  useEffect(() => () => void delete document.documentElement.dataset.music, []);
-  const isDocked = inTab && !audio && docked;
+    // ...and the toasts move to the top, off the frame (music.css).
+    if (audio && needsTap && view === "mini") html.dataset.musicTap = "";
+    else delete html.dataset.musicTap;
+  }, [mobile, view, audio, tall, needsTap]);
+  useEffect(
+    () => () => {
+      delete document.documentElement.dataset.music;
+      delete document.documentElement.dataset.musicTap;
+    },
+    []
+  );
+  // Music only, but YouTube wants a tap: its frame is shown like in Video mode
+  // (only classes change: the frame itself is never moved or re-created).
+  const tap = audio && needsTap;
+  useEffect(() => {
+    if (tap) mlog("showing YouTube's frame for a tap", { view, inTab });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tap]);
+  const isDocked = inTab && (!audio || tap) && docked;
   const cls = [
     "mp",
     inTab ? "mp--tab" : `mp--${view}`,
@@ -288,6 +331,7 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
     `mp--${side}`,
     audio ? "mp--audio" : "mp--video",
     isDocked ? "mp--docked" : "",
+    tap ? "mp--tap" : "",
   ].join(" ");
 
   return (
@@ -295,6 +339,7 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
       {mobile && view === "open" && <BackToMini />}
       {!inTab && view === "open" && <Head />}
       <div className="mp-video" ref={host} />
+      {tap && !inTab && <TapHint />}
       {!inTab && audio && view === "open" && <BigCover />}
       {/* The song and its controls; on the phone they stay pinned while the rest scrolls.
           The seek bar is always there in the panel, so nothing moves when a song starts. */}
@@ -312,6 +357,17 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
 }
 
 const MenuHost = memo(SongMenuHost);
+
+/** Under YouTube's frame while it waits for a tap: "Tap the video to start the music". */
+export function TapHint({ className = "mp-tapnote" }: { className?: string }) {
+  const { t } = useT();
+  return (
+    <div className={className} role="status">
+      <IconPlay size={14} />
+      <span>{t("music.tapVideo")}</span>
+    </div>
+  );
+}
 
 function Head() {
   const { t } = useT();
@@ -906,7 +962,9 @@ export function PremiumToggle() {
         <input type="checkbox" checked={on} onChange={(e) => music.setPremium(e.target.checked)} />
         <span>
           <b>{t("music.premium")}</b>
-          <small>{t("music.premiumHint")}</small>
+          <small>
+            {t("music.premiumHint")} {t("music.premiumCookies")}
+          </small>
         </span>
       </label>
     </div>

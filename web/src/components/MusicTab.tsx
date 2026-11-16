@@ -16,6 +16,7 @@ import {
   findYtPlaylists,
   getMusic,
   isSpotifyLink,
+  mlog,
   matchSpotify,
   music,
   musicErrorText,
@@ -51,7 +52,7 @@ import {
   type WriteResult,
 } from "../lib/musicDb";
 import { countryName, isFail, parseView, rowKeys, viewSub, type View } from "../lib/musicTabRoute";
-import { Cover, ModeSwitch, PlayButton, PremiumToggle, Progress } from "./MusicPlayer";
+import { Cover, ModeSwitch, PlayButton, PremiumToggle, Progress, TapHint } from "./MusicPlayer";
 import { openSongMenu, playlistErrorText, songMenuProps, type SongMenuCtx } from "./SongMenu";
 import {
   IconBack,
@@ -1970,7 +1971,9 @@ const TrackRow = memo(function TrackRow({
 
 function NowPlaying({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useT();
-  const video = useMusicSel((s) => s.mode === "video");
+  // Music only, but YouTube wants a tap: the slot (and so YouTube's frame) shows too.
+  const tap = useMusicSel((s) => s.mode === "audio" && s.needsTap);
+  const video = useMusicSel((s) => s.mode === "video") || tap;
   const now = useMusicSel((s) => s.now);
   const label = useMusicSel((s) => sourceLabel(s.source, t));
   const loading = useMusicSel((s) => s.playing && (s.status === "loading" || s.status === "buffering"));
@@ -2028,7 +2031,10 @@ function NowPlaying({ open, onClose }: { open: boolean; onClose: () => void }) {
           </button>
         </div>
         {video ? (
-          <div className="mt-now__video" ref={slot} />
+          <>
+            <div className="mt-now__video" ref={slot} />
+            {tap && <TapHint className="mp-tapnote mt-now__tap" />}
+          </>
         ) : (
           <div className="mt-now__cover" {...(current ? songMenuProps(current) : {})}>
             {now ? <Cover id={now.id} big /> : <IconNote size={48} />}
@@ -2094,6 +2100,17 @@ function PlayerBar({ barRef, queueOpen, onQueue }: { barRef: RefObject<HTMLEleme
   const shuffle = useMusicSel((s) => s.shuffle);
   const repeat = useMusicSel((s) => s.repeat);
   const current = useMemo<Track | null>(() => (now ? { id: now.id, title: now.title, channel: now.author } : null), [now]);
+  const tap = useMusicSel((s) => s.mode === "audio" && s.needsTap);
+
+  // "Tocca il video": bring YouTube's frame (on the Now playing slot) into view;
+  // in a narrow window that panel is a drawer, so it opens first.
+  const showVideo = () => {
+    const slot = document.querySelector<HTMLElement>(".mt-now__video");
+    const hidden = !slot || slot.getBoundingClientRect().width < 2;
+    mlog("tab: showing YouTube's frame for a tap", { openDrawer: hidden && !queueOpen });
+    if (hidden && !queueOpen) onQueue();
+    requestAnimationFrame(() => document.querySelector(".mt-now__video")?.scrollIntoView({ block: "center", behavior: "smooth" }));
+  };
 
   return (
     <footer className="mt-bar" ref={barRef} tabIndex={-1} aria-label={t("mt.barLabel")}>
@@ -2109,6 +2126,12 @@ function PlayerBar({ barRef, queueOpen, onQueue }: { barRef: RefObject<HTMLEleme
         </span>
         {current && <AddBtn track={current} />}
         {current && <MoreBtn track={current} ctx={CURRENT_CTX} />}
+        {tap && (
+          <button className="mt-taphint" onClick={showVideo}>
+            <IconPlay size={14} />
+            <span>{t("music.tapVideo")}</span>
+          </button>
+        )}
       </div>
       <div className="mt-bar__center">
         <div className="mt-bar__controls">

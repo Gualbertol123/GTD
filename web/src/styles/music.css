@@ -714,3 +714,62 @@ html[data-blur="off"] .mp-toast { -webkit-backdrop-filter: none; backdrop-filter
 }
 /* A narrow phone: the header keeps the note, the switch and both buttons. */
 @media (max-width: 420px) { .mp--phone .mp-head__label { display: none; } .mp--phone .mp-head { gap: 4px; } }
+
+/* ---- Music only, but YouTube wants a tap (needsTap) ------------------------
+   A phone (or a wall / overlay in YouTube's frame) refused to start from the
+   app: the frame comes forward, at least 200 × 200 and above the cover, so a
+   tap inside it starts the music. Only these classes change; the frame itself
+   is never moved or re-created. When the music plays it goes back out of sight. */
+.mp--audio.mp--tap:not(.mp--tab) .mp-video {
+  position: relative;
+  left: auto;
+  top: auto;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  min-height: 200px;
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 2;
+}
+.mp--audio.mp--tap .mp-cover { display: none; }
+/* The Music tab: on the tab's slot (MusicTab shows it while needsTap). */
+.mp--tab.mp--docked.mp--tap .mp-video { opacity: 1; pointer-events: auto; }
+/* The caption under the frame: plain text on the panel's own glass (no blur of its own). */
+.mp-tapnote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  color: #fff;
+  background: rgba(10, 132, 255, 0.28);
+  box-shadow: inset 0 -1px 0 var(--mp-line);
+}
+.mp-tapnote svg { flex-shrink: 0; }
+/* Phone, full player: frame and caption stay pinned under the header, like Video mode. */
+.mp--phone.mp--open.mp--tap {
+  --mp-vid-h: max(200px, calc((100vw - env(safe-area-inset-left) - env(safe-area-inset-right)) * 0.5625));
+  --mp-tap-h: 36px;
+  --mp-pin: calc(var(--mp-head-h) + var(--mp-vid-h) + var(--mp-tap-h) + 112px);
+}
+.mp--phone.mp--open.mp--tap .mp-video { position: sticky; top: var(--mp-head-h); height: var(--mp-vid-h); min-height: 0; aspect-ratio: auto; }
+.mp--phone.mp--open.mp--tap .mp-tapnote { position: sticky; top: calc(var(--mp-head-h) + var(--mp-vid-h)); z-index: 2; height: var(--mp-tap-h); min-height: 0; background: rgb(14, 40, 82); }
+.mp--phone.mp--open.mp--tap .mp-deck { top: calc(var(--mp-head-h) + var(--mp-vid-h) + var(--mp-tap-h)); }
+/* Phone, small player: the bar grows to hold the frame. */
+.mp--phone.mp--mini.mp--tap .mp-video { min-height: 200px; }
+@media (orientation: landscape) and (max-height: 500px) {
+  .mp--phone.mp--open.mp--tap { --mp-vid-h: 0px; --mp-tap-h: 0px; }
+  .mp--phone.mp--open.mp--tap .mp-video { position: relative; top: auto; height: 200px; }
+  .mp--phone.mp--open.mp--tap .mp-tapnote { position: relative; top: auto; height: auto; min-height: 34px; }
+}
+/* Phone, small player waiting for a tap: the toasts go to the top, so they never cover the frame. */
+@media (max-width: 640px) {
+  html[data-music-tap] .mp-toasts { bottom: auto; top: calc(env(safe-area-inset-top) + 64px); }
+}
