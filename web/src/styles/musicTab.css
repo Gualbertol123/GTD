@@ -737,3 +737,9 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
 .mt-taphint:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 @keyframes mt-tap-pulse { 50% { box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 0 4px rgba(10, 132, 255, 0.35); } }
 @media (prefers-reduced-motion: reduce) { .mt-taphint { animation: none; } }
+
+/* "Accedi con Spotify" / "Connesso a Spotify · Esci" under the link field (no blur of its own). */
+.mt-splogin { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 4px 0 8px; }
+p.mt-splogin { gap: 6px; font-size: 13px; }
+.mt-splogin .mt-hint { font-size: 13px; }
+.mt-splogin .mt-link { display: inline; }

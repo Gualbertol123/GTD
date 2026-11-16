@@ -11,7 +11,14 @@
 //    The keys are read from process.env here only, never logged or returned.
 //    Since late 2024 Spotify refuses (404 / 403) new apps the playlists made
 //    by Spotify itself (editorial / algorithmic, ids often "37i9dQZF1…"):
-//    those fall back to 2.
+//    those fall back to 2. Since February 2026, an app in Development Mode
+//    gets a playlist's songs only for playlists the signed-in user owns or
+//    collaborates on: with Client Credentials (no user) only the details come
+//    back (name, cover, no `items`), so the songs come from 2 (reason
+//    "owner-only"), keeping the API's name and cover. Both answer shapes are
+//    read: the new one (`items` / `items.items[].item`, GET …/items) and the
+//    old one (`tracks` / `tracks.items[].track`, GET …/tracks), which apps in
+//    Extended Quota Mode still get.
 // 2. Spotify's public embed page (open.spotify.com/embed/…, the player
 //    websites put on their pages), read as a plain page. No key needed. It
 //    lists a playlist's FIRST 100 songs (an album's all). The answer then says
@@ -47,8 +54,12 @@ export interface SpotifySong {
   ms: number;
 }
 
-/** Why the list may be short: no keys, a playlist made by Spotify, or the API failed. */
-export type LimitReason = "no-key" | "spotify-owned" | "api-error";
+/**
+ * Why the list may be short: no keys, a playlist made by Spotify, the API
+ * failed, or the API gave only the playlist's details (since February 2026 a
+ * Development Mode app reads the songs only of the user's own playlists).
+ */
+export type LimitReason = "no-key" | "spotify-owned" | "api-error" | "owner-only";
 
 export interface SpotifyList {
   kind: "playlist" | "album";
@@ -99,17 +110,42 @@ export function readSpotify(kind: "playlist" | "album", id: string, start = Date
 async function readBest(kind: "playlist" | "album", id: string, start: number): Promise<SpotifyList> {
   const keys = credentials();
   let reason: LimitReason = "no-key";
+  let meta: SpotifyList | null = null;
   if (keys) {
     try {
       return await readApi(kind, id, keys, start + API_MS);
     } catch (e) {
-      reason = kind === "playlist" && e instanceof ApiError && (e.status === 404 || e.status === 403) ? "spotify-owned" : "api-error";
+      if (e instanceof MetaOnly) {
+        meta = e.list;
+        reason = kind === "playlist" ? "owner-only" : "api-error";
+      } else reason = kind === "playlist" && e instanceof ApiError && (e.status === 404 || e.status === 403) ? "spotify-owned" : "api-error";
       console.warn("spotify api:", e instanceof ApiError ? `${e.status}` : e instanceof Error ? e.message : e, "→ embed page");
     }
   }
   const ms = Math.min(READ_MS, BUDGET_MS - 1000 - (Date.now() - start));
-  if (ms <= 0) throw new TimeoutError();
-  const list = await readEmbed(kind, id, ms);
+  let list: SpotifyList;
+  try {
+    if (ms <= 0) throw new TimeoutError();
+    list = await readEmbed(kind, id, ms);
+  } catch (e) {
+    // A list the API says is empty: it is (never an error for it).
+    if (meta && meta.total === 0) return meta;
+    throw e;
+  }
+  if (meta) {
+    // The API's details, the embed page's songs (never "0 songs" when it has some).
+    if (!list.songs.length) return meta;
+    const more = kind === "playlist" && (list.songs.length >= 100 || (!!meta.total && meta.total > list.songs.length));
+    return {
+      ...list,
+      name: meta.name || list.name,
+      owner: meta.owner || list.owner,
+      cover: meta.cover || list.cover,
+      ...(meta.total ? { total: meta.total } : {}),
+      reason,
+      ...(more ? { limited: true } : {}),
+    };
+  }
   return { ...list, reason, ...(kind === "playlist" && list.songs.length >= 100 ? { limited: true } : {}) };
 }
 
@@ -119,6 +155,14 @@ class ApiError extends Error {
   constructor(public status: number) {
     super(`spotify api ${status}`);
     this.name = "ApiError";
+  }
+}
+
+/** The API gave the list's details but none of its songs: `list` has them (songs empty). */
+class MetaOnly extends Error {
+  constructor(public list: SpotifyList) {
+    super("spotify api: details only");
+    this.name = "MetaOnly";
   }
 }
 
@@ -194,10 +238,30 @@ interface ApiImage {
   url?: string;
   width?: number | null;
 }
+/** One playlist entry: `item` since February 2026, `track` before (and in Extended Quota Mode). */
+export interface ApiEntry {
+  is_local?: boolean;
+  item?: ApiTrack | null;
+  track?: ApiTrack | null;
+}
 
 function songOf(t: ApiTrack | null | undefined): SpotifySong | null {
   if (!t?.name || (t.type && t.type !== "track")) return null; // episodes, empty slots
   return { title: t.name, artist: (t.artists ?? []).map((a) => a?.name).filter(Boolean).join(", "), ms: Number(t.duration_ms) || 0 };
+}
+
+/** The songs of a page of playlist entries, either shape; local files, episodes and empty slots skipped. */
+export function songsOfEntries(entries: (ApiEntry | null | undefined)[]): SpotifySong[] {
+  return entries
+    .filter((e) => !!e && !e.is_local)
+    .map((e) => songOf(e?.item ?? e?.track))
+    .filter((s): s is SpotifySong => !!s);
+}
+
+/** A playlist's number of songs, either shape (`items.total` / `tracks.total`); undefined when absent. */
+export function totalOf(meta: { items?: { total?: unknown } | null; tracks?: { total?: unknown } | null }): number | undefined {
+  const t = meta.items?.total ?? meta.tracks?.total;
+  return typeof t === "number" && Number.isFinite(t) && t >= 0 ? t : undefined;
 }
 
 const bestImage = (images: ApiImage[] | undefined) => [...(images ?? [])].sort((a, b) => (b.width ?? 0) - (a.width ?? 0))[0]?.url ?? "";
@@ -209,49 +273,93 @@ export const pageOffsets = (total: number, size: number) => {
   return out;
 };
 
+const META_FIELDS = "name,owner(display_name),images,items(total),tracks(total)";
+const ENTRY_FIELDS = "name,duration_ms,artists(name),type";
+const PAGE_FIELDS = `total,items(is_local,item(${ENTRY_FIELDS}),track(${ENTRY_FIELDS}))`;
+
+/** GET with a `fields` filter; if Spotify refuses the filter (400), once more without it. */
+async function apiFields<T>(path: string, fields: string, keys: { id: string; secret: string }, until: number): Promise<T> {
+  const sep = path.includes("?") ? "&" : "?";
+  try {
+    return await api<T>(`${path}${sep}fields=${encodeURIComponent(fields)}`, keys, until);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 400) return api<T>(path, keys, until);
+    throw e;
+  }
+}
+
 async function readApi(kind: "playlist" | "album", id: string, keys: { id: string; secret: string }, until: number): Promise<SpotifyList> {
   if (kind === "playlist") {
-    const meta = await api<{ name?: string; owner?: { display_name?: string }; images?: ApiImage[]; tracks?: { total?: number } }>(
-      `/playlists/${id}?fields=name,owner(display_name),images,tracks.total`,
-      keys,
-      until
-    );
-    const total = Number(meta.tracks?.total) || 0;
-    const pages = await pool(pageOffsets(total, 100), PAGES_AT_ONCE, (offset) =>
-      api<{ items?: { is_local?: boolean; track?: ApiTrack | null }[] }>(
-        `/playlists/${id}/tracks?limit=100&offset=${offset}&fields=next,total,items(is_local,track(name,duration_ms,artists(name),type))`,
-        keys,
-        until
-      )
-    );
-    const songs = pages
-      .flatMap((p) => p.items ?? [])
-      .filter((it) => !it?.is_local)
-      .map((it) => songOf(it?.track))
-      .filter((s): s is SpotifySong => !!s)
-      .slice(0, MAX_SONGS);
-    return {
+    const meta = await apiFields<{
+      name?: string;
+      owner?: { display_name?: string };
+      images?: ApiImage[];
+      items?: { total?: number } | null;
+      tracks?: { total?: number } | null;
+    }>(`/playlists/${id}`, META_FIELDS, keys, until);
+    const total = totalOf(meta);
+    const base: SpotifyList = {
       kind,
       id,
       name: String(meta.name ?? "Spotify"),
       owner: String(meta.owner?.display_name ?? ""),
       cover: bestImage(meta.images),
-      songs,
+      songs: [],
       via: "api",
-      total,
-      ...(total > MAX_SONGS ? { truncated: true } : {}),
+      ...(total !== undefined ? { total } : {}),
     };
+    // Details only (no `items`, no total): a Development Mode app reading a
+    // playlist its user does not own. The songs come from the embed page.
+    if (total === undefined) throw new MetaOnly(base);
+    if (total === 0) return base;
+
+    // GET …/items (since February 2026), else …/tracks (404 / 410: the old API).
+    let route = "items";
+    const page = async (offset: number) => {
+      const path = (r: string) => `/playlists/${id}/${r}?limit=100&offset=${offset}`;
+      try {
+        return await apiFields<{ items?: (ApiEntry | null)[] }>(path(route), PAGE_FIELDS, keys, until);
+      } catch (e) {
+        if (route === "items" && e instanceof ApiError && (e.status === 404 || e.status === 410)) {
+          route = "tracks";
+          return apiFields<{ items?: (ApiEntry | null)[] }>(path(route), PAGE_FIELDS, keys, until);
+        }
+        throw e;
+      }
+    };
+    const offsets = pageOffsets(total, 100);
+    let pages: { items?: (ApiEntry | null)[] }[];
+    try {
+      const first = await page(offsets[0]); // finds the route the others use
+      pages = [first, ...(await pool(offsets.slice(1), PAGES_AT_ONCE, page))];
+    } catch (e) {
+      // The details came, the songs are refused: the user-only rule again.
+      if (e instanceof ApiError && (e.status === 401 || e.status === 403 || e.status === 404)) throw new MetaOnly(base);
+      throw e;
+    }
+    const songs = songsOfEntries(pages.flatMap((p) => p.items ?? [])).slice(0, MAX_SONGS);
+    if (!songs.length) throw new MetaOnly(base);
+    return { ...base, songs, ...(total > MAX_SONGS ? { truncated: true } : {}) };
   }
 
-  const album = await api<{ name?: string; artists?: { name?: string }[]; images?: ApiImage[]; total_tracks?: number; tracks?: { total?: number } }>(`/albums/${id}`, keys, until);
-  const total = Number(album.tracks?.total ?? album.total_tracks) || 0;
-  const pages = await pool(pageOffsets(total, 50), PAGES_AT_ONCE, (offset) => api<{ items?: ApiTrack[] }>(`/albums/${id}/tracks?limit=50&offset=${offset}`, keys, until));
+  const album = await api<{
+    name?: string;
+    artists?: { name?: string }[];
+    images?: ApiImage[];
+    total_tracks?: number;
+    tracks?: { total?: number } | null;
+    items?: { total?: number } | null;
+  }>(`/albums/${id}`, keys, until);
+  const total = totalOf(album) ?? (Number(album.total_tracks) || 0);
+  const pages = await pool(pageOffsets(total, 50), PAGES_AT_ONCE, (offset) =>
+    api<{ items?: (ApiTrack & ApiEntry)[] }>(`/albums/${id}/tracks?limit=50&offset=${offset}`, keys, until)
+  );
   const songs = pages
     .flatMap((p) => p.items ?? [])
-    .map(songOf)
+    .map((t) => songOf(t?.item ?? t?.track ?? t))
     .filter((s): s is SpotifySong => !!s)
     .slice(0, MAX_SONGS);
-  return {
+  const list: SpotifyList = {
     kind,
     id,
     name: String(album.name ?? "Spotify"),
@@ -262,6 +370,8 @@ async function readApi(kind: "playlist" | "album", id: string, keys: { id: strin
     total,
     ...(total > MAX_SONGS ? { truncated: true } : {}),
   };
+  if (!songs.length && total > 0) throw new MetaOnly({ ...list, songs: [] });
+  return list;
 }
 
 // ---- 2. The public embed page ----------------------------------------------------

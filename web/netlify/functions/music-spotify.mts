@@ -9,7 +9,10 @@
 //          (`truncated` beyond; `total` = the real count). via "embed":
 //          Spotify's public embed page (no key, a playlist's first 100);
 //          `limited` = a playlist of 100+ songs, there may be more; `reason`
-//          = "no-key" | "spotify-owned" | "api-error". lib/spotify.mts.
+//          = "no-key" | "spotify-owned" | "api-error" | "owner-only" (the
+//          API gave only the details: since February 2026 a Development
+//          Mode app reads the songs only of the signed-in user's own
+//          playlists; name and cover then come from the API). lib/spotify.mts.
 //   POST { tracks: ["<22-char track id>", …] }   (up to 50 at a time)
 //        → { songs: [{ title, artist, ms } | null, …], failed: [i, …] }
 //          songs copied from the Spotify app and pasted (one track link per

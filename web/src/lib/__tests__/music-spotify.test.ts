@@ -69,9 +69,17 @@ const playlistEmbed = (n: number) =>
 
 const ok = (body: unknown) => new Response(typeof body === "string" ? body : JSON.stringify(body), { status: 200 });
 
-/** Fake Spotify: token, Web API (playlist of `total` songs) and embed pages. */
-function fakeSpotify(opts: { total?: number; apiStatus?: number; embedSongs?: number } = {}) {
+/**
+ * Fake Spotify: token, Web API (playlist of `total` songs) and embed pages.
+ * `shape` "new" (default): February 2026 Development Mode — `items.total`,
+ * GET …/items with `item` entries, …/tracks gone (404). "old": `tracks.total`,
+ * GET …/tracks with `track` entries, no …/items (404). `metaOnly`: the details
+ * without `items` (a playlist the app's user does not own), songs refused.
+ */
+function fakeSpotify(opts: { total?: number; apiStatus?: number; embedSongs?: number; shape?: "new" | "old"; metaOnly?: boolean } = {}) {
   const total = opts.total ?? 250;
+  const shape = opts.shape ?? "new";
+  const key = shape === "new" ? "item" : "track";
   return vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const u = new URL(String(input));
     if (u.host === "accounts.spotify.com") {
@@ -83,17 +91,23 @@ function fakeSpotify(opts: { total?: number; apiStatus?: number; embedSongs?: nu
     if (u.host === "api.spotify.com") {
       expect(new Headers(init?.headers).get("authorization")).toBe("Bearer app-token");
       if (opts.apiStatus) return new Response("{}", { status: opts.apiStatus });
-      const tracks = u.pathname.endsWith("/tracks");
-      if (!tracks) return ok({ name: "API list", owner: { display_name: "Ann" }, images: [{ url: "https://i/a", width: 300 }, { url: "https://i/b", width: 640 }], tracks: { total } });
+      const route = u.pathname.match(/\/(items|tracks)$/)?.[1];
+      if (!route) {
+        const details = { name: "API list", owner: { display_name: "Ann" }, images: [{ url: "https://i/a", width: 300 }, { url: "https://i/b", width: 640 }] };
+        if (opts.metaOnly) return ok(details);
+        return ok({ ...details, ...(shape === "new" ? { items: { total } } : { tracks: { total } }) });
+      }
+      if ((shape === "new") !== (route === "items")) return new Response('{"error":{"status":404}}', { status: 404 });
+      if (opts.metaOnly) return new Response('{"error":{"status":403}}', { status: 403 });
       const offset = Number(u.searchParams.get("offset"));
       const limit = Number(u.searchParams.get("limit"));
       const items = Array.from({ length: Math.max(0, Math.min(limit, total - offset)) }, (_, k) => {
         const i = offset + k;
         // A local file, an episode and an empty slot are skipped.
-        if (i === 1) return { is_local: true, track: { name: "Local", duration_ms: 1, artists: [], type: "track" } };
-        if (i === 2) return { is_local: false, track: { name: "Podcast", duration_ms: 1, artists: [], type: "episode" } };
-        if (i === 3) return { is_local: false, track: null };
-        return { is_local: false, track: { name: `Song ${i}`, duration_ms: 1000 + i, artists: [{ name: "A" }, { name: "B" }], type: "track" } };
+        if (i === 1) return { is_local: true, [key]: { name: "Local", duration_ms: 1, artists: [], type: "track" } };
+        if (i === 2) return { is_local: false, [key]: { name: "Podcast", duration_ms: 1, artists: [], type: "episode" } };
+        if (i === 3) return { is_local: false, [key]: null };
+        return { is_local: false, [key]: { name: `Song ${i}`, duration_ms: 1000 + i, artists: [{ name: "A" }, { name: "B" }], type: "track" } };
       });
       return ok({ items, total, next: null });
     }
@@ -147,7 +161,7 @@ describe("readSpotify with the site's keys (Web API)", () => {
     vi.unstubAllEnvs();
   });
 
-  it("reads every page (total 250 → 3 pages) in order, skipping local files, episodes and empty slots", async () => {
+  it("new shape (Feb 2026): items.total, GET …/items, `item` entries; every page (250 → 3) in order, local files, episodes and empty slots skipped", async () => {
     const f = fakeSpotify({ total: 250 });
     vi.stubGlobal("fetch", f);
     const list = await readSpotify("playlist", PL);
@@ -158,11 +172,65 @@ describe("readSpotify with the site's keys (Web API)", () => {
     expect(list.songs[0]).toEqual({ title: "Song 0", artist: "A, B", ms: 1000 });
     expect(list.songs.map((s) => s.title).slice(0, 3)).toEqual(["Song 0", "Song 4", "Song 5"]);
     expect(list.songs[list.songs.length - 1].title).toBe("Song 249");
-    const pages = apiCalls(f, "api.spotify.com").filter((u) => u.pathname.endsWith("/tracks"));
+    const pages = apiCalls(f, "api.spotify.com").filter((u) => u.pathname.endsWith("/items"));
     expect(pages.map((u) => u.searchParams.get("offset")).sort()).toEqual(["0", "100", "200"]);
     expect(pages[0].searchParams.get("limit")).toBe("100");
-    expect(pages[0].searchParams.get("fields")).toContain("items(is_local,track(name,duration_ms,artists(name),type))");
+    expect(pages[0].searchParams.get("fields")).toContain("item(name,duration_ms,artists(name),type)");
+    expect(apiCalls(f, "api.spotify.com").filter((u) => u.pathname.endsWith("/tracks"))).toHaveLength(0);
     expect(apiCalls(f, "open.spotify.com")).toHaveLength(0); // no embed page needed
+  });
+
+  it("old shape (Extended Quota Mode): tracks.total, `track` entries; …/items 404 → …/tracks, asked once", async () => {
+    const f = fakeSpotify({ total: 250, shape: "old" });
+    vi.stubGlobal("fetch", f);
+    const list = await readSpotify("playlist", PL);
+    expect(list).toMatchObject({ name: "API list", owner: "Ann", cover: "https://i/b", via: "api", total: 250 });
+    expect(list.songs).toHaveLength(247);
+    expect(list.songs[0]).toEqual({ title: "Song 0", artist: "A, B", ms: 1000 });
+    const api = apiCalls(f, "api.spotify.com");
+    expect(api.filter((u) => u.pathname.endsWith("/items"))).toHaveLength(1); // only the first page tries it
+    expect(api.filter((u) => u.pathname.endsWith("/tracks")).map((u) => u.searchParams.get("offset")).sort()).toEqual(["0", "100", "200"]);
+    expect(apiCalls(f, "open.spotify.com")).toHaveLength(0);
+  });
+
+  it("details only (Development Mode, not the user's playlist): the embed page's songs, the API's name and cover, limited, reason owner-only", async () => {
+    const f = fakeSpotify({ metaOnly: true, embedSongs: 100 });
+    vi.stubGlobal("fetch", f);
+    const list = await readSpotify("playlist", PL);
+    expect(list).toMatchObject({ via: "embed", limited: true, reason: "owner-only", name: "API list", owner: "Ann", cover: "https://i/b" });
+    expect(list.songs).toHaveLength(100);
+    expect(list.songs[0]).toEqual({ title: "Song 0", artist: "Artist", ms: 1000 });
+    expect(apiCalls(f, "open.spotify.com")[0].pathname).toBe(`/embed/playlist/${PL}`);
+  });
+
+  it("a total but every song refused (403) or none collected: still the embed page, never 0 songs", async () => {
+    // Total given, pages refused.
+    const f = vi.fn(async (input: string | URL | Request) => {
+      const u = new URL(String(input));
+      if (u.host === "accounts.spotify.com") return ok({ access_token: "app-token", expires_in: 3600 });
+      if (u.host === "open.spotify.com") return ok(playlistEmbed(40));
+      if (u.pathname.endsWith("/items")) return new Response("{}", { status: 403 });
+      return ok({ name: "party", owner: { display_name: "Gca" }, images: [{ url: "https://i/p", width: 640 }], items: { total: 140 } });
+    });
+    vi.stubGlobal("fetch", f);
+    const a = await readSpotify("playlist", PL);
+    expect(a).toMatchObject({ via: "embed", reason: "owner-only", name: "party", owner: "Gca", cover: "https://i/p", total: 140, limited: true });
+    expect(a.songs).toHaveLength(40);
+
+    // Pages answered with no songs at all.
+    forgetSpotify();
+    const g = vi.fn(async (input: string | URL | Request) => {
+      const u = new URL(String(input));
+      if (u.host === "accounts.spotify.com") return ok({ access_token: "app-token", expires_in: 3600 });
+      if (u.host === "open.spotify.com") return ok(playlistEmbed(12));
+      if (u.pathname.endsWith("/items")) return ok({ items: [], total: 12 });
+      return ok({ name: "party", owner: { display_name: "Gca" }, images: [], items: { total: 12 } });
+    });
+    vi.stubGlobal("fetch", g);
+    const b = await readSpotify("playlist", PL);
+    expect(b).toMatchObject({ via: "embed", reason: "owner-only", name: "party" });
+    expect(b.songs).toHaveLength(12);
+    expect(b.limited).toBeUndefined(); // the embed page had all 12
   });
 
   it("asks for the token once and reuses it", async () => {
@@ -180,7 +248,7 @@ describe("readSpotify with the site's keys (Web API)", () => {
     const list = await readSpotify("playlist", PL);
     expect(list).toMatchObject({ via: "api", total: 1500, truncated: true });
     expect(list.songs.length).toBeLessThanOrEqual(MAX_SONGS);
-    const pages = apiCalls(f, "api.spotify.com").filter((u) => u.pathname.endsWith("/tracks"));
+    const pages = apiCalls(f, "api.spotify.com").filter((u) => u.pathname.endsWith("/items"));
     expect(pages).toHaveLength(10);
     expect(pageOffsets(1500, 100).slice(-1)[0]).toBe(900);
     expect(pageOffsets(250, 100)).toEqual([0, 100, 200]);
@@ -199,6 +267,22 @@ describe("readSpotify with the site's keys (Web API)", () => {
   it("another API failure falls back too, as api-error", async () => {
     vi.stubGlobal("fetch", fakeSpotify({ apiStatus: 500, embedSongs: 100 }));
     expect(await readSpotify("playlist", PL)).toMatchObject({ via: "embed", limited: true, reason: "api-error" });
+  });
+
+  it("an album whose pages give no songs falls back to its embed page", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL | Request) => {
+        const u = new URL(String(input));
+        if (u.host === "accounts.spotify.com") return ok({ access_token: "app-token", expires_in: 3600 });
+        if (u.host === "open.spotify.com") return ok(playlistEmbed(9));
+        if (u.pathname.endsWith("/tracks")) return ok({ items: [] });
+        return ok({ name: "Album", artists: [{ name: "X" }], images: [{ url: "https://i/c", width: 640 }], total_tracks: 9 });
+      })
+    );
+    const list = await readSpotify("album", PL);
+    expect(list).toMatchObject({ kind: "album", via: "embed", name: "Album", cover: "https://i/c" });
+    expect(list.songs).toHaveLength(9);
   });
 
   it("reads an album with its own pages of 50", async () => {

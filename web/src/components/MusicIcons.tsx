@@ -189,6 +189,13 @@ export const IconCheck = (p: P) => (
     <path d="M20 6 9 17l-5-5" />
   </Svg>
 );
+/** A person (sign in to an account). */
+export const IconUser = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 20.5c1.2-3.6 4.3-5.5 8-5.5s6.8 1.9 8 5.5" />
+  </Svg>
+);
 export const IconExternal = (p: P) => (
   <Svg {...p}>
     <path d="M15 3h6v6" />

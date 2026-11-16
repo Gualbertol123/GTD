@@ -21,7 +21,9 @@ import {
   matchSpotify,
   music,
   parseSpotifyTracks,
+  readSpotifyAsUser,
   readSpotifyTracks,
+  spotifyPlaylistId,
   musicErrorText,
   playlistIdFrom,
   searchMusic,
@@ -85,8 +87,10 @@ import {
   IconSpinner,
   IconTrend,
   IconUp,
+  IconUser,
   IconVolume,
 } from "./MusicIcons";
+import { beginSpotifyLogin, signOutSpotify, spotifyLoginAvailable, spotifyUserToken, takeReturnLink, useSpotifyAuth } from "../lib/spotifyAuth";
 import "../styles/musicTab.css";
 
 // -----------------------------------------------------------------------------
@@ -1424,13 +1428,26 @@ async function startSpotify(input: string): Promise<void> {
   if (ids.length >= 2) return startPasted(input, ids, ctrl);
   if (!isSpotifyLink(input)) return setSp({ url: input, phase: "error", error: "bad-link", list: null, done: 0, matches: [] });
   setSp({ url: input, phase: "reading", error: null, list: null, done: 0, matches: [] });
+  // Signed in with Spotify: the playlist straight from Spotify with the
+  // person's own token (all of it when it is theirs or collaborative).
+  const pid = spotifyPlaylistId(input);
+  let ownerOnly = false;
+  if (pid && spotifyUserToken()) {
+    const u = await readSpotifyAsUser(pid, { signal: ctrl.signal });
+    if (!mine() || !spJob) return;
+    if (u !== "meta-only" && u !== "fail") return matchList(u, ctrl);
+    ownerOnly = u === "meta-only";
+  }
   const r = await fetchSpotify(input, { signal: ctrl.signal });
   if (!mine() || !spJob) return;
   if (isFail(r)) {
     if (r.error !== "aborted") setSp({ ...spJob, phase: "error", error: r.error });
     return;
   }
-  await matchList(r, ctrl);
+  // Spotify gave the signed-in person only the details: the server's list
+  // (the embed page's first 100), with the hint that says why.
+  const list = ownerOnly && r.via !== "api" ? { ...r, reason: "owner-only" as const, ...(r.songs.length >= 100 ? { limited: true } : {}) } : r;
+  await matchList(list, ctrl);
 }
 
 /** Step 1 of 2 for pasted songs: read each one from Spotify; then the same matching. */
@@ -1483,6 +1500,34 @@ async function retrySpotifyMissing(): Promise<void> {
 /** README §1e: how the site admin adds Spotify's free keys. */
 const SPOTIFY_KEYS_HELP = "https://github.com/Gualbertol123/prova_sito_GTD#1e-music";
 
+/**
+ * "Accedi con Spotify" (only when the site has VITE_SPOTIFY_CLIENT_ID), or
+ * "Connesso a Spotify · Esci". Signed in, this tab reads the person's own and
+ * collaborative playlists in full (lib/spotifyAuth.ts).
+ */
+function SpotifyLogin({ link }: { link: string }) {
+  const { t } = useT();
+  const auth = useSpotifyAuth();
+  if (!spotifyLoginAvailable()) return null;
+  if (auth.status === "in")
+    return (
+      <p className="mt-hint mt-splogin">
+        <IconCheck size={15} /> {t("sp.connected")} ·{" "}
+        <button type="button" className="mt-link" onClick={signOutSpotify}>
+          {t("sp.logout")}
+        </button>
+      </p>
+    );
+  return (
+    <div className="mt-splogin">
+      <button type="button" className="mt-pill mt-pill--sm" disabled={auth.status === "busy"} onClick={() => void beginSpotifyLogin(link)}>
+        {auth.status === "busy" ? <IconSpinner size={14} /> : <IconUser size={14} />} {t(auth.status === "busy" ? "sp.loggingIn" : "sp.login")}
+      </button>
+      <span className="mt-hint">{t(auth.status === "error" ? "sp.loginFailed" : "sp.loginHint")}</span>
+    </div>
+  );
+}
+
 /** A labelled progress bar (one import step). */
 function StepBar({ label, n, m }: { label: string; n: number; m: number }) {
   return (
@@ -1501,6 +1546,16 @@ function SpotifyPage({ playlists, available, go }: { playlists: Playlist[]; avai
   const job = useSpotifyJob();
   const [link, setLink] = useState(job?.url ?? "");
   const [editing, setEditing] = useState(false);
+  const auth = useSpotifyAuth();
+
+  // Back from "Accedi con Spotify": the link being imported before, read again with the new login.
+  useEffect(() => {
+    if (auth.status !== "in" && auth.status !== "error") return;
+    const back = takeReturnLink();
+    if (!back) return;
+    setLink(back);
+    if (auth.status === "in") void startSpotify(back);
+  }, [auth.status]);
 
   const list = job?.list ?? null;
   const phase = job?.phase ?? "idle";
@@ -1586,6 +1641,7 @@ function SpotifyPage({ playlists, available, go }: { playlists: Playlist[]; avai
         </button>
       </form>
       {typed >= 2 && link.trim() !== job?.url && <p className="mt-hint">{t("sp.pastedCount", { n: typed })}</p>}
+      <SpotifyLogin link={link} />
       {error === "bad-link" && (
         <div className="mp-note" role="alert">
           {t("sp.badLink")}
@@ -1630,7 +1686,7 @@ function SpotifyPage({ playlists, available, go }: { playlists: Playlist[]; avai
           {list.limited && (
             <div className="mt-hint" role="note">
               <p style={{ margin: "0 0 4px" }}>
-                {t(list.reason === "spotify-owned" ? "sp.limitedOwned" : "sp.limited")} {t("sp.pasteHow")}
+                {list.reason === "owner-only" ? t("sp.ownerOnly") : `${t(list.reason === "spotify-owned" ? "sp.limitedOwned" : "sp.limited")} ${t("sp.pasteHow")}`}
               </p>
               {list.reason === "no-key" && (
                 <p style={{ margin: 0 }}>

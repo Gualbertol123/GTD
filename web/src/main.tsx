@@ -7,6 +7,7 @@ import { AuthGate } from "./components/AuthGate";
 import { initSkin } from "./lib/skin";
 import { initPwa } from "./lib/pwa";
 import { IdleOpener } from "./components/IdleOpener";
+import { handleSpotifyCallback } from "./lib/spotifyAuth";
 import "./index.css";
 import "./styles/glass.css";
 
@@ -14,6 +15,9 @@ import "./styles/glass.css";
 initSkin();
 // Installable app: service worker (code only, never data) + install prompt.
 initPwa();
+// Back from "Accedi con Spotify" (/callback?code&state): the address becomes
+// /#/music/spotify before the router reads it, then the code is exchanged.
+void handleSpotifyCallback();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

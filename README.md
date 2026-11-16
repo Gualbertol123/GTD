@@ -192,15 +192,28 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
   songs not found are listed. Where the songs come from
   (`netlify/lib/spotify.mts`, function `netlify/functions/music-spotify.mts`):
   - **With the site's Spotify keys** (optional, see Setup step 4): the official
-    Spotify Web API gives **every song, up to 1000** (the page shows the
-    playlist's total, and says so when only the first 1000 were taken).
+    Spotify Web API. Since Spotify's February/March 2026 rules, an app in
+    *Development Mode* (the default) gets with these keys (Client Credentials,
+    no user) **only a playlist's details** (name, cover): the songs then come
+    from the embed page below (first 100), keeping the API's name and cover,
+    and the page says why. Albums, and apps in *Extended Quota Mode*, still
+    give every song, up to 1000. Both the old (`tracks`) and new (`items`)
+    answer shapes are read.
+  - **Accedi con Spotify** (optional, Setup step 4): a person signs in with
+    their own Spotify account in the browser (Authorization Code with PKCE,
+    no secret, token kept in this tab only). Their **own and collaborative
+    playlists** are then read whole (up to 1000) straight from Spotify; for
+    anyone else's playlist Spotify still gives only the details, so the
+    first 100 come from the embed page. A Development Mode app needs its
+    owner to have **Spotify Premium** and allows **at most 5 users**, each
+    added in the dashboard under *User Management* (name + Spotify e-mail).
   - **Without keys**, or when the API refuses: Spotify's public embed page, no
     account and no key, but only a playlist's **first 100 songs** (an album's
     all). The page then explains how to get the rest. Since late 2024 Spotify
     refuses new apps the playlists made by Spotify itself (editorial and
     algorithmic ones, ids often starting `37i9dQZF1`), so those need the
     paste method below even with keys.
-  - **Paste the songs (no key needed, any length):** in the Spotify desktop or
+  - **Paste the songs (no key needed, any length, works for every playlist):** in the Spotify desktop or
     web app open the playlist, click a song, press **Ctrl+A** (Cmd+A on a
     Mac), then **Ctrl+C**, and paste into the Spotify link field. That copies
     one `https://open.spotify.com/track/…` link per song; each song is read
@@ -210,7 +223,7 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
 
   The embed pages are unofficial: if Spotify changes them, the import says so.
   Nothing taken from them is used to call Spotify's API; only the site's own
-  keys are.
+  keys and the signed-in person's own token are.
 - On a phone the music stops when the screen locks or the app goes to the
   background (a limit of YouTube embeds on iOS / Android).
 - **Every control answers at once.**
@@ -263,25 +276,29 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
    costs only 1 unit per 50 songs, and the suggested playlist searches are
    kept in each browser for a day. When it runs out the player says so and
    offers YouTube's own search until the next day.
-4. *(Optional)* **Spotify keys**, so "Importa da Spotify" reads whole
-   playlists (up to 1000 songs) instead of the first 100. Free:
+4. *(Optional)* **Spotify app**, for "Importa da Spotify" past the first 100
+   songs. Free. Under Spotify's 2026 rules for *Development Mode* apps the
+   site's keys give only a playlist's details; signing in (*Accedi con
+   Spotify*) reads whole the playlists the person owns or collaborates on;
+   the app owner needs Spotify Premium; at most 5 users. The paste method
+   (Ctrl+A / Ctrl+C) works for every playlist without any of this.
    1. [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard)
       → *Create app* (any name and description; tick only *Web API*).
-      Spotify requires a Redirect URI even though this import never uses it,
-      and it refuses `localhost`: enter the site's address plus `/callback`
-      (e.g. `https://<your-site>.netlify.app/callback`) or
-      `http://127.0.0.1:8888/callback`, then click *Add*.
-   2. Open the app's *Settings*, copy the *Client ID* and the *Client secret*
-      into Netlify → Site configuration → Environment variables as
-      `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` (keep the secret's
-      scope including *Functions*).
-   3. Redeploy (Deploys → Trigger deploy): functions read new variables
-      only after a deploy. The app staying in Spotify's "Development mode"
-      is fine: that only limits user logins, which this import never uses.
-   The keys are read only by `netlify/lib/spotify.mts` on the server (Client
-   Credentials flow: no user login, public playlists only), never sent to
-   browsers or logged, and **must never be put in the code**. Playlists made by
-   Spotify itself still give only 100 songs this way: use the paste method.
+      *Redirect URIs*: add exactly `https://<your-site>/callback` (e.g.
+      `https://<your-site>.netlify.app/callback`), then *Add* and *Save*.
+      *User Management*: add each person who will sign in (name + the
+      e-mail of their Spotify account; at most 5).
+   2. Netlify → Site configuration → Environment variables:
+      `VITE_SPOTIFY_CLIENT_ID` = the app's *Client ID* (public, read at
+      **build** time; it turns on the *Accedi con Spotify* button), and keep
+      `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET` for the server path (keep
+      the secret's scope including *Functions*).
+   3. Redeploy (Deploys → Trigger deploy): the build and the functions read
+      new variables only after a deploy.
+   The secret is read only by `netlify/lib/spotify.mts` on the server, never
+   sent to browsers or logged, and **must never be put in the code**. The
+   sign-in (`src/lib/spotifyAuth.ts`) needs no secret: the browser exchanges
+   the code itself (PKCE) and keeps the token in `sessionStorage`.
 5. Supabase → SQL Editor: run `supabase/migration-021-music-radio-playlists.sql`
    (after 018–020), so playlists saved with *Salva radio come playlist* update
    themselves once a day. Before it, they are saved as ordinary playlists.
@@ -291,7 +308,8 @@ an embed whose page sends none ("Error 153"), and this site sends
 `Referrer-Policy: no-referrer`. The player's own frame therefore uses
 `strict-origin-when-cross-origin` (YouTube sees the site's address, no path);
 everything else still sends nothing. The CSP allows YouTube's script and
-frame (`netlify.toml`).
+frame, and calls to `accounts.spotify.com` / `api.spotify.com` for *Accedi
+con Spotify* (`netlify.toml`).
 
 Header extras: editable board title + subtitle (double-click), a **"You"**
 identity picker, a live-connection badge, an **IT/EN** toggle, a **Glass**
@@ -572,6 +590,7 @@ prova_sito_GTD/
         │   ├── pwa.ts            ← service worker registration + the install prompt
         │   ├── music.ts          ← the music player's state, defaults, link parsing, search
         │   ├── musicDb.ts        ← team playlists (music_playlists), live
+        │   ├── spotifyAuth.ts    ← "Accedi con Spotify": PKCE in the browser, /callback, token in sessionStorage
         │   ├── i18n.mobile.ts    ← the mobile app's IT/EN strings (merged into i18n.tsx)
         │   ├── __tests__/        ← Vitest: reducer, live sync, projects, subtask writes, i18n parity
         │   ├── seed.ts           ← initial data for a brand-new empty project

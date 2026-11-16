@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { supabase } from "./supabaseClient";
 import { readPref, writePref } from "./prefs";
+import { refreshSpotifyToken, spotifyUserToken } from "./spotifyAuth";
 
 // -----------------------------------------------------------------------------
 // The music player (components/MusicPlayer.tsx): what it can play, its state,
@@ -2070,7 +2071,8 @@ export interface SpotifyList {
   truncated?: boolean;
   /** A playlist of 100+ songs read from the embed page: there may be more. */
   limited?: boolean;
-  reason?: "no-key" | "spotify-owned" | "api-error";
+  /** "owner-only": Spotify gave only the details (since Feb 2026 it lists the songs only of your own or collaborative playlists). */
+  reason?: "no-key" | "spotify-owned" | "api-error" | "owner-only";
 }
 
 /** Is this a Spotify playlist / album link? */
@@ -2100,6 +2102,144 @@ export function parseSpotifyTracks(text: string): string[] {
 
 /** Two or more track links: a list of songs pasted from the Spotify app. */
 export const isSpotifyTrackList = (s: string) => parseSpotifyTracks(s).length >= 2;
+
+/** The playlist id in a Spotify playlist link (null for an album or anything else). */
+export function spotifyPlaylistId(s: string): string | null {
+  const t = s.trim();
+  const m = t.match(/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(?:embed\/)?playlist\/([A-Za-z0-9]{22})/) ?? t.match(/^spotify:playlist:([A-Za-z0-9]{22})$/);
+  return m ? m[1] : null;
+}
+
+/** Songs read from one playlist at most (as on the server). */
+const USER_MAX_SONGS = 1000;
+const USER_PAGES_AT_ONCE = 4;
+/** Each call to api.spotify.com must answer within this. */
+const USER_CALL_MS = 10000;
+
+interface UserApiTrack {
+  name?: string;
+  duration_ms?: number;
+  artists?: { name?: string }[];
+  type?: string;
+}
+/** A playlist entry: `item` since February 2026, `track` before (Extended Quota Mode). */
+interface UserApiEntry {
+  is_local?: boolean;
+  item?: UserApiTrack | null;
+  track?: UserApiTrack | null;
+}
+
+/** The songs of playlist entries in either shape; local files, episodes and empty slots skipped. */
+export function songsOfSpotifyEntries(entries: (UserApiEntry | null | undefined)[]): SpotifySong[] {
+  const out: SpotifySong[] = [];
+  for (const e of entries) {
+    if (!e || e.is_local) continue;
+    const t = e.item ?? e.track;
+    if (!t?.name || (t.type && t.type !== "track")) continue;
+    out.push({ title: t.name, artist: (t.artists ?? []).map((a) => a?.name).filter(Boolean).join(", "), ms: Number(t.duration_ms) || 0 });
+  }
+  return out;
+}
+
+class UserApiError extends Error {
+  constructor(public status: number) {
+    super(`spotify ${status}`);
+  }
+}
+
+/** GET api.spotify.com with the user's token: a timeout, the caller's signal, one refresh on 401. */
+async function userApi<T>(path: string, signal?: AbortSignal): Promise<T> {
+  let tok = spotifyUserToken();
+  if (!tok) throw new UserApiError(401);
+  for (let attempt = 0; ; attempt++) {
+    if (signal?.aborted) throw new UserApiError(0);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), USER_CALL_MS);
+    const onAbort = () => ctrl.abort();
+    signal?.addEventListener("abort", onAbort, { once: true });
+    let res: Response;
+    try {
+      res = await fetch(`https://api.spotify.com/v1${path}`, { headers: { Authorization: `Bearer ${tok}` }, signal: ctrl.signal });
+    } catch {
+      throw new UserApiError(0); // offline, timeout or cancelled
+    } finally {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+    }
+    if (res.status === 401 && attempt === 0) {
+      tok = await refreshSpotifyToken(signal);
+      if (!tok) throw new UserApiError(401);
+      continue;
+    }
+    if (!res.ok) throw new UserApiError(res.status);
+    return (await res.json()) as T;
+  }
+}
+
+/**
+ * A playlist read with the signed-in user's own Spotify token, straight from
+ * api.spotify.com (up to 1000 songs). "meta-only": Spotify gave only its
+ * details (since Feb 2026, a playlist the user neither owns nor collaborates
+ * on); "fail": anything else (not signed in, refused, offline, cancelled).
+ */
+export async function readSpotifyAsUser(id: string, opts?: CallOpts): Promise<SpotifyList | "meta-only" | "fail"> {
+  const signal = opts?.signal;
+  try {
+    const meta = await userApi<{
+      name?: string;
+      owner?: { display_name?: string };
+      images?: { url?: string; width?: number | null }[];
+      items?: { total?: number } | null;
+      tracks?: { total?: number } | null;
+    }>(`/playlists/${id}?fields=${encodeURIComponent("name,owner(display_name),images,items(total),tracks(total)")}`, signal);
+    const rawTotal = meta.items?.total ?? meta.tracks?.total;
+    if (typeof rawTotal !== "number") return "meta-only";
+    const total = rawTotal;
+    const base: SpotifyList = {
+      kind: "playlist",
+      id,
+      name: String(meta.name ?? "Spotify"),
+      owner: String(meta.owner?.display_name ?? ""),
+      cover: [...(meta.images ?? [])].sort((a, b) => (b.width ?? 0) - (a.width ?? 0))[0]?.url ?? "",
+      songs: [],
+      via: "api",
+      total,
+    };
+    if (total === 0) return base;
+    const fields = encodeURIComponent("total,items(is_local,item(name,duration_ms,artists(name),type),track(name,duration_ms,artists(name),type))");
+    let route = "items";
+    const page = async (offset: number) => {
+      const path = () => `/playlists/${id}/${route}?limit=100&offset=${offset}&fields=${fields}`;
+      try {
+        return await userApi<{ items?: (UserApiEntry | null)[] }>(path(), signal);
+      } catch (e) {
+        // …/items is new (Feb 2026): an app still on the old API answers 404 / 410.
+        if (route === "items" && e instanceof UserApiError && (e.status === 404 || e.status === 410)) {
+          route = "tracks";
+          return userApi<{ items?: (UserApiEntry | null)[] }>(path(), signal);
+        }
+        throw e;
+      }
+    };
+    const offsets: number[] = [];
+    for (let o = 0; o < Math.min(total, USER_MAX_SONGS); o += 100) offsets.push(o);
+    const pages = [await page(offsets[0])];
+    let next = 1;
+    const worker = async () => {
+      while (next < offsets.length) {
+        const i = next++;
+        pages[i] = await page(offsets[i]);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(USER_PAGES_AT_ONCE, offsets.length - 1) }, worker));
+    const songs = songsOfSpotifyEntries(pages.flatMap((p) => p?.items ?? [])).slice(0, USER_MAX_SONGS);
+    if (!songs.length) return "meta-only";
+    return { ...base, songs, ...(total > USER_MAX_SONGS ? { truncated: true } : {}) };
+  } catch (e) {
+    if (e instanceof UserApiError && e.status === 403) return "meta-only";
+    return "fail";
+  }
+}
 
 /** A public Spotify playlist or album: name, cover, songs (all of them with the site's keys, else a playlist's first 100). */
 export function fetchSpotify(url: string, opts?: CallOpts) {
