@@ -20,10 +20,12 @@
 //          `failed`: Spotify did not answer in time or failed, worth asking
 //          again; null alone: no such song.
 //   POST { songs: [{ title, artist, ms }, …] }   (up to 20 at a time)
-//        → { matches: [{ id, title, channel, thumb } | null, …], failed: [i, …] }
-//          each song found on YouTube (lib/ytjs.mts matchSong). null with its
-//          index in `failed`: YouTube did not answer in time or failed, worth
-//          asking again; null alone: YouTube has no good match.
+//        → { matches: [{ id, title, channel, thumb, confidence, ms? } | null, …], failed: [i, …] }
+//          each song found on YouTube (lib/ytjs.mts matchSong). `confidence`
+//          (0–1): how sure the match is (below ~0.6: worth a look); `ms`: the
+//          video's length. null with its index in `failed`: YouTube did not
+//          answer in time or failed, worth asking again; null alone: YouTube
+//          has no good match (a wrong song is never returned as found).
 //
 // The app asks for the songs in small batches and shows the progress, so no
 // single call comes near Netlify's time limit. No Spotify account needed, no
@@ -79,10 +81,12 @@ export default async (req: Request): Promise<Response> => {
   // failure or timeout is reported in `failed`, not hidden as "no match".
   const g = await gate(req, () => {
     const ms = msLeft(start, BUDGET_MS - 500);
+    // Each song stops starting new searches in time to answer by then.
+    const until = Date.now() + ms;
     return Promise.all(
       songs.map((s): Promise<Match | Failed> =>
         s.title
-          ? deadline(matchSong(s.title, s.artist, s.ms), ms).catch((e) => {
+          ? deadline(matchSong(s.title, s.artist, s.ms, until), ms).catch((e) => {
               console.warn("spotify match failed:", e instanceof Error ? e.message : e);
               return { failed: codeOf(e) };
             })

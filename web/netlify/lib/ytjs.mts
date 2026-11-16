@@ -12,8 +12,9 @@
 // -----------------------------------------------------------------------------
 
 import type { Innertube } from "youtubei.js";
-import { BUDGET_MS, NotFoundError, TtlCache, deadline, normKey } from "./http.mts";
+import { BUDGET_MS, NotFoundError, TimeoutError, TtlCache, deadline, normKey } from "./http.mts";
 import { classify, parseViews, type RawResult, type TrackKind, type TrackTag } from "../../src/lib/musicSort";
+import { bestMatch, parseSpotify, queries, type MatchCandidate } from "./songMatch.mts";
 
 export interface Song {
   id: string;
@@ -58,7 +59,7 @@ function innertube(): Promise<Innertube> {
 async function withClient<T>(fn: (yt: Innertube) => Promise<T>, ms = BUDGET_MS - 500): Promise<T> {
   const used = innertube();
   const run = used.then(fn).catch((e) => {
-    if (!(e instanceof NotFoundError) && client === used) client = null;
+    if (!(e instanceof NotFoundError) && !(e instanceof TimeoutError) && client === used) client = null;
     throw e;
   });
   return deadline(run, ms);
@@ -463,66 +464,166 @@ export function musicArtist(id: string): Promise<{ name: string; thumb: string; 
 }
 
 // ---- Matching a song from elsewhere (Spotify import) ----------------------------
+//
+// The scoring is in lib/songMatch.mts (pure, unit-tested); this part asks YouTube.
 
-const norm = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/\(.*?\)|\[.*?\]/g, " ")
-    .replace(/[^a-z0-9 ]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-const words = (s: string) => new Set(norm(s).split(" ").filter((w) => w.length > 1 && !["feat", "ft", "the", "official", "video", "audio", "lyrics", "testo", "remastered", "remaster"].includes(w)));
-
-function parseLength(text: string): number {
-  const p = text.split(":").map(Number);
-  if (p.some(isNaN)) return 0;
-  return p.reduce((a, b) => a * 60 + b, 0) * 1000;
+/** A matched song: how sure the match is (0–1), and its length when known. */
+export interface MatchedSong extends Song {
+  confidence: number;
+  ms?: number;
 }
 
-/** matchSong's bonus for what a candidate is (classify in lib/musicSort). */
-const KIND_BONUS: Record<TrackKind | "lyrics", number> = { official: 1.2, audio: 1.0, live: -0.7, other: 0, lyrics: -0.5, cover: -2 };
-const VARIANT = /\b(remix|lyrics?|lyric video|testo|letra|paroles)\b/i;
+/**
+ * YouTube Music's song search finds the official "Topic" audio, the same
+ * recording as Spotify's (title, artists, length to the second). From some
+ * networks it answers "no results" to everything (the music catalogue is
+ * hidden there; seen from a cloud server in Nov 2026): after NO_MUSIC_AFTER
+ * such answers in a row it is skipped for a while, then tried again.
+ */
+const NO_MUSIC_AFTER = 4;
+const NO_MUSIC_FOR = 30 * MIN;
+const musicState = { works: false, emptyRun: 0, skipUntil: 0 };
+
+const secondsOf = (d: any): number => (typeof d?.seconds === "number" && d.seconds > 0 ? d.seconds * 1000 : parseLength(str(d?.text ?? d)));
+
+function parseLength(text: string): number {
+  if (!/^\d{1,3}(?:[:.]\d{2}){1,2}$/.test(text.trim())) return 0;
+  return text.trim().split(/[:.]/).map(Number).reduce((a, b) => a * 60 + b, 0) * 1000;
+}
+
+/** The candidates of a video search (Video and LockupView nodes). */
+export function videoCandidates(nodes: any[] | undefined): MatchCandidate[] {
+  const out: MatchCandidate[] = [];
+  for (const n of nodes ?? []) {
+    const s = toSong(n);
+    if (!s || out.some((c) => c.id === s.id)) continue;
+    const raw = rawOf(n, s.title);
+    let ms = 0;
+    try {
+      ms = secondsOf(n.duration) || parseLength(str(n.length_text));
+    } catch {
+      /* LockupView without a length badge */
+    }
+    // LockupView: the channel is the first metadata part (" - Topic" kept, unlike Song.channel).
+    const channel = raw.channel || str(n.metadata?.metadata?.metadata_rows?.[0]?.metadata_parts?.[0]?.text) || s.channel;
+    out.push({ id: s.id, title: s.title, channel, ms, verifiedArtist: raw.verifiedArtist, verified: raw.verified, source: "video", rank: out.length });
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
+/** The candidates of a YouTube Music song search (MusicResponsiveListItem nodes, item_type "song"). */
+export function musicCandidates(contents: any[] | undefined): MatchCandidate[] {
+  const out: MatchCandidate[] = [];
+  const items: any[] = [];
+  for (const sec of contents ?? []) items.push(...(sec?.contents ?? (sec?.item_type ? [sec] : [])));
+  for (const n of items) {
+    if (n?.item_type !== "song" && n?.item_type !== "video") continue;
+    const id: string = n.id ?? n.video_id ?? "";
+    if (!VIDEO_ID.test(id) || out.some((c) => c.id === id)) continue;
+    const title = str(n.title);
+    if (!title) continue;
+    const artists: string[] = (n.artists ?? n.authors ?? []).map((a: any) => str(a?.name)).filter(Boolean);
+    const by = artists.join(", ") || str(n.author?.name);
+    out.push({
+      id,
+      title,
+      // A song is the official audio ("Artist - Topic" on YouTube); a video keeps its channel.
+      channel: n.item_type === "song" ? `${by} - Topic` : by,
+      artists,
+      ms: secondsOf(n.duration),
+      source: n.item_type === "song" ? "music" : "video",
+      rank: out.length,
+    });
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
+/** One query's candidates, kept 10 minutes (a retry of a song cut short goes on from there). */
+function searchVideos(yt: Innertube, q: string): Promise<MatchCandidate[]> {
+  return cache.get(`mv:${normKey(q)}`, 10 * MIN, async () => videoCandidates((await yt.search(q, { type: "video" })).videos as any[]));
+}
+
+/** YouTube Music's songs for a query, or [] (and nothing asked) while it is known to answer nothing. */
+function searchMusic(yt: Innertube, q: string): Promise<MatchCandidate[]> {
+  if (Date.now() < musicState.skipUntil) return Promise.resolve([]);
+  return cache.get(`mm:${normKey(q)}`, 10 * MIN, async () => {
+    const r: any = await yt.music.search(q, { type: "song" });
+    const found = musicCandidates(r.contents as any[]);
+    if (found.length) {
+      musicState.works = true;
+      musicState.emptyRun = 0;
+    } else if (++musicState.emptyRun >= NO_MUSIC_AFTER) {
+      musicState.works = false;
+      musicState.emptyRun = 0;
+      musicState.skipUntil = Date.now() + NO_MUSIC_FOR;
+    }
+    return found;
+  });
+}
+
+/** Time a search needs (YouTube answers in ~0.3–0.8 s): no new one is started with less left. */
+const SEARCH_MS = 1500;
 
 /**
- * The YouTube video for a song known by title + artist (+ length): searches
- * "artist title", scores the first results on title words, artist and length,
- * and prefers official uploads over covers, karaoke, live and lyric versions.
+ * The YouTube video for a song known by title + artist (+ length in ms), or
+ * null when YouTube has nothing good enough (a wrong song is worse than "not
+ * found"). Tries, until a sure match (lib/songMatch):
+ *   1. "artist title" on YouTube Music's songs (the official audio, the same
+ *      recording as Spotify's) and on YouTube's videos, at the same time while
+ *      it is not known whether the song search answers here;
+ *   2. "title artists" and 3. "title" alone, videos only, the artist still checked.
+ * Stops starting searches at `until` (a Date.now() value) minus the time one
+ * takes: with nothing acceptable by then it throws TimeoutError (the song
+ * goes in `failed`, worth asking again; the searches done are kept).
  */
-export function matchSong(title: string, artist: string, ms = 0): Promise<Song | null> {
+export function matchSong(title: string, artist: string, ms = 0, until = Date.now() + BUDGET_MS - 1000): Promise<MatchedSong | null> {
   return cached(`match:${normKey(title)}|${normKey(artist)}|${Math.round(ms / 1000)}`, 60 * MIN, async (yt) => {
-    const first = artist.split(",")[0].trim();
-    const r = await yt.search(`${first} ${title}`, { type: "video" });
-    // A live or cover version asked for by name ("Song - Live") is not penalised.
-    const wanted = classify({ title, channel: "" });
-    const asked = (c: { kind: TrackKind; tag?: TrackTag }) => (wanted.kind === "live" || wanted.kind === "cover") && c.kind === wanted.kind && c.tag === wanted.tag;
-    const tw = words(title);
-    const aw = words(first);
-    let best: { s: Song; score: number } | null = null;
-    for (const v of (r.videos as any[]).slice(0, 8)) {
-      const s = toSong(v);
-      if (!s) continue;
-      const hay = words(`${s.title} ${s.channel}`);
-      const titleHit = [...tw].filter((w) => hay.has(w)).length / Math.max(1, tw.size);
-      const artistHit = [...aw].filter((w) => hay.has(w)).length / Math.max(1, aw.size);
-      let score = titleHit * 3 + artistHit * 2;
-      const len = parseLength(str(v.length_text ?? v.duration?.text ?? ""));
-      // Music videos often run longer than the track (intro, outro): only
-      // a big difference counts, and never by much.
-      if (ms && len) score -= Math.min(1.2, Math.max(0, Math.abs(len - ms) - 45000) / 60000);
-      // The same rules as the search list (lib/musicSort classify): official
-      // video / audio first, covers, karaoke and edits far behind (unless that
-      // is the version asked for), live a little behind, fan lyric videos too.
-      const raw = rawOf(v, s.title);
-      const c = classify(raw);
-      if (!asked(c)) score += KIND_BONUS[c.kind === "cover" && c.tag === "lyrics" ? "lyrics" : c.kind];
-      if (raw.verifiedArtist && (c.kind === "official" || c.kind === "audio")) score += 0.2;
-      // The artist's own remix or lyric video is official, but not the song asked for.
-      if (c.kind === "official" && VARIANT.test(s.title) && !VARIANT.test(title)) score -= 0.7;
-      if (!best || score > best.score) best = { s, score };
+    const song = parseSpotify(title, artist, ms);
+    const [q0, ...more] = queries(song);
+    const music = () => searchMusic(yt, q0).catch(() => [] as MatchCandidate[]);
+    // Each step is one or two searches; the next starts only when the best so far is not sure.
+    const steps: (() => Promise<MatchCandidate[]>)[] =
+      Date.now() < musicState.skipUntil
+        ? [() => searchVideos(yt, q0)]
+        : musicState.works
+          ? [music, () => searchVideos(yt, q0)] // known to work: the official audio first
+          : [async () => (await Promise.all([music(), searchVideos(yt, q0)])).flat()];
+    for (const q of more) steps.push(() => searchVideos(yt, q));
+
+    const pool: MatchCandidate[] = [];
+    let best: ReturnType<typeof bestMatch> = null;
+    let cut = false;
+    let failure: unknown = null;
+    for (const [i, step] of steps.entries()) {
+      if (i > 0 && Date.now() > until - SEARCH_MS) {
+        cut = true;
+        break;
+      }
+      try {
+        for (const c of await step()) if (!pool.some((p) => p.id === c.id && p.source === c.source)) pool.push(c);
+      } catch (e) {
+        // YouTube refused or failed (403, network): keep what the earlier searches found.
+        failure = e;
+        break;
+      }
+      best = bestMatch(song, pool);
+      if (best?.r.sure) break;
     }
-    return best && best.score >= 2.5 ? best.s : null;
-  });
+    if (!best) {
+      if (failure) throw failure;
+      if (cut) throw new TimeoutError();
+      return null;
+    }
+    const { c, r } = best;
+    return {
+      id: c.id,
+      title: c.title,
+      channel: c.channel.replace(/\s+-\s+Topic$/, "").replace(/\s*·.*$/, ""),
+      thumb: `https://i.ytimg.com/vi/${c.id}/mqdefault.jpg`,
+      confidence: r.confidence,
+      ...(c.ms ? { ms: c.ms } : {}),
+    };
+  }, Math.max(1, until - Date.now()));
 }

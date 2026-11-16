@@ -1,6 +1,6 @@
 # Music performance harness
 
-Two measurement tools for the music system (README §1e). Neither needs a
+Three measurement tools for the music system (README §1e). Neither needs a
 secret, and neither touches `src/` or `netlify/`.
 
 | Command | What it measures |
@@ -9,6 +9,7 @@ secret, and neither touches `src/` or `netlify/`.
 | `npm run perf:fns -- --label baseline` | The server functions `netlify/functions/music-*.mts`, against real YouTube / Spotify |
 | `npm run perf:music -- --compare baseline-v2 after` | A before / after table of two UI runs, with a better / worse column |
 | `npm run perf:music:check` | Fast smoke test (S2, S3, S4, S8, S9 once); exits 1 if a hard check fails |
+| `npm run perf:match -- --label after` | Spotify → YouTube matching (`matchSong`) on ~170 real Spotify songs, against real YouTube |
 
 Results go to `scripts/perf/results/<label>.json` (UI) and
 `results/fns-<label>.json` (functions), and a markdown table is printed on
@@ -180,3 +181,34 @@ S14 plays a song, kills its connection, and checks four things:
 - the UI never shows paused in the meantime.
 
 S14 also reports `recoveredMs`, how long the silence lasted. It is part of `npm run perf:music:check`.
+
+## Match rate (`match-rate.mjs`)
+
+```
+npm run perf:match -- --label after                                # all of match-sample.json, 20 at a time
+node scripts/perf/match-rate.mjs --label base --src /path/to/old/ytjs.mts   # another version of matchSong
+node scripts/perf/match-rate.mjs --label quick --only 40 --out /tmp/match
+```
+
+Bundles `matchSong` (`netlify/lib/ytjs.mts`, scoring in `songMatch.mts`) and
+runs it over `match-sample.json`: ~170 songs as Spotify writes them, read
+from the public embed pages of editorial playlists (Top 50 Italy / Global /
+Japan / Korea / India, Rock Classics, All Out 50s–2010s, Viva Latino, Afternoon
+Acoustic, Coffee Table Jazz, …) plus Italian classics typed by hand
+(`approxMs`). Songs go 20 at a time with an 8 s limit each, like the
+function. A song whose search failed (YouTube 403, network) is retried after
+2, 4 and 8 s and counts as *error*, never as *miss*.
+
+Each chosen video is looked up again (title, channel, length) and judged:
+*exact* (title words, an artist and the version agree, length within ±10 s),
+*other cut* (the same, 10–60 s off: a music video's intro), *wrong*
+(another song, a cover, live for studio, a length 60 s+ off). `okIds` /
+`badIds` in the sample are verdicts checked by hand. The table is printed on
+stdout with the wrong, retried and missing songs; per-song rows go to
+`results/match-<label>.json`.
+
+Note: from some networks YouTube hides its music catalogue (YouTube Music's
+song search answers "no results", "- Topic" uploads never appear). matchSong
+notices and uses the video search only; songs that exist on YouTube only as
+Topic audio then count as misses.
+
