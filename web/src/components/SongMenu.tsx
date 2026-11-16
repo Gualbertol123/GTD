@@ -285,6 +285,8 @@ function Menu({ req }: { req: SongMenuRequest }) {
   const { t } = useT();
   const { me } = useMe();
   const { playlists, available } = usePlaylists();
+  // Spotify mode: radio is YouTube's (its up-next mix), so "Avvia radio" waits for YouTube mode.
+  const spMode = getMusic().engine === "spotify";
   const box = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ left: req.x, top: req.y, ready: false });
   const [sub, setSub] = useState(false);
@@ -575,6 +577,8 @@ function Menu({ req }: { req: SongMenuRequest }) {
             </Item>
             <Item
               icon={<IconRadio />}
+              disabled={spMode}
+              after={spMode ? <small className="song-menu__hint">{t("music.sp.radioHint")}</small> : undefined}
               onClick={run(() => {
                 // playRadio plays the seed and shows its own "loading" at once.
                 void playRadio(tr, t("mt.radio")).then((err) => {

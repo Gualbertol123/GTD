@@ -58,7 +58,11 @@
 # that only allows this site's own scripts, Supabase (REST + realtime),
 # Google Fonts, and YouTube's official player (script + frame) for the music
 # player. "Accedi con Spotify" (web/src/lib/spotifyAuth.ts) exchanges its code
-# at accounts.spotify.com and reads playlists from api.spotify.com.
+# at accounts.spotify.com and reads playlists from api.spotify.com. Spotify
+# mode (web/src/lib/spotifyPlayer.ts) loads the Web Playback SDK from
+# sdk.scdn.co (script + its hidden frame), which talks to *.spotify.com
+# (https + wss) and streams from *.scdn.co / *.spotifycdn.com (media-src; the
+# CSP had none before, so default-src 'self' covered media).
 # img-src allows https: because the logo may be an external link;
 # data:/blob: fonts and images are used when the report is captured as a PDF.
 [[headers]]
@@ -71,4 +75,4 @@
     Referrer-Policy = "no-referrer"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
     Cross-Origin-Opener-Policy = "same-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' https://www.youtube.com https://s.ytimg.com; frame-src https://www.youtube-nocookie.com https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.spotify.com https://api.spotify.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://www.youtube.com https://s.ytimg.com https://sdk.scdn.co; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://sdk.scdn.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https://*.scdn.co https://*.spotifycdn.com; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.spotify.com https://api.spotify.com https://*.spotify.com wss://*.spotify.com https://*.scdn.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"

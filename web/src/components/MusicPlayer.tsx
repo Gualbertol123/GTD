@@ -27,11 +27,17 @@ import {
   useMusicSel,
   useMusicTime,
   youtubeSearchUrl,
+  takeEnginePending,
+  spotifyFailed,
+  toast,
   type MusicErrorCode,
   type Track,
   type YtLike,
 } from "../lib/music";
 import { usePlaylist, usePlaylists } from "../lib/musicDb";
+import { spotifyLoginAvailable, useSpotifyAuth } from "../lib/spotifyAuth";
+// Spotify mode's engine registers itself with lib/music.ts when loaded.
+import { prepareSpotifyPlayer } from "../lib/spotifyPlayer";
 import { SongMenuHost, openSongMenu, songMenuProps } from "./SongMenu";
 import { HiddenNote, KindBadge, SortBar, sortable, useSortedResults } from "./MusicSearchSort";
 import {
@@ -141,6 +147,9 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
   // Made the first time it is needed: a panel or the tab opened, something
   // played, or a music control about to be used (music.warm).
   const wanted = useMusicSel((s) => s.view !== "closed" || s.tab || s.warm || !!s.source);
+  // Spotify mode: YouTube's frame is hidden entirely (never seen or heard) and not even made until YouTube is back.
+  const sp = useMusicSel((s) => s.engine === "spotify");
+  const auth = useSpotifyAuth();
   const root = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const player = useRef<YTPlayer | null>(null);
@@ -268,9 +277,29 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
   };
 
   useEffect(() => {
-    if (wanted && !failed) create();
+    if (wanted && !failed && !sp) create();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wanted, failed]);
+  }, [wanted, failed, sp]);
+
+  // "Spotify" was chosen before signing in: once the sign-in is back, switch.
+  // Signed out (Esci, a refused refresh) while in Spotify mode: back to YouTube.
+  useEffect(() => {
+    if (auth.status === "in" && takeEnginePending()) {
+      mlog("signed in to Spotify after choosing Spotify mode: switching now");
+      music.setEngine("spotify");
+    } else if (auth.status === "out" && sp) {
+      // Like a failure: back to YouTube PAUSED. YouTube never carries on Spotify's queue by itself.
+      spotifyFailed("after signing out of Spotify");
+      toast(t("music.sp.signedOut"), "error");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.status]);
+
+  // Signed in and the music is in view (♪ panel, Music tab): Spotify's player object is made now, so the
+  // first click on the switch or Play can activate it synchronously (phones, Safari).
+  useEffect(() => {
+    if (auth.status === "in" && spotifyLoginAvailable() && (view === "open" || tab || sp)) prepareSpotifyPlayer();
+  }, [auth.status, view, tab, sp]);
 
   // "Ho YouTube Premium" changed (the other host), or the stall rescue asked
   // for a fresh player (a new frame, a new connection): the player is built
@@ -295,7 +324,7 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [premium, rebuild]);
 
-  const audio = mode === "audio";
+  const audio = mode === "audio" || sp;
   // On the Music tab the tab is the player: this one only hosts the frame
   // (and, in video mode, shows the video on the tab's slot).
   const inTab = tab && !mobile;
@@ -324,7 +353,7 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
   );
   // Music only, but YouTube wants a tap: its frame is shown like in Video mode
   // (only classes change: the frame itself is never moved or re-created).
-  const tap = audio && needsTap;
+  const tap = audio && needsTap && !sp;
   useEffect(() => {
     if (tap) mlog("showing YouTube's frame for a tap", { view, inTab });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -338,13 +367,14 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
     audio ? "mp--audio" : "mp--video",
     isDocked ? "mp--docked" : "",
     tap ? "mp--tap" : "",
+    sp ? "mp--spotify" : "",
   ].join(" ");
 
   return (
     <div ref={root} className={cls} role="region" aria-label={t("music.title")} aria-hidden={!inTab && view === "closed"} data-ready={ready}>
       {mobile && view === "open" && <BackToMini />}
       {!inTab && view === "open" && <Head />}
-      <div className="mp-video" ref={host} />
+      <div className="mp-video" ref={host} aria-hidden={sp || undefined} />
       {tap && !inTab && <TapHint />}
       {!inTab && audio && view === "open" && <BigCover />}
       {/* The song and its controls; on the phone they stay pinned while the rest scrolls.
@@ -395,15 +425,118 @@ function Head() {
 
 function BigCover() {
   const id = useMusicSel((s) => s.now?.id);
+  const sp = useMusicSel((s) => s.engine === "spotify");
   return (
-    <div className="mp-cover">
+    <div className={`mp-cover${sp ? " mp-cover--sp" : ""}`}>
       {id ? (
-        <Cover id={id} big />
+        <NowCover big />
       ) : (
         <div className="mp-cover__ph">
           <IconNote size={44} />
         </div>
       )}
+      <SpotifyCredit />
+    </div>
+  );
+}
+
+/**
+ * The cover of the song playing: in Spotify mode Spotify's own album image
+ * (its policy: Spotify content is always shown with its cover art), else
+ * YouTube's picture.
+ */
+export function NowCover({ big, className }: { big?: boolean; className?: string }) {
+  const id = useMusicSel((s) => s.now?.id);
+  const spCover = useMusicSel((s) => (s.engine === "spotify" ? s.spNow?.cover ?? "" : null));
+  if (spCover !== null) {
+    // Nothing from Spotify yet (loading): a placeholder, never YouTube's picture for Spotify's song.
+    return <Cover src={spCover || undefined} big={big} className={className} />;
+  }
+  return <Cover id={id} big={big} className={className} />;
+}
+
+/** "Song supplied by Spotify" + "Open in Spotify" for the song playing (Spotify mode only). */
+export function SpotifyCredit({ compact }: { compact?: boolean }) {
+  const { t } = useT();
+  const sp = useMusicSel((s) => (s.engine === "spotify" ? s.spNow : null));
+  const on = useMusicSel((s) => s.engine === "spotify");
+  if (!on) return null;
+  return (
+    <div className={`mp-spcredit${compact ? " mp-spcredit--compact" : ""}`}>
+      <span className="mp-spcredit__by" title={t("music.sp.by")}>
+        <IconSpotifyMark size={14} />
+        <span>{compact ? t("music.engineSp") : t("music.sp.by")}</span>
+      </span>
+      {sp?.url && (
+        <a className="mp-spcredit__open" href={sp.url} target="_blank" rel="noopener noreferrer" title={sp.album ? `${sp.title} · ${sp.album}` : sp.title}>
+          {t("music.sp.open")} <IconExternal size={12} />
+        </a>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The small player's attribution in Spotify mode: Spotify's mark, linking to
+ * the song on Spotify (outside the open button: a link is never inside a button).
+ */
+function SpotifyMiniCredit() {
+  const { t } = useT();
+  const on = useMusicSel((s) => s.engine === "spotify");
+  const sp = useMusicSel((s) => (s.engine === "spotify" ? s.spNow : null));
+  if (!on) return null;
+  const label = `${t("music.sp.by")} · ${t("music.sp.open")}`;
+  if (!sp?.url) {
+    return (
+      <span className="mp-spmini" title={t("music.sp.by")} aria-label={t("music.sp.by")} role="img">
+        <IconSpotifyMark size={16} />
+      </span>
+    );
+  }
+  return (
+    <a className="mp-spmini mp-spmini--link" href={sp.url} target="_blank" rel="noopener noreferrer" title={`${label}: ${sp.title}`} aria-label={`${label}: ${sp.title}`}>
+      <IconSpotifyMark size={16} />
+    </a>
+  );
+}
+
+/** A plain mark for "Spotify" next to the word (not Spotify's logo file): a disc with sound waves. */
+export function IconSpotifyMark({ size = 16 }: { size?: number }) {
+  return (
+    <svg className="mi" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="9.2" />
+      <path d="M7.6 9.6c3-.9 6.1-.6 8.8.8M8.2 12.6c2.4-.6 4.8-.4 7 .7M8.8 15.4c1.8-.4 3.6-.2 5.2.5" />
+    </svg>
+  );
+}
+
+/**
+ * YouTube | Spotify: who plays the queue. Pointing at Spotify gets its device
+ * ready; the click pauses the other service first (never both at once).
+ * Shown when the site has a Spotify Client ID (or Spotify mode is on).
+ */
+export function EngineSwitch() {
+  const { t } = useT();
+  const engine = useMusicSel((s) => s.engine);
+  const busy = useMusicSel((s) => s.engine === "spotify" && s.playing && (s.status === "loading" || s.status === "buffering"));
+  const auth = useSpotifyAuth();
+  if (!spotifyLoginAvailable() && engine !== "spotify") return null;
+  const signing = auth.status === "busy" && engine !== "spotify";
+  return (
+    <div className="mp-mode mp-engine" role="group" aria-label={t("music.engine")}>
+      <button aria-pressed={engine === "youtube"} onClick={() => music.setEngine("youtube")} title={t("music.engineYtHint")}>
+        <IconVideo size={14} /> {t("music.engineYt")}
+      </button>
+      <button
+        aria-pressed={engine === "spotify"}
+        aria-busy={busy || signing}
+        onPointerDown={music.warmSpotify}
+        onPointerEnter={music.warmSpotify}
+        onClick={() => music.setEngine("spotify")}
+        title={t("music.engineSpHint")}
+      >
+        {busy || signing ? <IconSpinner size={14} title={t("music.loading")} /> : <IconSpotifyMark size={14} />} {t("music.engineSp")}
+      </button>
     </div>
   );
 }
@@ -427,7 +560,7 @@ function Strip({ view, audio, phone }: { view: string; audio: boolean; phone: bo
   const name = title || label || t("music.nothing");
   const info = (
     <>
-      {audio && mini && <span className="mp-thumb">{nowId ? <Cover id={nowId} /> : <IconNote size={18} />}</span>}
+      {audio && mini && <span className="mp-thumb">{nowId ? <NowCover /> : <IconNote size={18} />}</span>}
       <span className="mp-now">
         <span className="mp-now__title">{name}</span>
         {(view === "open" || audio) && author && <span className="mp-now__author">{author}</span>}
@@ -444,6 +577,7 @@ function Strip({ view, audio, phone }: { view: string; audio: boolean; phone: bo
         info
       )}
       <div className="mp-controls">
+        {mini && <SpotifyMiniCredit />}
         {view === "open" && (
           <button className="mp-icon" onClick={music.prev} aria-label={t("music.prev")} disabled={!has}>
             <IconPrev size={17} />
@@ -510,6 +644,9 @@ export function Cover({ id, src, big, className }: { id?: string; src?: string; 
 export function ModeSwitch() {
   const { t } = useT();
   const mode = useMusicSel((s) => s.mode);
+  // Spotify mode has no video (YouTube's frame is hidden entirely).
+  const sp = useMusicSel((s) => s.engine === "spotify");
+  if (sp) return null;
   return (
     <div className="mp-mode" role="group" aria-label={t("music.mode")}>
       <button aria-pressed={mode === "audio"} onClick={() => music.setMode("audio")}>
@@ -604,6 +741,8 @@ const MusicBrowser = memo(function MusicBrowser({ phone }: { phone: boolean }) {
   const srcKey = useMusicSel((s) => s.source?.key);
   const nowId = useMusicSel((s) => s.now?.id);
   const queued = useMusicSel((s) => s.queue.length);
+  // Spotify mode: the mix and the artists' channels are YouTube lists (no song list to match).
+  const sp = useMusicSel((s) => s.engine === "spotify");
   const { playlists, loaded } = usePlaylists();
   const [q, setQ] = useState("");
   const [searched, setSearched] = useState("");
@@ -690,6 +829,13 @@ const MusicBrowser = memo(function MusicBrowser({ phone }: { phone: boolean }) {
 
   return (
     <div className="mp-body">
+      {/* YouTube | Spotify: its own row (the header has no room on a phone or in the 400 px panel). */}
+      {spotifyLoginAvailable() || sp ? (
+        <div className="mp-enginerow">
+          <span className="mp-enginerow__label">{t("music.engine")}</span>
+          <EngineSwitch />
+        </div>
+      ) : null}
       <button className={`mp-mix${srcKey === "trends" ? " is-on" : ""}`} onClick={() => void playTrends()} disabled={trendBusy} aria-busy={trendBusy}>
         <span className="mp-mix__icon">{trendBusy ? <IconSpinner size={20} title={t("music.loading")} /> : <IconTrend size={20} />}</span>
         <span>
@@ -818,7 +964,13 @@ const MusicBrowser = memo(function MusicBrowser({ phone }: { phone: boolean }) {
 
       <div className="mp-label">{t("mt.teamArtists")}</div>
       <div className="mp-chips">
-        <button className={`mp-chip${srcKey === "mix" ? " is-on" : ""}`} aria-pressed={srcKey === "mix"} onClick={() => music.play({ kind: "mix" })}>
+        <button
+          className={`mp-chip${srcKey === "mix" ? " is-on" : ""}`}
+          aria-pressed={srcKey === "mix"}
+          disabled={sp}
+          title={sp ? t("music.sp.radioHint") : undefined}
+          onClick={() => music.play({ kind: "mix" })}
+        >
           {t("music.mix")}
         </button>
         {ARTISTS.map((a) => (
@@ -826,6 +978,8 @@ const MusicBrowser = memo(function MusicBrowser({ phone }: { phone: boolean }) {
             key={a.name}
             className={`mp-chip${srcKey === `artist:${a.name}` ? " is-on" : ""}`}
             aria-pressed={srcKey === `artist:${a.name}`}
+            disabled={sp}
+            title={sp ? t("music.sp.radioHint") : undefined}
             onClick={() => music.play({ kind: "artist", artist: a.name })}
           >
             {a.name}

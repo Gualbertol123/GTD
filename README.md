@@ -238,6 +238,67 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
   The embed pages are unofficial: if Spotify changes them, the import says so.
   Nothing taken from them is used to call Spotify's API; only the site's own
   keys and the signed-in person's own token are.
+- **La mia libreria Spotify (MUSICA tab sidebar, after *Accedi con
+  Spotify*):** your own Spotify library, read in the browser with your token
+  (`src/lib/spotifyLibrary.ts`, `components/SpotifyLibrary.tsx`,
+  `#/music/splib/…`). Sections: *Le mie playlist* (`/me/playlists`, every
+  page), *Brani che ti piacciono* (`/me/tracks`, 50 a page, up to 2000, with a
+  note when there are more), *Album salvati*, *Artisti seguiti* (an artist
+  opens its albums, an album its songs), *Ascoltati di recente* (last 50) and
+  *Cerca su Spotify* (songs, albums, playlists; 10 per type, *Altri risultati*
+  pages on). Anything opens to its songs; someone else's or Spotify's own
+  playlists give only the details (Spotify's 2026 rule), and the page offers
+  the paste method. **Importa nella libreria del team** on any playlist,
+  album, the liked songs or the recent list runs the same two-step job as
+  *Importa da Spotify* (each song found on YouTube; it keeps going if you leave
+  the page), named after the list (editable before saving); **+** on a
+  single song adds it to a team playlist. Every song saved this way, and every
+  song of the link / pasted import when Spotify gave its id, keeps its Spotify
+  track id (`Track.spotify`), so Spotify mode plays it without searching.
+  Every item shows its cover, a *da Spotify* label and *Apri su Spotify*
+  (Spotify's attribution rules); Spotify is credited in words, never with a
+  redrawn copy of its icon (its branding rules allow only the official mark).
+  **Policy risk, still to be decided by the site owner:** Spotify's Developer
+  Policy forbids products "integrated with streams or content from another
+  service", and this import turns Spotify metadata into YouTube songs that
+  play YouTube audio in YouTube mode. To keep that apart, the import carries no
+  Spotify cover art or mark into the team library, song rows with **+** show
+  no Spotify art, and the import sits in its own panel saying the result is
+  YouTube songs. The fully compliant alternative is to play the library only
+  in Spotify mode and drop the YouTube import. Calls: a 10 s timeout, one
+  token refresh on 401 (shared with the player, never cancelled by leaving a
+  page; a refresh that does not answer says "network", a second 401 signs
+  out); a 429 (the app's rate limit / Development Mode quota) shows "riprova
+  tra N s". Signing in again once is needed to grant the library permissions.
+  Check: `node scripts/e2e/spotify-library.mjs` (Playwright, everything mocked).
+- **YouTube | Spotify (play with Spotify):** a switch in the player bar
+  (MUSICA tab) and at the top of the ♪ panel / phone player chooses who plays
+  the queue. **Spotify** plays it in this browser through Spotify's official
+  Web Playback SDK, as a Spotify device called *Team GTD*
+  (`src/lib/spotifyPlayer.ts`); YouTube is the default.
+  - **Kept separate by design** (Spotify's Developer Policy forbids mixing
+    its streams with another service's): switching pauses the other service
+    first, the queue is kept, and in Spotify mode everything plays only on
+    Spotify. YouTube's frame is hidden entirely; radio, *Mix preferiti*, the
+    artists' channels and pasted YouTube playlist links stay YouTube only (a
+    hint says so).
+  - Each song plays as its Spotify twin: the Spotify id kept in the team
+    playlist (`Track.spotify`), or one found with Spotify's search (title,
+    artist, length; official versions over live / remix / karaoke) and kept in
+    this browser. A song not on Spotify is **skipped** with a toast, never
+    played from YouTube. Spotify gets up to 50 songs at a time
+    (`PUT /me/player/play`); next, pause, seek and volume go to the SDK.
+  - Spotify's cover art and its own title and artists are shown for the song
+    playing, with *Brano fornito da Spotify* and **Apri su Spotify**.
+  - **Needs:** Spotify **Premium** for every listener, the person added in the
+    Spotify app's *User Management* (Development Mode: at most 5), and
+    signing in again once (*Accedi con Spotify*) for the playback
+    permissions. Choosing Spotify without a sign-in starts it. No Premium, an
+    unsupported browser or an old sign-in: a toast says why and the player
+    goes back to YouTube. Works best on desktop Chrome, Edge or Firefox; on a
+    phone, iOS needs a tap to start (*Riproduci*) and the volume is the
+    phone's buttons. Check: `node scripts/perf/spotify.mjs` (Playwright, a
+    fake SDK and a mocked Spotify; nothing real is called).
 - On a phone the music stops when the screen locks or the app goes to the
   background (a limit of YouTube embeds on iOS / Android).
 - **Every control answers at once.**
@@ -313,6 +374,12 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
    sent to browsers or logged, and **must never be put in the code**. The
    sign-in (`src/lib/spotifyAuth.ts`) needs no secret: the browser exchanges
    the code itself (PKCE) and keeps the token in `sessionStorage`.
+   **Spotify mode** (the YouTube | Spotify switch) uses the same app and
+   Client ID: nothing more to set up in Netlify. Each listener needs Spotify
+   Premium and must be in *User Management*; everyone signs in again once
+   to grant the playback permissions (`streaming`, `user-modify-playback-state`,
+   `user-read-playback-state`). The CSP in `netlify.toml` already allows the
+   SDK (`sdk.scdn.co`, `*.spotify.com`, `*.scdn.co`, `*.spotifycdn.com`).
 5. Supabase → SQL Editor: run `supabase/migration-021-music-radio-playlists.sql`
    (after 018–020), so playlists saved with *Salva radio come playlist* update
    themselves once a day. Before it, they are saved as ordinary playlists.

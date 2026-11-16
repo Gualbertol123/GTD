@@ -860,3 +860,50 @@ html[data-blur="off"] .mp-toast { -webkit-backdrop-filter: none; backdrop-filter
 @media (prefers-reduced-motion: reduce) {
   .msort-switch, .msort-switch::after, .msort-seg__opt { transition: none; }
 }
+
+/* ---- Spotify mode (lib/spotifyPlayer.ts) --------------------------------------
+   YouTube's frame is hidden entirely (never seen, never heard: it is paused and
+   not even made until YouTube is back); Spotify's cover, its metadata and a
+   link back to Spotify are shown instead. No blur here: these sit inside
+   panels that already have theirs. */
+.mp--spotify .mp-video {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  aspect-ratio: auto;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: -1;
+}
+.mp--spotify .mp-video iframe { display: none; }
+.mp-engine button[aria-pressed="true"]:last-child { background: #1ed760; color: #04120a; }
+.mp-engine button[aria-busy="true"] { cursor: progress; }
+.mp-cover--sp { position: relative; aspect-ratio: 1 / 1; max-height: 340px; }
+.mp-cover--sp img { object-fit: cover; }
+.mp-cover .mp-spcredit {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(8, 12, 24, 0.72);
+}
+.mp-spcredit { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12px; color: rgba(235, 235, 245, 0.85); }
+.mp-spcredit__by { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.mp-spcredit__open { display: inline-flex; align-items: center; gap: 4px; color: #1ed760; font-weight: 700; text-decoration: none; }
+.mp-spcredit__open:hover, .mp-spcredit__open:focus-visible { text-decoration: underline; }
+.mp-spmini { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; color: rgba(235, 235, 245, 0.7); }
+.mp-spmini--link { color: #1ed760; text-decoration: none; transition: background-color 0.12s ease; }
+.mp-spmini--link:hover, .mp-spmini--link:focus-visible { background: rgba(255, 255, 255, 0.12); }
+.mp-spcredit--compact { display: inline-flex; flex-wrap: nowrap; gap: 8px; font-size: 11px; margin-top: 2px; }
+.mt-now__fine .mp-spcredit { margin-bottom: 10px; }
+.song-menu__hint { font-size: 11px; opacity: 0.8; white-space: nowrap; }
+.mp--phone .mp-engine button { position: relative; height: 36px; }
+.mp-enginerow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.mp-enginerow__label { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--mp-text-2); }

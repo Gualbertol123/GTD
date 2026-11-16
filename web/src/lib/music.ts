@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { supabase } from "./supabaseClient";
 import { readPref, writePref } from "./prefs";
-import { refreshSpotifyToken, spotifyUserToken } from "./spotifyAuth";
+import { beginSpotifyLogin, refreshSpotifyToken, spotifyLoginAvailable, spotifyUserToken } from "./spotifyAuth";
 import type { TrackKind, TrackTag } from "./musicSort";
 
 // -----------------------------------------------------------------------------
@@ -110,6 +110,25 @@ export type Mode = "audio" | "video";
  * buffering = YouTube is fetching; playing / paused = confirmed.
  */
 export type Status = "idle" | "loading" | "buffering" | "playing" | "paused";
+/**
+ * Who plays the queue: YouTube's embedded player (the default) or Spotify's
+ * Web Playback SDK (lib/spotifyPlayer.ts, Premium). Never both: switching
+ * pauses the other one first, and nothing from one is mixed into the other.
+ */
+export type Engine = "youtube" | "spotify";
+
+/** The Spotify track playing in Spotify mode, as Spotify describes it (shown with its cover and a link back). */
+export interface SpotifyNow {
+  id: string;
+  uri: string;
+  title: string;
+  artists: string;
+  album: string;
+  /** The album image from Spotify ("" when it has none). */
+  cover: string;
+  /** https://open.spotify.com/track/<id> */
+  url: string;
+}
 
 export interface NowPlaying {
   id: string;
@@ -168,6 +187,10 @@ export interface MusicState {
   rebuild: number;
   /** Create the YouTube player now (a music control is about to be used). */
   warm: boolean;
+  /** YouTube or Spotify plays the queue (kept per browser). */
+  engine: Engine;
+  /** Spotify mode: the track Spotify is on (its own title, artists, cover). */
+  spNow: SpotifyNow | null;
 }
 
 /** What setMusic accepts: the state, plus the old fields kept for older callers. */
@@ -200,6 +223,9 @@ let state: MusicState = {
   premium: readPref("musicPremium") === "1",
   rebuild: 0,
   warm: false,
+  // Spotify mode needs the sign-in, which lives in this tab only: a new tab starts on YouTube.
+  engine: readPref("musicEngine") === "spotify" && !!spotifyUserToken() ? "spotify" : "youtube",
+  spNow: null,
 };
 const listeners = new Set<() => void>();
 
@@ -222,15 +248,19 @@ export function setMusic(patch: MusicPatch): void {
     }
   }
   if (!changed) return;
+  const prevQueue = state.queue;
   state = { ...state, ...rest };
+  // Spotify was given the next songs ahead: it must hear about any new queue before anyone reads it.
+  if (state.queue !== prevQueue && state.engine === "spotify") alt?.queueChanged();
   // YouTube could not be reached: nothing will ever start, so a click must not
   // leave a spinner turning. Say again why (the toast has Riprova).
-  if (state.failed && (state.status === "loading" || state.status === "buffering")) {
+  if (state.failed && state.engine === "youtube" && (state.status === "loading" || state.status === "buffering")) {
     state = { ...state, status: "idle", playing: false };
     if (!("failed" in rest)) queueMicrotask(() => toast(tr("music.failed"), "error"));
   }
   if (rest.side) writePref("music", rest.side);
   if (rest.mode) writePref("musicMode", rest.mode);
+  if (rest.engine) writePref("musicEngine", rest.engine);
   if (rest.volume !== undefined) {
     // localStorage is synchronous: write once the slider rests.
     clearTimeout(volTimer);
@@ -313,6 +343,11 @@ export function getMusicTime(): { time: number; duration: number } {
   return time;
 }
 
+/** The position, from the engine playing (YouTube's tick here, Spotify's in lib/spotifyPlayer). */
+export function setMusicTime(t: number, d: number = time.duration): void {
+  setTime(t, d);
+}
+
 function setTime(t: number, d: number = time.duration): void {
   if (t === time.time && d === time.duration) return;
   time = { time: t, duration: d };
@@ -390,6 +425,8 @@ let tr: (key: string) => string = (k) => k;
 export function setMusicTranslator(t: (key: string) => string): void {
   tr = t;
 }
+/** The engine's translator, for lib/spotifyPlayer. */
+export const musicTr = (key: string): string => tr(key);
 
 // ---- Pure queue logic (unit-tested) ------------------------------------------
 
@@ -438,7 +475,7 @@ export function insertTracks(q: Track[], index: number, tracks: Track[], where: 
   return out;
 }
 
-const nowOf = (t: Track | undefined): NowPlaying | null => (t ? { id: t.id, title: t.title, author: t.channel } : null);
+export const nowOf = (t: Track | undefined): NowPlaying | null => (t ? { id: t.id, title: t.title, author: t.channel } : null);
 
 /** The text that names a source ("Mix preferiti", an artist, a list's label). */
 export function sourceLabel(s: Source | null, t: (key: string) => string): string {
@@ -454,6 +491,64 @@ function withKey(s: Source): Source {
   if (s.kind === "artist") return { ...s, key: `artist:${s.artist}` };
   if (s.kind === "list") return { ...s, key: `list:${s.list}` };
   return s;
+}
+
+// ---- Spotify mode: the other engine (lib/spotifyPlayer.ts) ---------------------
+//
+// The queue, the index, the play / pause intent and the status stay here; in
+// Spotify mode the few places below that would tell YouTube something tell
+// this adapter instead, and every YouTube path (events, start check, stall
+// rescue, watchdog) stands still. lib/spotifyPlayer registers itself when it
+// is imported (MusicPlayer does), so this file never loads Spotify's code.
+
+export interface AltEngine {
+  /** Spotify mode is switched on (inside the click): make the device and, when i >= 0, play queue entry i. */
+  activate(i: number): void;
+  /** Play queue entry i (the state already shows it loading); `auto`: a song ended or was skipped. */
+  start(i: number, auto: boolean): void;
+  pause(): void;
+  /** Play again where it was (or entry `index` when Spotify has nothing loaded). */
+  resume(): void;
+  seek(sec: number): void;
+  /** 0–100; 0 = muted. */
+  volume(v: number): void;
+  /** Spotify mode is switched off: pause at once and drop whatever was pending. */
+  stop(): void;
+  /** Get the device ready (pointerdown on the switch). */
+  warm(): void;
+  /** The queue array was rewritten (play next, add, shuffle): the songs Spotify was given may no longer be the queue's. */
+  queueChanged(): void;
+}
+
+let alt: AltEngine | null = null;
+export function registerSpotifyEngine(e: AltEngine | null): void {
+  alt = e;
+}
+/** Spotify plays the queue: YouTube is left alone (paused). */
+const spOn = () => state.engine === "spotify";
+
+const ENGINE_PENDING = "gtd-spotify-engine-pending";
+/** "Spotify" was chosen before signing in: switch once the sign-in is back (MusicPlayer). */
+export function takeEnginePending(): boolean {
+  try {
+    const v = sessionStorage.getItem(ENGINE_PENDING) === "1";
+    sessionStorage.removeItem(ENGINE_PENDING);
+    return v;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Spotify mode ends without the user choosing YouTube (no Premium, browser,
+ * sign-in refused, signed out): back to YouTube PAUSED, queue kept. YouTube
+ * never takes over by itself (no segue from one service to the other).
+ */
+export function spotifyFailed(why = "after a failure"): void {
+  if (!spOn()) return;
+  mlog(`Spotify mode off ${why}: back to YouTube (paused, same queue)`, undefined, "warn");
+  alt?.stop();
+  setMusic({ engine: "youtube", spNow: null, playing: false, status: state.source ? "paused" : "idle" });
 }
 
 // ---- The engine: drives YouTube's player ---------------------------------------
@@ -700,6 +795,8 @@ function safe<T>(f: () => T, d: T): T {
 function syncToPlayer(): void {
   const p = yt;
   if (!p || !state.source) return;
+  // Spotify plays: YouTube gets the queue when it is switched back on.
+  if (spOn()) return;
   const at = resumeAt;
   resumeAt = 0;
   if (state.queue.length && state.index >= 0) {
@@ -792,6 +889,11 @@ function goTo(i: number, auto = false): void {
   clearTimeout(advanceTimer);
   seekTarget = null;
   setTime(0, 0);
+  if (spOn() && alt) {
+    // Spotify's cover and link belong to the song before: none until Spotify confirms this one.
+    setMusic({ index: i, now: nowOf(q[i]), playing: true, status: "loading", spNow: null });
+    return alt.start(i, auto);
+  }
   setMusic({ index: i, now: nowOf(q[i]), playing: true, status: "loading" });
   ytLoad(i);
 }
@@ -936,6 +1038,7 @@ function giveUp(why: string, textKey = "music.tapToPlay"): void {
  */
 function armBlocked(ms = state.needsTap ? 3000 : 6000, retry = false): void {
   clearBlock();
+  if (spOn()) return;
   const p0 = yt;
   const t0 = p0 ? safe(() => p0.getCurrentTime(), 0) || 0 : 0;
   blockTimer = setTimeout(() => {
@@ -1018,6 +1121,14 @@ export function onYtState(s: number): void {
   if (!p) return;
   const vid = safe(() => p.getVideoData()?.video_id ?? "", "");
   mlog(`← YouTube ${ytStateName(s)}`, { video: vid, app: state.status, playing: state.playing, expect: expectId });
+  if (spOn()) {
+    // Spotify is the engine: YouTube must stay silent (never two at once).
+    if (s === S.PLAYING || s === S.BUFFERING) {
+      mlog("  Spotify mode: YouTube must not play: pausing it", undefined, "warn");
+      p.pauseVideo();
+    }
+    return;
+  }
   // Only the song the app left is set aside; any other video is the one
   // YouTube really plays (it may have moved past a song it could not play).
   if (s !== S.UNSTARTED && s !== S.CUED && isLeftEcho(vid)) {
@@ -1189,6 +1300,7 @@ export function onYtError(code: number): void {
   if (!p) return;
   const vid = safe(() => p.getVideoData()?.video_id ?? "", "");
   mlog(`← YouTube ERROR ${code}`, { video: vid, expect: expectId, meaning: ERROR_MEANING[code] ?? "unknown", errorsInARow: errCount + 1 }, "warn");
+  if (spOn()) return;
   // YouTube may have moved past the song asked for by itself (it skips ids
   // it cannot use): an error about a later entry is an error on that entry.
   const ahead = vid && !leftIds.has(vid) ? state.queue.findIndex((t, k) => k > state.index && t.id === vid) : -1;
@@ -1226,7 +1338,7 @@ export function onYtError(code: number): void {
 /** Every 500 ms: the time (its own store), the list's ids, and YouTube's own volume controls. */
 function tick(): void {
   const p = yt;
-  if (!p) return;
+  if (!p || spOn()) return;
   tickN++;
   if (adopting && tickN % 2 === 0) adopt();
   if (tickN % 2 === 0) watchdog(p);
@@ -1417,7 +1529,7 @@ function rescue(p: YtLike, t: number, why: string): void {
 function recheck(why: string): void {
   const p = yt;
   mlog(`page ${why}`, snap());
-  if (!p) return;
+  if (!p || spOn()) return;
   watchdog(p);
   const ys = safe(() => p.getPlayerState(), -9);
   if (state.playing && ys !== S.PLAYING && !blockTimer && !adopting) {
@@ -1439,7 +1551,7 @@ if (typeof document !== "undefined" && typeof window !== "undefined" && typeof d
     mlog("the device is online again", snap());
     // Music was wanted and is stuck: go on at once, at the same second.
     const p = yt;
-    if (!p || !state.playing || state.status === "playing") return;
+    if (!p || spOn() || !state.playing || state.status === "playing") return;
     const t = safe(() => p.getCurrentTime(), 0) || time.time;
     if (state.queue.length && state.index >= 0 && startedId === state.queue[state.index]?.id) {
       mlog(`  reloading the song at ${Math.round(t)} s`);
@@ -1461,14 +1573,82 @@ export const music = {
     clearTimeout(advanceTimer);
     cmd("pause");
     yt?.stopVideo();
+    if (spOn()) alt?.pause();
     setMusic({ view: "closed", playing: false, status: "idle", needsTap: false });
   },
   /** Create the YouTube player ahead of time (pointerdown / hover on a music control). */
   warm: () => {
     if (!state.warm) setMusic({ warm: true });
   },
+  /** Get Spotify's device ready (pointerdown on the Spotify switch). */
+  warmSpotify: () => {
+    if (spotifyUserToken()) alt?.warm();
+  },
+  /**
+   * YouTube | Spotify. The other engine is paused FIRST (never two services at
+   * once, nothing mixed); the queue is kept, and music that was playing goes
+   * on at the same song with the new engine. Spotify without a sign-in starts
+   * "Accedi con Spotify" (and switches when it is back).
+   */
+  setEngine: (e: Engine) => {
+    if (e === state.engine) return;
+    const wasPlaying = state.playing;
+    const i = state.index;
+    mlog(`ENGINE ${state.engine} → ${e} asked`, { wasPlaying, index: i, queue: state.queue.length, signedIn: !!spotifyUserToken() });
+    if (e === "spotify") {
+      if (!alt) {
+        mlog("  no Spotify engine loaded: staying on YouTube", undefined, "warn");
+        return;
+      }
+      if (!spotifyUserToken()) {
+        if (!spotifyLoginAvailable()) {
+          mlog("  not signed in and no Client ID on this site: staying on YouTube", undefined, "warn");
+          toast(tr("music.sp.noLogin"), "error");
+          return;
+        }
+        mlog("  not signed in to Spotify: starting 'Accedi con Spotify' (switches when back)");
+        try {
+          sessionStorage.setItem(ENGINE_PENDING, "1");
+        } catch {
+          /* the switch is then made by hand after the sign-in */
+        }
+        toast(tr("music.sp.signingIn"));
+        void beginSpotifyLogin();
+        return;
+      }
+      // YouTube stops first, keeping its queue.
+      mlog("  pausing YouTube first (its queue is kept)");
+      cmd("pause");
+      clearBlock();
+      clearTimeout(advanceTimer);
+      clearInterval(adoptTimer);
+      expectId = null;
+      if (yt) yt.pauseVideo();
+      // A YouTube list still being read (mix, artist, link) has no songs to give Spotify.
+      const canGo = wasPlaying && i >= 0 && state.queue.length > 0;
+      if (wasPlaying && !canGo) toast(tr("music.sp.ytOnly"));
+      adopting = null;
+      if (canGo) setTime(0, 0);
+      setMusic({ engine: "spotify", needsTap: false, playing: canGo, status: canGo ? "loading" : state.source ? "paused" : "idle" });
+      alt.activate(canGo ? i : -1);
+      return;
+    }
+    mlog("  pausing Spotify first");
+    alt?.stop();
+    setMusic({ engine: "youtube", spNow: null, playing: false, status: state.source ? "paused" : "idle" });
+    if (wasPlaying && i >= 0 && i < state.queue.length) {
+      mlog("  YouTube goes on at the same song");
+      goTo(i);
+    } else setTime(0, 0);
+  },
   play: (s0: Source) => {
     const s = withKey(s0);
+    if (spOn() && s.kind !== "videos") {
+      // The mix, an artist's channel, a pasted list: YouTube reads their songs itself.
+      mlog("PLAY refused in Spotify mode: a YouTube list (no song list to match)", { source: sourceLogName(s) });
+      toast(tr("music.sp.ytOnly"));
+      return;
+    }
     mlog("PLAY asked", { source: sourceLogName(s), songs: s.kind === "videos" ? s.tracks.length : "YouTube list", start: s.kind === "videos" ? s.start : 0, player: yt ? "ready" : "not ready yet (applied when ready)" });
     playSeq++;
     errCount = 0;
@@ -1496,6 +1676,7 @@ export const music = {
       }
       if (!queue.length) return setMusic({ source: s, view, queue, index: -1, now: null, playing: false, status: "idle" });
       setMusic({ source: s, view, warm: true, queue, index, now: nowOf(queue[index]), playing: true, status: "loading" });
+      if (spOn() && alt) return alt.start(index, false);
       ytLoad(index);
       return;
     }
@@ -1513,11 +1694,22 @@ export const music = {
       clearBlock();
       clearTimeout(advanceTimer);
       setMusic({ playing: false, status: "paused", needsTap: false });
-      yt?.pauseVideo();
+      if (spOn()) alt?.pause();
+      else yt?.pauseVideo();
+      return;
+    }
+    if (spOn() && !state.queue.length) {
+      // A YouTube list still being read when Spotify mode began: no songs to give Spotify.
+      mlog("  PLAY refused in Spotify mode: the queue has no songs (a YouTube list not read yet)", undefined, "warn");
+      toast(tr("music.sp.nothing"));
       return;
     }
     cmd("play");
     setMusic({ playing: true, status: "loading" });
+    if (spOn()) {
+      alt?.resume();
+      return;
+    }
     const p = yt;
     if (!p) return; // applied when the player is ready
     unmuteInTap();
@@ -1541,6 +1733,7 @@ export const music = {
     mlog("NEXT pressed", { index: state.index, queue: state.queue.length });
     const q = state.queue;
     if (!q.length) {
+      if (spOn()) return;
       // A YouTube list not read yet: YouTube knows what is next.
       cmd("play");
       setMusic({ playing: true, status: "loading" });
@@ -1574,6 +1767,11 @@ export const music = {
     seekTarget = sec;
     seekAt = now();
     setTime(sec);
+    if (spOn()) {
+      seekTarget = null;
+      alt?.seek(sec);
+      return;
+    }
     if (yt) yt.seekTo(sec, true);
     else resumeAt = sec;
   },
@@ -1582,6 +1780,7 @@ export const music = {
     v = Math.max(0, Math.min(100, Math.round(v)));
     localVolAt = now();
     setMusic({ volume: v, muted: v === 0 });
+    if (spOn()) return alt?.volume(v);
     const p = yt;
     if (!p) return;
     // One command per frame, however fast the slider moves. It reads the state
@@ -1598,6 +1797,7 @@ export const music = {
   setMuted: (m: boolean) => {
     localVolAt = now();
     setMusic({ muted: m, ...(!m && state.volume === 0 ? { volume: 50 } : {}) });
+    if (spOn()) return alt?.volume(m ? 0 : state.volume);
     const p = yt;
     if (!p) return;
     if (m) p.mute();
@@ -1708,7 +1908,7 @@ export function __resetMusicForTests(): void {
   frozenStage = 0;
   muteTries = 0;
   wd = { since: 0, kind: "", lastT: -1, stillSince: 0 };
-  state = { ...state, needsTap: false, mode: "audio", muted: false };
+  state = { ...state, needsTap: false, mode: "audio", muted: false, engine: "youtube", spNow: null };
   resumeAt = 0;
   seekTarget = null;
   memo.clear();
@@ -2049,6 +2249,12 @@ export function fetchRadio(videoId: string, opts: CallOpts & { full?: boolean } 
  * Returns an error code, "empty", or null.
  */
 export async function playRadio(t: { id: string; title: string; channel?: string; thumb?: string }, label: string): Promise<MusicErrorCode | "empty" | null> {
+  if (spOn()) {
+    // Radio is YouTube's (its up-next mix): not in Spotify mode.
+    mlog("radio refused in Spotify mode", { id: t.id });
+    toast(tr("music.sp.radioOff"));
+    return null;
+  }
   const seed: Track = { id: t.id, title: t.title, channel: t.channel ?? "", thumb: t.thumb };
   music.play({ kind: "videos", label: `${label} · ${t.title}`, key: `radio:${t.id}`, tracks: [seed], start: 0 });
   const seq = playSeq;
