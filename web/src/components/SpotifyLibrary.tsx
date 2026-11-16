@@ -56,7 +56,12 @@ export interface SpotifyLibraryProps {
   onAdd: (track: Track, anchor: HTMLElement) => void;
   /** Starts the import job (MusicTab's Spotify job store) and shows its page. */
   onImport: (list: SpotifyList, name: string, url: string) => void;
+  /** A Spotify import is reading or matching: signing in (which leaves the page) would drop it. */
+  importBusy?: boolean;
 }
+
+/** A long name in a page's big title is drawn smaller (musicTab.css clamps it to two lines). */
+const titleCls = (name: string | undefined) => ((name?.length ?? 0) > 24 ? " mt-title--long" : "");
 
 /**
  * The Spotify credit, in words: Spotify's branding rules allow only the
@@ -181,7 +186,7 @@ const SECS: { sec: SpLibSec; key: string }[] = [
   { sec: "search", key: "spl.secSearch" },
 ];
 
-export function SpotifyLibrary({ view, go, onAdd, onImport }: SpotifyLibraryProps) {
+export function SpotifyLibrary({ view, go, onAdd, onImport, importBusy }: SpotifyLibraryProps) {
   const { t } = useT();
   const auth = useSpotifyAuth();
   const sec: SpLibSec = view.sec ?? "playlists";
@@ -228,7 +233,8 @@ export function SpotifyLibrary({ view, go, onAdd, onImport }: SpotifyLibraryProp
           <button
             type="button"
             className="mt-pill mt-pill--solid"
-            disabled={auth.status === "busy"}
+            disabled={auth.status === "busy" || importBusy}
+            aria-describedby="spl-signin-note"
             onClick={() => {
               mlog("splib: sign in");
               markLibraryReturn();
@@ -237,6 +243,10 @@ export function SpotifyLibrary({ view, go, onAdd, onImport }: SpotifyLibraryProp
           >
             {auth.status === "busy" ? <IconSpinner size={16} /> : <IconUser size={16} />} {t(auth.status === "busy" ? "sp.loggingIn" : "sp.login")}
           </button>
+          {/* Signing in leaves the page: say so (and wait for an import running now). */}
+          <p id="spl-signin-note" className="mt-hint spl-signin__note">
+            {t(importBusy ? "ux.music.splibWaitImport" : "ux.music.splibLeaveNote")}
+          </p>
         </div>
       </div>
     );
@@ -663,7 +673,9 @@ function ListView({ type, id, ctx }: { type: "playlist" | "album"; id: string; c
             {t(type === "album" ? "sp.album" : "sp.playlist")}
             {item.mine ? ` · ${t("spl.mine")}` : item.collaborative ? ` · ${t("spl.collab")}` : ok ? "" : ` · ${t("spl.detailsOnly")}`}
           </small>
-          <h1>{item.name}</h1>
+          <h1 className={`mt-clamp${titleCls(item.name)}`} title={item.name}>
+            {item.name}
+          </h1>
           <small>{[item.sub, typeof count === "number" ? t("mt.songs").replace("{n}", String(count)) : ""].filter(Boolean).join(" · ")}</small>
           <div className="spl-hero__attr">
             <FromSpotify />
@@ -717,7 +729,9 @@ function ArtistView({ id, ctx }: { id: string; ctx: Ctx }) {
           <Cover src={a.cover} className="mt-hero__img spl-round" />
           <div className="mt-hero__text">
             <small>{t("spl.artist")}</small>
-            <h1>{a.name}</h1>
+            <h1 className={`mt-clamp${titleCls(a.name)}`} title={a.name}>
+              {a.name}
+            </h1>
             <div className="spl-hero__attr">
               <FromSpotify />
               <OpenOnSpotify url={a.url} label={a.name} big />

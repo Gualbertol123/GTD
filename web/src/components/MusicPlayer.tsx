@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "../lib/i18n";
 import { useBackClose } from "../lib/history";
@@ -344,6 +344,11 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
     if (audio && needsTap && view === "mini") html.dataset.musicTap = "";
     else delete html.dataset.musicTap;
   }, [mobile, view, audio, tall, needsTap]);
+  // The panel scrolls (search results); the small player is the same element,
+  // so a scroll kept from the panel would hide its strip. Every view starts at the top.
+  useLayoutEffect(() => {
+    if (root.current) root.current.scrollTop = 0;
+  }, [view]);
   useEffect(
     () => () => {
       delete document.documentElement.dataset.music;
@@ -371,7 +376,22 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
   ].join(" ");
 
   return (
-    <div ref={root} className={cls} role="region" aria-label={t("music.title")} aria-hidden={!inTab && view === "closed"} data-ready={ready}>
+    <div
+      ref={root}
+      className={cls}
+      role="region"
+      aria-label={t("music.title")}
+      aria-hidden={!inTab && view === "closed"}
+      data-ready={ready}
+      onKeyDown={(e) => {
+        // Escape folds the desktop panel to the small player (the music keeps playing),
+        // unless something inside (a sheet, the song menu) handles it first.
+        if (e.key !== "Escape" || e.defaultPrevented || inTab || mobile || view !== "open") return;
+        if (document.querySelector('.song-menu[role="menu"], .mp-signin')) return;
+        e.preventDefault();
+        music.minimize();
+      }}
+    >
       {mobile && view === "open" && <BackToMini />}
       {!inTab && view === "open" && <Head />}
       <div className="mp-video" ref={host} aria-hidden={sp || undefined} />
@@ -520,24 +540,140 @@ export function EngineSwitch() {
   const engine = useMusicSel((s) => s.engine);
   const busy = useMusicSel((s) => s.engine === "spotify" && s.playing && (s.status === "loading" || s.status === "buffering"));
   const auth = useSpotifyAuth();
+  const spBtn = useRef<HTMLButtonElement>(null);
+  const [ask, setAsk] = useState(false);
   if (!spotifyLoginAvailable() && engine !== "spotify") return null;
   const signing = auth.status === "busy" && engine !== "spotify";
+  // Signed out, "Spotify" leaves the app for Spotify's sign-in page: ask first.
+  const mustSignIn = auth.status !== "in" && engine !== "spotify" && spotifyLoginAvailable();
+  const closeAsk = () => {
+    setAsk(false);
+    spBtn.current?.focus({ preventScroll: true });
+  };
   return (
     <div className="mp-mode mp-engine" role="group" aria-label={t("music.engine")}>
-      <button aria-pressed={engine === "youtube"} onClick={() => music.setEngine("youtube")} title={t("music.engineYtHint")}>
+      <button aria-pressed={engine === "youtube"} onClick={() => music.setEngine("youtube")} title={t("music.engineYtHint")} aria-label={t("music.engineYt")}>
         <IconVideo size={14} /> {t("music.engineYt")}
       </button>
       <button
+        ref={spBtn}
         aria-pressed={engine === "spotify"}
         aria-busy={busy || signing}
+        aria-label={t("music.engineSp")}
+        aria-haspopup={mustSignIn ? "dialog" : undefined}
+        aria-expanded={mustSignIn ? ask : undefined}
         onPointerDown={music.warmSpotify}
         onPointerEnter={music.warmSpotify}
-        onClick={() => music.setEngine("spotify")}
-        title={t("music.engineSpHint")}
+        onClick={() => (mustSignIn && !signing ? setAsk((v) => !v) : music.setEngine("spotify"))}
+        title={mustSignIn ? t("ux.music.engineSpOutHint") : t("music.engineSpHint")}
       >
         {busy || signing ? <IconSpinner size={14} title={t("music.loading")} /> : <IconSpotifyMark size={14} />} {t("music.engineSp")}
       </button>
+      {ask && mustSignIn && (
+        <SignInAsk
+          anchor={spBtn}
+          onCancel={closeAsk}
+          onGo={() => {
+            setAsk(false);
+            music.setEngine("spotify");
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * "Spotify" while signed out: a small dialog by the button says that the page
+ * leaves for Spotify's sign-in (the music stops) before it happens. In a
+ * portal with fixed coordinates, so neither the panel nor the tab's bar clips
+ * it; it opens upward when the button is low on the screen (the tab's bar).
+ * A solid surface: no blur of its own (the bar or the panel under it has one).
+ */
+function SignInAsk({ anchor, onCancel, onGo }: { anchor: RefObject<HTMLButtonElement>; onCancel: () => void; onGo: () => void }) {
+  const { t } = useT();
+  const box = useRef<HTMLDivElement>(null);
+  const go = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number } | null>(null);
+  const cancel = useRef(onCancel);
+  cancel.current = onCancel;
+
+  useLayoutEffect(() => {
+    const a = anchor.current;
+    if (!a) return;
+    const r = a.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const w = Math.min(300, vw - 16);
+    const left = Math.max(8, Math.min(r.right - w, vw - w - 8));
+    setPos(r.top > vh / 2 ? { left, bottom: vh - r.top + 8 } : { left, top: r.bottom + 8 });
+  }, [anchor]);
+
+  useEffect(() => {
+    if (pos) go.current?.focus({ preventScroll: true });
+  }, [pos]);
+
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        cancel.current();
+      } else if (e.key === "Tab" && box.current) {
+        // Focus stays in the two buttons.
+        const all = [...box.current.querySelectorAll<HTMLButtonElement>("button")];
+        const i = all.indexOf(document.activeElement as HTMLButtonElement);
+        e.preventDefault();
+        all[(i + (e.shiftKey ? all.length - 1 : 1)) % all.length]?.focus();
+      }
+    };
+    const away = (e: PointerEvent) => {
+      const n = e.target as Node;
+      if (box.current?.contains(n) || anchor.current?.contains(n)) return;
+      cancel.current();
+    };
+    // A scroll or resize that moves the button away from the dialog closes it
+    // (one that leaves the button where it was, e.g. a list playing along, does not).
+    const at = anchor.current?.getBoundingClientRect();
+    const moved = () => {
+      const r = anchor.current?.getBoundingClientRect();
+      if (!r || !at || Math.abs(r.top - at.top) > 2 || Math.abs(r.left - at.left) > 2) cancel.current();
+    };
+    document.addEventListener("keydown", key, true);
+    document.addEventListener("pointerdown", away, true);
+    window.addEventListener("resize", moved);
+    window.addEventListener("scroll", moved, true);
+    return () => {
+      document.removeEventListener("keydown", key, true);
+      document.removeEventListener("pointerdown", away, true);
+      window.removeEventListener("resize", moved);
+      window.removeEventListener("scroll", moved, true);
+    };
+  }, [anchor]);
+
+  return createPortal(
+    <div
+      ref={box}
+      className="mp-signin"
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby="mp-signin-title"
+      aria-describedby="mp-signin-text"
+      style={{ left: pos?.left ?? 0, top: pos?.top, bottom: pos?.bottom, visibility: pos ? "visible" : "hidden" }}
+    >
+      <b id="mp-signin-title" className="mp-signin__title">
+        <IconSpotifyMark size={16} /> {t("ux.music.spSignInTitle")}
+      </b>
+      <p id="mp-signin-text">{t("ux.music.spSignInQ")}</p>
+      <div className="mp-signin__row">
+        <button type="button" className="mp-signin__cancel" onClick={onCancel}>
+          {t("ux.music.cancel")}
+        </button>
+        <button ref={go} type="button" className="mp-signin__go" onClick={onGo}>
+          {t("ux.music.spSignInGo")}
+        </button>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -641,7 +777,7 @@ export function Cover({ id, src, big, className }: { id?: string; src?: string; 
 }
 
 /** Video or music only. */
-export function ModeSwitch() {
+export function ModeSwitch({ bar }: { bar?: boolean } = {}) {
   const { t } = useT();
   const mode = useMusicSel((s) => s.mode);
   // Spotify mode has no video (YouTube's frame is hidden entirely).
@@ -649,10 +785,11 @@ export function ModeSwitch() {
   if (sp) return null;
   return (
     <div className="mp-mode" role="group" aria-label={t("music.mode")}>
-      <button aria-pressed={mode === "audio"} onClick={() => music.setMode("audio")}>
+      {/* In the tab's bar a narrow window shows the icons only (musicTab.css): the name stays in aria-label and title. */}
+      <button aria-pressed={mode === "audio"} onClick={() => music.setMode("audio")} aria-label={t("music.audioOnly")} title={bar ? t("music.audioOnly") : undefined}>
         <IconNote size={14} /> {t("music.audioOnly")}
       </button>
-      <button aria-pressed={mode === "video"} onClick={() => music.setMode("video")}>
+      <button aria-pressed={mode === "video"} onClick={() => music.setMode("video")} aria-label={t("music.video")} title={bar ? t("music.video") : undefined}>
         <IconVideo size={14} /> {t("music.video")}
       </button>
     </div>
@@ -923,6 +1060,7 @@ const MusicBrowser = memo(function MusicBrowser({ phone }: { phone: boolean }) {
         {error && <SearchError error={error} q={searched || q} onRetry={() => void search(searched || q)} />}
         {results && (
           <div className="mp-results">
+            {results.length > 0 && <div className="mp-label">{t("mt.results", { q: searched })}</div>}
             {results.length === 0 && <div className="mp-note">{t("music.noResults")}</div>}
             {sortable(results) && <SortBar id="panel" res={sorted} compact />}
             {/* Play and the queue follow the order shown. */}
@@ -1088,7 +1226,18 @@ function ListSheet({ view, onClose }: { view: ListView; onClose: () => void }) {
   };
 
   return (
-    <div className="mp-sheet" role="dialog" aria-modal="true" aria-label={title} onKeyDown={(e) => e.key === "Escape" && onClose()}>
+    <div
+      className="mp-sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onKeyDown={(e) => {
+        if (e.key !== "Escape") return;
+        // Handled here: the panel around it must not fold too.
+        e.preventDefault();
+        onClose();
+      }}
+    >
       <div className="mp-sheet__head">
         <button ref={back} className="mp-icon" onClick={onClose} aria-label={t("music.back")}>
           <IconBack size={18} />

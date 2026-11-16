@@ -277,6 +277,7 @@ export function MusicTab() {
         {view.kind === "spotify" && <SpotifyPage playlists={playlists} available={available} go={go} />}
         {view.kind === "splib" && (
           <SpotifyLibrary
+            importBusy={job?.phase === "reading" || job?.phase === "matching"}
             view={view}
             go={go}
             onAdd={(track, anchor) => openAddMenu({ track, anchor })}
@@ -369,6 +370,11 @@ function setUndo(u: Undo) {
   undo = u;
   undoListeners.forEach((l) => l());
 }
+/** A long name in a page's big title is drawn smaller (musicTab.css clamps it to two lines). */
+function titleCls(name: string | undefined): string {
+  return (name?.length ?? 0) > 24 ? " mt-title--long" : "";
+}
+
 function showUndo(text: string, run: () => void) {
   const id = ++undoSeq;
   setUndo({ id, text, run });
@@ -1091,7 +1097,17 @@ function PlayFab({ on }: { on: boolean }) {
 
 // ---- Search -------------------------------------------------------------------
 
-const GENRES = ["Pop latino", "Cantautori italiani", "Reggaeton", "Ballate", "Anni 2000", "Flamenco pop", "Dance", "Acoustic"];
+/** Genre tiles: q is what is searched (as it always was), key the label shown. */
+const GENRES: { q: string; key: string }[] = [
+  { q: "Pop latino", key: "ux.music.g.popLatino" },
+  { q: "Cantautori italiani", key: "ux.music.g.cantautori" },
+  { q: "Reggaeton", key: "ux.music.g.reggaeton" },
+  { q: "Ballate", key: "ux.music.g.ballate" },
+  { q: "Anni 2000", key: "ux.music.g.anni2000" },
+  { q: "Flamenco pop", key: "ux.music.g.flamenco" },
+  { q: "Dance", key: "ux.music.g.dance" },
+  { q: "Acoustic", key: "ux.music.g.acoustic" },
+];
 
 // The last results, so coming back to Search (or Back) shows them again.
 let lastSearch: { query: string; tracks: Track[] } | null = null;
@@ -1255,15 +1271,15 @@ function Search({ initial, go }: { initial?: string; go: Go }) {
           <div className="mt-genres">
             {GENRES.map((g, i) => (
               <button
-                key={g}
+                key={g.q}
                 className="mt-genre"
                 style={{ background: GRADIENTS[i % GRADIENTS.length] }}
                 onClick={() => {
-                  setQ(g);
-                  void run(g);
+                  setQ(g.q);
+                  void run(g.q);
                 }}
               >
-                {g}
+                {t(g.key)}
               </button>
             ))}
           </div>
@@ -1276,16 +1292,16 @@ function Search({ initial, go }: { initial?: string; go: Go }) {
 // ---- Import ------------------------------------------------------------------
 
 /** Searches suggested on the Import page; the first three run on their own. */
-const SUGGESTED = [
-  "Enrique Iglesias greatest hits",
-  "Ricky Martin greatest hits",
-  "Tiziano Ferro best of",
-  "Latin pop hits",
-  "Hit italiane",
-  "Reggaeton classics",
-  "Ballate romantiche",
-  "Pop anni 2000",
-  "Musica per concentrarsi",
+const SUGGESTED: { q: string; key: string }[] = [
+  { q: "Enrique Iglesias greatest hits", key: "ux.music.s.enrique" },
+  { q: "Ricky Martin greatest hits", key: "ux.music.s.ricky" },
+  { q: "Tiziano Ferro best of", key: "ux.music.s.tiziano" },
+  { q: "Latin pop hits", key: "ux.music.s.latinPop" },
+  { q: "Hit italiane", key: "ux.music.s.hitItaliane" },
+  { q: "Reggaeton classics", key: "ux.music.s.reggaeton" },
+  { q: "Ballate romantiche", key: "ux.music.s.ballate" },
+  { q: "Pop anni 2000", key: "ux.music.s.pop2000" },
+  { q: "Musica per concentrarsi", key: "ux.music.s.focus" },
 ];
 
 function ImportPage({ go }: { go: Go }) {
@@ -1301,7 +1317,7 @@ function ImportPage({ go }: { go: Go }) {
   // "For your artists": the top lists for each favourite, from the day's cache.
   const picks = useLoad(
     async (signal) => {
-      const rs = await Promise.all(SUGGESTED.slice(0, 3).map((s) => findYtPlaylists(s, true, { signal })));
+      const rs = await Promise.all(SUGGESTED.slice(0, 3).map((s) => findYtPlaylists(s.q, true, { signal })));
       const lists = rs.flatMap((r) => ("lists" in r ? r.lists.slice(0, 4) : []));
       const err = rs.find((r): r is MusicFail => isFail(r));
       return lists.length || !err ? { lists } : err;
@@ -1315,7 +1331,7 @@ function ImportPage({ go }: { go: Go }) {
     setQ(words);
     const signal = req.next();
     setBusy(true);
-    const r = await findYtPlaylists(w, SUGGESTED.includes(words), { signal });
+    const r = await findYtPlaylists(w, SUGGESTED.some((s) => s.q === words), { signal });
     if (signal.aborted || (isFail(r) && r.error === "aborted")) return;
     setBusy(false);
     if (isFail(r)) {
@@ -1325,6 +1341,9 @@ function ImportPage({ go }: { go: Go }) {
       setFound({ title: w, lists: r.lists });
     }
   };
+
+  // A suggested search shows its label (translated); what was searched stays the same.
+  const foundKey = found ? SUGGESTED.find((s) => s.q === found.title)?.key : undefined;
 
   return (
     <div className="mt-page">
@@ -1368,17 +1387,18 @@ function ImportPage({ go }: { go: Go }) {
             setLink(e.target.value);
             setLinkError(false);
           }}
-          placeholder={t("mt.linkPh")}
-          aria-label={t("mt.linkPh")}
+          placeholder={t("ux.music.linkPh")}
+          aria-label={t("ux.music.linkPh")}
           aria-invalid={linkError}
+          aria-describedby={linkError ? "mt-linkerr" : undefined}
         />
         <button type="submit" className="mt-pill mt-pill--solid" disabled={!link.trim()}>
           {t("mt.open")}
         </button>
       </form>
       {linkError && (
-        <div className="mp-note" role="alert">
-          {t("mt.badLink")}
+        <div className="mp-note" id="mt-linkerr" role="alert">
+          {t("ux.music.badLink")}
         </div>
       )}
 
@@ -1397,8 +1417,8 @@ function ImportPage({ go }: { go: Go }) {
       </form>
       <div className="mt-chips">
         {SUGGESTED.map((s) => (
-          <button key={s} className={`mt-chip${found?.title === s ? " is-on" : ""}`} aria-pressed={found?.title === s} onClick={() => void run(s)}>
-            {s}
+          <button key={s.q} className={`mt-chip${found?.title === s.q ? " is-on" : ""}`} aria-pressed={found?.title === s.q} onClick={() => void run(s.q)}>
+            {t(s.key)}
           </button>
         ))}
       </div>
@@ -1407,7 +1427,7 @@ function ImportPage({ go }: { go: Go }) {
 
       {found && (
         <>
-          <h2 className="mt-h2">{found.title}</h2>
+          <h2 className="mt-h2">{foundKey ? t(foundKey) : found.title}</h2>
           {found.lists.length ? <ListCards lists={found.lists} go={go} /> : <p className="mt-hint">{t("music.noResults")}</p>}
         </>
       )}
@@ -1736,8 +1756,8 @@ function SpotifyPage({ playlists, available, go }: { playlists: Playlist[]; avai
               }}
             />
           ) : (
-            <h1 className="mt-title">
-              <span className="mt-title__text" onClick={() => setEditing(true)} title={t("mt.rename")}>
+            <h1 className={`mt-title${titleCls(label)}`}>
+              <span className="mt-title__text" onClick={() => setEditing(true)} title={`${label} · ${t("mt.rename")}`}>
                 {label}
               </span>
               <button className="mt-iconbtn mt-title__edit" onClick={() => setEditing(true)} aria-label={`${t("mt.renameBtn")} ${label}`} title={t("mt.renameBtn")}>
@@ -1893,9 +1913,11 @@ function YtPlaylistPage({ list, playlists, available, go }: { list: string; play
       {back}
       <div className="mt-hero mt-hero--artist" style={{ background: gradientFor(data.title) }}>
         {data.thumb ? <Cover src={data.thumb} className="mt-hero__img" /> : <Mosaic tracks={tracks} size={160} />}
-        <div>
+        <div className="mt-hero__text">
           <small>{t("mt.ytPlaylist")}</small>
-          <h1>{data.title}</h1>
+          <h1 className={`mt-clamp${titleCls(data.title)}`} title={data.title}>
+            {data.title}
+          </h1>
           <small>
             {data.channel || "YouTube"} · {t("mt.songs").replace("{n}", String(tracks.length))}
             {data.total && data.total > tracks.length ? ` (${t("mt.ofTotal").replace("{n}", String(data.total))})` : ""}
@@ -1944,9 +1966,11 @@ function ArtistPage({ name }: { name: string }) {
     <div className="mt-page">
       <div className="mt-hero mt-hero--artist" style={{ background: `${gradientFor(artist.name)}` }}>
         <ArtistAvatar name={artist.name} size={160} />
-        <div>
+        <div className="mt-hero__text">
           <small>{t("mt.artist")}</small>
-          <h1>{artist.name}</h1>
+          <h1 className={`mt-clamp${titleCls(artist.name)}`} title={artist.name}>
+            {artist.name}
+          </h1>
         </div>
       </div>
       <div className="mt-actions">
@@ -1972,9 +1996,11 @@ function MusicArtistPage({ id, name }: { id: string; name: string }) {
     <div className="mt-page">
       <div className="mt-hero mt-hero--artist" style={{ background: gradientFor(title || id) }}>
         {data?.thumb ? <Cover src={data.thumb} className="mt-hero__img mt-hero__img--round" /> : <ArtistAvatar name={title || "?"} size={160} />}
-        <div>
+        <div className="mt-hero__text">
           <small>{t("mt.artist")}</small>
-          <h1>{title}</h1>
+          <h1 className={`mt-clamp${titleCls(title)}`} title={title}>
+            {title}
+          </h1>
         </div>
       </div>
       <div className="mt-actions">
@@ -2045,8 +2071,8 @@ function PlaylistPage({ id, go }: { id: string; go: Go }) {
               }}
             />
           ) : (
-            <h1 className="mt-title">
-              <span className="mt-title__text" onClick={() => setEditing(true)} title={t("mt.rename")}>
+            <h1 className={`mt-title${titleCls(p.name)}`}>
+              <span className="mt-title__text" onClick={() => setEditing(true)} title={`${p.name} · ${t("mt.rename")}`}>
                 {p.name}
               </span>
               <button className="mt-iconbtn mt-title__edit" onClick={() => setEditing(true)} aria-label={`${t("mt.renameBtn")} ${p.name}`} title={t("mt.renameBtn")}>
@@ -2067,8 +2093,17 @@ function PlaylistPage({ id, go }: { id: string; go: Go }) {
                   </span>
                 ) : null}
               </span>
-              <button className="mt-ghost mt-radiobadge__stop" onClick={() => reportWrite(detachRadio(p.id), t)} title={t("mt.radioStopTip")}>
-                {t("mt.radioStop")}
+              <button
+                className="mt-ghost mt-radiobadge__stop"
+                onClick={() => {
+                  // The team's daily radio: one click stops it, so it can be undone.
+                  const snap = p;
+                  reportWrite(detachRadio(p.id), t);
+                  showUndo(t("ux.music.radioDetached", { p: snap.name }), () => reportWrite(restorePlaylist(snap), t));
+                }}
+                title={t("mt.radioStopTip")}
+              >
+                {t("ux.music.radioStop")}
               </button>
               <small className="mt-radiobadge__note">{t("mt.radioEditNote")}</small>
             </div>
@@ -2704,6 +2739,35 @@ function NowPlaying({ open, onClose }: { open: boolean; onClose: () => void }) {
   const queue = useMusicSel((s) => s.queue);
   const index = useMusicSel((s) => s.index);
   const slot = useRef<HTMLDivElement>(null);
+  const closeBtn = useRef<HTMLButtonElement>(null);
+
+  // A narrow window shows this panel as a drawer ("Coda" in the bar): focus goes
+  // to its Close on opening and back to "Coda" on closing; Escape closes it.
+  const wasOpen = useRef(false);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const drawer = () => !!closeBtn.current && closeBtn.current.getClientRects().length > 0;
+    if (open) {
+      wasOpen.current = true;
+      if (drawer()) closeBtn.current?.focus({ preventScroll: true });
+      const key = (e: globalThis.KeyboardEvent) => {
+        if (e.key !== "Escape" || e.defaultPrevented || !drawer()) return;
+        // The song menu (over the drawer) closes first.
+        if (document.querySelector('.song-menu[role="menu"]')) return;
+        e.preventDefault();
+        closeRef.current();
+      };
+      document.addEventListener("keydown", key);
+      return () => document.removeEventListener("keydown", key);
+    }
+    if (wasOpen.current) {
+      wasOpen.current = false;
+      const btn = document.querySelector<HTMLElement>(".mt-queuebtn");
+      const a = document.activeElement;
+      if (btn && btn.getClientRects().length && (!a || a === document.body || a.closest(".mt-now"))) btn.focus({ preventScroll: true });
+    }
+  }, [open]);
 
   // In Video mode the player (fixed, at the root) sits exactly on this slot.
   // Only the window and this panel's own scroll move it; an unchanged rectangle
@@ -2746,11 +2810,11 @@ function NowPlaying({ open, onClose }: { open: boolean; onClose: () => void }) {
   const title = now?.title || label;
 
   return (
-    <aside className={`mt-now${open ? " is-open" : ""}`} aria-label={t("mt.nowPlaying")} onKeyDown={(e) => open && e.key === "Escape" && onClose()}>
+    <aside className={`mt-now${open ? " is-open" : ""}`} aria-label={t("mt.nowPlaying")}>
       <div className="mt-box mt-now__box">
         <div className="mt-now__head">
           <span>{t("mt.nowPlaying")}</span>
-          <button className="mt-iconbtn mt-now__close" onClick={onClose} aria-label={t("music.close")}>
+          <button ref={closeBtn} className="mt-iconbtn mt-now__close" onClick={onClose} aria-label={t("ux.music.closeQueue")} title={t("ux.music.closeQueue")}>
             <IconClose size={16} />
           </button>
         </div>
@@ -2881,7 +2945,7 @@ function PlayerBar({ barRef, queueOpen, onQueue }: { barRef: RefObject<HTMLEleme
         <button className={`mt-iconbtn mt-queuebtn${queueOpen ? " is-on" : ""}`} onClick={onQueue} aria-pressed={queueOpen} title={t("mt.queue")} aria-label={t("mt.queue")}>
           <IconQueue size={18} />
         </button>
-        <ModeSwitch />
+        <ModeSwitch bar />
         <EngineSwitch />
         <Volume />
       </div>
