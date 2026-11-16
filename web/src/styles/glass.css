@@ -821,3 +821,37 @@ html[data-skin="glass"]:not([data-blur="off"]) button.bg-white::after {
 html[data-skin="glass"]:not([data-blur="off"]) button.bg-white:not(:disabled):hover::after {
   opacity: 1;
 }
+
+/* ---------------------------------------------------------------------------
+   Readable status colours. A few Classic text colours map to system colours
+   that are too faint as small text on one of the two appearances.
+   --------------------------------------------------------------------------- */
+/* Amber text (warnings, "to improve", the search highlight, a due-soon chip):
+   the light palette's yellow is about 2:1 on white glass, so use a dark amber. */
+html[data-skin="glass"][data-appearance="light"] .text-\[\#92400E\] {
+  color: #8a5a00;
+}
+/* Weekly column pills, light glass: darker steps of their colours. */
+html[data-skin="glass"][data-appearance="light"] .weekly-pill--improve {
+  color: #8a5a00;
+}
+html[data-skin="glass"][data-appearance="light"] .weekly-pill--blockers {
+  color: #c4141b;
+}
+html[data-skin="glass"][data-appearance="light"] .weekly-pill--well {
+  color: #1a6b2e;
+}
+/* An overdue chip on dark glass: a lighter red over its red tint. */
+html[data-skin="glass"][data-appearance="dark"] .due-chip--late {
+  color: #ff8a80;
+}
+
+/* The V tag in the product tree: the Classic gold, as a warm glass tint. */
+html[data-skin="glass"] .tag-v {
+  background-color: color-mix(in srgb, var(--ios-orange) 16%, transparent);
+  border-color: color-mix(in srgb, var(--ios-orange) 36%, transparent);
+  color: #a84b00;
+}
+html[data-skin="glass"][data-appearance="dark"] .tag-v {
+  color: var(--ios-orange);
+}

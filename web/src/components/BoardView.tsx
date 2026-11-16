@@ -4,7 +4,6 @@ import type { Board, Op, Priority, Status, Task } from "../lib/types";
 import { STATUS_ORDER, PRIORITY_ORDER, isArchived } from "../lib/constants";
 import { priorityLabel, statusLabel, useT } from "../lib/i18n";
 import { TaskCard } from "./TaskCard";
-import { UndoToastHost } from "./TaskDetails";
 import { isOwnedBy } from "../lib/owners";
 import { QuickAdd } from "./QuickAdd";
 import { MembersBar } from "./MembersBar";
@@ -680,7 +679,6 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
       )}
 
       {/* Undo for deletes, "done" checks and member removal. */}
-      <UndoToastHost />
     </div>
   );
 }

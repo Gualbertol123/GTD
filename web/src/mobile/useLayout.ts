@@ -9,7 +9,7 @@ export type LayoutChoice = "auto" | "mobile" | "desktop";
 
 // A phone turned sideways is wider than 767 px but short and touch-driven:
 // it stays on the phone layout. Tablets are taller, desktops have a mouse.
-const PHONE_QUERY = "(max-width: 767px), (max-height: 500px) and (pointer: coarse)";
+export const PHONE_QUERY = "(max-width: 767px), (max-height: 500px) and (pointer: coarse)";
 
 function readChoice(): LayoutChoice {
   const v = readPref("layout");

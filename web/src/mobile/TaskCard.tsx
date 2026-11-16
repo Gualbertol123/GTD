@@ -22,6 +22,7 @@ export function TaskCard({
   onToggleDone,
   onMove,
   showStatus,
+  hideProject,
   swipe = true,
 }: {
   task: Task;
@@ -29,6 +30,8 @@ export function TaskCard({
   onToggleDone: () => void;
   onMove: () => void;
   showStatus?: boolean;
+  /** Inside a project's own sheet: no project-name chip (the step chip stays). */
+  hideProject?: boolean;
   /** Swipe right = done, left = move. Off where sideways swipes scroll (the Board). */
   swipe?: boolean;
 }) {
@@ -159,7 +162,10 @@ export function TaskCard({
                 <IconHourglass size={12} /> {t("m.waitingDays").replace("{n}", String(waiting))}
               </span>
             )}
-            {project && (
+            {project && hideProject && step && (
+              <span className="m-chip m-chip--blue">{t("m.step").replace("{n}", String(step.n)).replace("{total}", String(step.total))}</span>
+            )}
+            {project && !hideProject && (
               <span className="m-chip" style={{ ["--c" as string]: projectColor(project) }}>
                 <span className="m-chip__dot" style={{ background: projectColor(project) }} />
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{project.name}</span>

@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IconNote } from "../components/MusicIcons";
 import type { Board, Weekly } from "../lib/types";
-import { WEEKLY_COLUMNS, genId, isArchived } from "../lib/constants";
+import { WEEKLY_COLUMNS, genId } from "../lib/constants";
+import { periodBounds, taskCompletedAt, weekPeriod } from "../lib/reportData";
+import { taskOwners } from "../lib/owners";
 import { useT } from "../lib/i18n";
 import { useMe } from "../lib/identity";
 import { readAppearanceChoice, readBlur, readSkin, writeAppearance, writeBlur, writeSkin, type AppearanceChoice } from "../lib/skin";
@@ -10,7 +12,7 @@ import { DailyReflection } from "../components/DailyReflection";
 import { SettingsView } from "../components/SettingsView";
 import { ReportView } from "../components/ReportView";
 import { ProductTreeView } from "../components/ProductTreeView";
-import { Avatar, Sheet, useToast } from "./ui";
+import { Avatar, Avatars, Sheet, useToast } from "./ui";
 import { useInstall } from "../lib/pwa";
 import { music } from "../lib/music";
 import { IconBack, IconChevron, IconClose, IconAuto, IconDesktop, IconDownload, IconMoon, IconSun, IconGear, IconLeaf, IconMail, IconReport, IconTree, IconUser, IconWeekly } from "./icons";
@@ -59,7 +61,7 @@ export function MoreScreen({
         {page === "report" && (
           <>
             <p className="m-sub" style={{ margin: "0 4px 12px" }}>
-              {t("m.reportHint")}
+              {t("ux.report.mobileHint")}
             </p>
             <div className="m-scroll-x">
               <ReportView board={board} send={send} />
@@ -138,35 +140,84 @@ export function MoreScreen({
 /** The weekly review, stacked: this week's wins from the board, then the five lists. */
 function WeeklyPage({ board, send }: { board: Board; send: Send }) {
   const { t } = useT();
-  const done = board.tasks.filter((tk) => tk.status === "DONE" && !isArchived(tk));
+  const toast = useToast();
   const [confirm, setConfirm] = useState(false);
   const [showDone, setShowDone] = useState(false);
+  const clearBtn = useRef<HTMLButtonElement>(null);
+  const refocusClear = useRef(false);
+
+  // The same Monday–Sunday week as the desktop Recap and the Report.
+  const { start, end } = periodBounds(weekPeriod(0));
+  const done = board.tasks
+    .filter((tk) => {
+      if (tk.status !== "DONE") return false;
+      const at = taskCompletedAt(tk);
+      return at >= start && at < end;
+    })
+    .sort((a, b) => taskCompletedAt(b) - taskCompletedAt(a));
+
+  const itemCount = WEEKLY_COLUMNS.reduce((n, c) => n + board.weekly[c.key].length, 0);
+
+  useEffect(() => {
+    if (!confirm && refocusClear.current) {
+      refocusClear.current = false;
+      clearBtn.current?.focus();
+    }
+  }, [confirm]);
+  const cancelClear = () => {
+    refocusClear.current = true;
+    setConfirm(false);
+  };
+  const clearAll = () => {
+    const snapshot: { column: keyof Weekly; item: { id: string; text: string } }[] = [];
+    for (const c of WEEKLY_COLUMNS) for (const item of board.weekly[c.key]) snapshot.push({ column: c.key, item });
+    send({ type: "weeklyClear" });
+    setConfirm(false);
+    // Undo puts every line back, in its order.
+    toast(t("weekly.cleared", { n: snapshot.length }), () => {
+      for (const r of snapshot) send({ type: "weeklyAdd", column: r.column, item: { ...r.item } });
+    });
+  };
 
   return (
     <>
-      <button className="m-panel m-row" onClick={() => setShowDone((v) => !v)}>
+      <p className="m-sub" style={{ margin: "0 4px 12px" }}>
+        {t("weekly.helpV2")}
+      </p>
+      <button
+        className="m-panel m-row"
+        onClick={() => setShowDone((v) => !v)}
+        aria-expanded={showDone}
+        aria-controls="m-weekly-recap"
+      >
         <span className="m-row__icon" style={{ ["--tile" as string]: "var(--m-green)", fontWeight: 800 }}>
           {done.length}
         </span>
         <span className="m-row__main">
-          <span className="m-row__title">{t("weekly.doneThisWeek")}</span>
+          <span className="m-row__title">{t("weekly.recapTitle")}</span>
           <span className="m-row__hint" style={{ display: "block" }}>
             {t("m.weeklyFromBoard")}
           </span>
         </span>
         <IconChevron size={18} className={showDone ? "rotate-90" : ""} />
       </button>
-      {showDone && done.length > 0 && (
-        <div className="m-panel m-list" style={{ marginTop: 8 }}>
-          {done.map((tk) => (
-            <div key={tk.id} className="m-row" style={{ minHeight: 0, padding: "10px 14px" }}>
-              <Avatar name={tk.owner} />
-              <span className="m-row__main" style={{ fontSize: 14 }}>
-                {tk.title}
-              </span>
-              <span className="m-chip">{tk.priority}</span>
+      {showDone && (
+        <div id="m-weekly-recap" className="m-panel m-list" style={{ marginTop: 8 }}>
+          {done.length === 0 ? (
+            <div className="m-empty" style={{ padding: "14px" }}>
+              {t("weekly.noneDone")}
             </div>
-          ))}
+          ) : (
+            done.map((tk) => (
+              <div key={tk.id} className="m-row" style={{ minHeight: 0, padding: "10px 14px" }}>
+                <Avatars task={tk} max={taskOwners(tk).length} />
+                <span className="m-row__main" style={{ fontSize: 14 }}>
+                  {tk.title}
+                </span>
+                <span className="m-chip">{tk.priority}</span>
+              </div>
+            ))
+          )}
         </div>
       )}
 
@@ -176,23 +227,36 @@ function WeeklyPage({ board, send }: { board: Board; send: Send }) {
 
       <div style={{ marginTop: 26 }}>
         {confirm ? (
-          <div style={{ display: "flex", gap: 10 }}>
-            <button className="m-btn" style={{ flex: 1 }} onClick={() => setConfirm(false)}>
-              {t("task.no")}
-            </button>
-            <button
-              className="m-btn m-btn--danger"
-              style={{ flex: 1.4 }}
-              onClick={() => {
-                send({ type: "weeklyClear" });
-                setConfirm(false);
-              }}
-            >
-              {t("m.clearYes")}
-            </button>
+          <div
+            role="alertdialog"
+            aria-labelledby="m-weekly-clear-q"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.stopPropagation();
+                cancelClear();
+              }
+            }}
+          >
+            <p id="m-weekly-clear-q" className="m-sub" style={{ margin: "0 4px 10px", color: "var(--m-red)" }}>
+              {t("weekly.confirmClearN", { n: itemCount })}
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="m-btn" style={{ flex: 1 }} autoFocus onClick={cancelClear}>
+                {t("task.no")}
+              </button>
+              <button className="m-btn m-btn--danger" style={{ flex: 1.4 }} onClick={clearAll}>
+                {t("m.clearYes")}
+              </button>
+            </div>
           </div>
         ) : (
-          <button className="m-btn m-btn--block" onClick={() => setConfirm(true)}>
+          <button
+            ref={clearBtn}
+            className="m-btn m-btn--block"
+            onClick={() => setConfirm(true)}
+            disabled={itemCount === 0}
+            title={itemCount === 0 ? t("weekly.clearEmpty") : undefined}
+          >
             {t("weekly.clear")}
           </button>
         )}
@@ -221,6 +285,11 @@ function WeeklyBucket({
     send({ type: "weeklyAdd", column: bucket, item: { id: genId(), text: v } });
     setDraft("");
   };
+  const remove = (it: { id: string; text: string }) => {
+    send({ type: "weeklyDelete", column: bucket, id: it.id });
+    // Undo puts the line back (at the end of the list).
+    toast(t("ux.m.weeklyDeleted"), () => send({ type: "weeklyAdd", column: bucket, item: it }));
+  };
   return (
     <>
       <h2 className="m-h2">
@@ -232,17 +301,11 @@ function WeeklyBucket({
             <WeeklyItemField
               text={it.text}
               onSave={(v) => send({ type: "weeklyUpdate", column: bucket, id: it.id, text: v })}
+              onDelete={() => remove(it)}
+              ariaLabel={t("weekly.itemLabel", { col: label })}
               className="m-sub-row__text"
             />
-            <button
-              className="m-hit"
-              aria-label={t("m.delete")}
-              onClick={() => {
-                send({ type: "weeklyDelete", column: bucket, id: it.id });
-                // Undo puts the line back (at the end of the list).
-                toast(t("ux.m.weeklyDeleted"), () => send({ type: "weeklyAdd", column: bucket, item: it }));
-              }}
-            >
+            <button className="m-hit" aria-label={t("m.delete")} onClick={() => remove(it)}>
               <IconClose size={16} />
             </button>
           </div>
@@ -251,10 +314,13 @@ function WeeklyBucket({
           <input
             className="m-sub-row__text"
             style={{ background: "transparent", border: 0, outline: "none", color: "var(--m-text)", fontSize: 16 }}
-            placeholder={t("weekly.add")}
+            placeholder={t(`weekly.ph.${bucket}`)}
+            aria-label={t("weekly.addTo", { col: label })}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && add()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.nativeEvent.isComposing) add();
+            }}
             enterKeyHint="done"
           />
           {draft.trim() && (

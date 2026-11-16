@@ -4,7 +4,7 @@ export const UX_PRODUCTS_IT: Record<string, string> = {
   "ux.products.searchLabel": "Cerca nell’albero prodotti",
   "ux.products.searchPlaceholder": "Cerca in inglese: card, deposit, leasing…",
   "ux.products.searchHint":
-    "Le voci sono in inglese, come nei fogli di origine: cerca «card», «deposit», «loan», «insurance»…",
+    "Le voci sono in inglese, come nei fogli di origine: cerca «card», «deposit», «loan»… Funzionano anche alcune parole italiane, come «carte», «depositi», «mutui», «assicurazione».",
   "ux.products.clearSearch": "Cancella ricerca",
   "ux.products.removeTag": "Rimuovi filtro tag",
   "ux.products.noResultFor": "Nessun risultato per «{q}»",
@@ -22,13 +22,14 @@ export const UX_PRODUCTS_IT: Record<string, string> = {
   "ux.products.gloss.FTP": "tassi di trasferimento interni (funds transfer pricing)",
   "ux.products.margin.byProduct": "per prodotto",
   "ux.products.margin.exclWaivers": "ed escl. Waivers",
+  "ux.products.byAlias": "trovato per «{alias}»",
 };
 
 export const UX_PRODUCTS_EN: Record<string, string> = {
   "ux.products.searchLabel": "Search the product tree",
   "ux.products.searchPlaceholder": "Search: card, deposit, leasing…",
   "ux.products.searchHint":
-    "Product names are in English, as in the source sheets: try “card”, “deposit”, “loan”, “insurance”…",
+    "Product names are in English, as in the source sheets: try “card”, “deposit”, “loan”, “insurance”… Some Italian words work too, such as “carte”, “depositi”, “mutui”.",
   "ux.products.clearSearch": "Clear search",
   "ux.products.removeTag": "Remove tag filter",
   "ux.products.noResultFor": "No results for “{q}”",
@@ -46,4 +47,5 @@ export const UX_PRODUCTS_EN: Record<string, string> = {
   "ux.products.gloss.FTP": "funds transfer pricing",
   "ux.products.margin.byProduct": "by product",
   "ux.products.margin.exclWaivers": "and excl. Waivers",
+  "ux.products.byAlias": "found by “{alias}”",
 };

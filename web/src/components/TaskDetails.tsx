@@ -26,8 +26,9 @@ interface Props {
 
 // ---- Undo toast -------------------------------------------------------------
 // One small store shared by every board surface (task delete, subtask delete,
-// mark done, member removal). It lives outside any card, so the toast survives
-// the card that raised it unmounting. Only the first mounted host renders it.
+// mark done, member removal, a deleted project). It lives outside any card, so
+// the toast survives the card that raised it unmounting. The host is mounted
+// once, at the App root; an extra host would stay silent.
 interface UndoToast {
   id: number;
   text: string;
@@ -58,7 +59,7 @@ function clearToast(id: number) {
   }
 }
 
-/** Mount once per screen (BoardView does); extra hosts stay silent. */
+/** Mounted once, at the App root (App.tsx); extra hosts stay silent. */
 export function UndoToastHost() {
   const { t } = useT();
   const [hostId] = useState(() => ++toastSeq);

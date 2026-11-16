@@ -6,6 +6,7 @@ import {
   countLeaves,
   countTagged,
   filterIndex,
+  aliasMatch,
   glossary,
   marginSteps,
   PRODUCTS_SECTION,
@@ -31,14 +32,9 @@ import { IconChevronRight, IconClose } from "./MusicIcons";
 const WARM_TINT =
   "bg-[#FAF3E6] [html[data-skin=glass]_&]:[background-color:color-mix(in_srgb,var(--ios-orange)_12%,transparent)]";
 
-/** Chip colours per tag. V keeps the Classic gold but gets its own glass tint. */
+/** Chip colours per tag. V keeps the Classic gold; its glass tint is in glass.css (.tag-v). */
 const TAG_STYLE: Record<Tag, string> = {
-  V:
-    "tag-v bg-[#FAF3E6] text-gold-dark border-[#C9A96E]/40 " +
-    "[html[data-skin=glass]_&]:[background-color:color-mix(in_srgb,var(--ios-orange)_16%,transparent)] " +
-    "[html[data-skin=glass]_&]:[border-color:color-mix(in_srgb,var(--ios-orange)_36%,transparent)] " +
-    "[html[data-skin=glass]_&]:text-[#A84B00] " +
-    "[html[data-skin=glass][data-appearance=dark]_&]:[color:var(--ios-orange)]",
+  V: "tag-v bg-[#FAF3E6] text-gold-dark border-[#C9A96E]/40", // glass tint: glass.css
   NPL: "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]",
   C: "bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]",
 };
@@ -49,12 +45,6 @@ const TAG_LABEL: Record<Tag, string> = { V: "V", NPL: "NPL", C: "C" };
 const GLOBAL_TAG_COUNTS = Object.fromEntries(
   TAGS.map((tg) => [tg, countTagged(sections.find((s) => s.id === PRODUCTS_SECTION)!.roots, tg)])
 ) as Record<Tag, number>;
-
-/** Glossary meaning and margin-note translations; the source labels stay English. */
-const MARGIN_NOTE_KEY: Record<string, string> = {
-  "by product": "ux.products.margin.byProduct",
-  "and excl. Waivers": "ux.products.margin.exclWaivers",
-};
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]";
@@ -124,6 +114,18 @@ function Highlight({ text, query }: { text: string; query: string }) {
       </mark>
       {text.slice(at + q.length)}
     </>
+  );
+}
+
+/** Says which Italian word found a line whose label does not hold the query. */
+function AliasNote({ node, query }: { node: TreeNode; query: string }) {
+  const { t } = useT();
+  const alias = aliasMatch(node, query);
+  if (!alias) return null;
+  return (
+    <span className="text-[11px] text-[#8A8A8A] italic">
+      {t("ux.products.byAlias", { alias })}
+    </span>
   );
 }
 
@@ -494,6 +496,7 @@ export function ProductTreeView() {
                   <Highlight text={node.note} query={query} />
                 </span>
               )}
+              {hit && <AliasNote node={node} query={query} />}
               {node.tags && (
                 <span className="inline-flex gap-1">
                   {node.tags.map((tg) => (
@@ -815,6 +818,7 @@ export function ProductTreeView() {
                   <Highlight text={root.note} query={query} />
                 </span>
               )}
+              {rootHit && <AliasNote node={root} query={query} />}
               {root.tags && (
                 <span className="inline-flex gap-1">
                   {root.tags.map((tg) => (
@@ -899,9 +903,9 @@ export function ProductTreeView() {
                 >
                   {step.label}
                 </span>
-                {step.note && (
+                {(step.noteKey || step.note) && (
                   <span className="text-[11px] text-[#8A8A8A]">
-                    ({MARGIN_NOTE_KEY[step.note] ? t(MARGIN_NOTE_KEY[step.note]) : step.note})
+                    ({step.noteKey ? t(step.noteKey) : step.note})
                   </span>
                 )}
               </li>
@@ -917,16 +921,12 @@ export function ProductTreeView() {
             {t("tree.glossary")}
           </h3>
           <dl className="mt-3 space-y-1.5">
-            {glossary.map(([abbr, meaning]) => {
-              const key = `ux.products.gloss.${abbr}`;
-              const local = t(key);
-              return (
-                <div key={abbr} className="flex gap-2 text-[12px]">
-                  <dt className="shrink-0 w-12 font-semibold text-[#0A1931]">{abbr}</dt>
-                  <dd className="text-[#6B6B6B]">{local === key ? meaning : local}</dd>
-                </div>
-              );
-            })}
+            {glossary.map(([abbr, key]) => (
+              <div key={abbr} className="flex gap-2 text-[12px]">
+                <dt className="shrink-0 w-12 font-semibold text-[#0A1931]">{abbr}</dt>
+                <dd className="text-[#6B6B6B]">{t(key)}</dd>
+              </div>
+            ))}
           </dl>
         </div>
         <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-4">

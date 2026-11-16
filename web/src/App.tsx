@@ -19,10 +19,11 @@ import { LangToggle } from "./components/LangToggle";
 import { IdentityPicker } from "./components/IdentityPicker";
 import { GlassToggle } from "./components/GlassToggle";
 import { ProjectsProvider } from "./lib/projectsContext";
-import { useLayout } from "./mobile/useLayout";
+import { PHONE_QUERY, useLayout } from "./mobile/useLayout";
 import { MusicButton, MusicPlayer } from "./components/MusicPlayer";
 import { music } from "./lib/music";
 import { MusicTab } from "./components/MusicTab";
+import { UndoToastHost } from "./components/TaskDetails";
 import { navigate, useRoute } from "./lib/history";
 
 // The phone layout is its own chunk: desktop visitors never download it.
@@ -106,6 +107,8 @@ export default function App() {
   return (
     <>
       <MusicPlayer mobile={layout.mobile} />
+      {/* The one Undo toast (delete a task, a project, a member…), on every tab. */}
+      <UndoToastHost />
       {layout.mobile ? (
         <ProjectsProvider value={projectsValue}>
           <Suspense fallback={<div className="min-h-screen bg-[#0A1931]" />}>
@@ -135,7 +138,7 @@ export default function App() {
         {t("ux.shell.skipToContent")}
       </a>
       {/* On a phone showing the desktop layout by choice: the way back. */}
-      {layout.choice === "desktop" && window.matchMedia?.("(max-width: 767px)").matches && (
+      {layout.choice === "desktop" && window.matchMedia?.(PHONE_QUERY).matches && (
         <button
           onClick={() => layout.setChoice("auto")}
           style={{ display: "block", width: "100%", padding: "12px 16px", background: "#C9A96E", color: "#0A1931", fontSize: 14, fontWeight: 700 }}

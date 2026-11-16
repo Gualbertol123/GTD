@@ -21,6 +21,8 @@ export interface TreeNode {
   label: string;
   /** Short qualifier shown beside the label. */
   note?: string;
+  /** Italian (lower-case) search words for the line: "carte" finds CARDS. Not shown. */
+  aliases?: string[];
   /**
    * Declared where the source file declares it. A family tag covers every line
    * beneath it that does not declare tags of its own.
@@ -40,6 +42,7 @@ export interface TreeSection {
 
 interface NodeOpts {
   note?: string;
+  aliases?: string[];
   tags?: Tag[];
   children?: TreeNode[];
 }
@@ -48,6 +51,7 @@ const n = (id: string, label: string, o: NodeOpts = {}): TreeNode => ({
   id,
   label,
   ...(o.note ? { note: o.note } : {}),
+  ...(o.aliases ? { aliases: o.aliases } : {}),
   ...(o.tags ? { tags: o.tags } : {}),
   ...(o.children ? { children: o.children } : {}),
 });
@@ -94,10 +98,11 @@ const segments: TreeNode[] = [
 
 const products: TreeNode[] = [
   n("lending", "LENDING", {
+    aliases: ["prestiti", "finanziamenti", "crediti", "impieghi"],
     children: [
-      n("lending.overdraft", "Overdraft Facilities", { tags: VNC }),
+      n("lending.overdraft", "Overdraft Facilities", { aliases: ["fido", "scoperto di conto"], tags: VNC }),
       n("lending.st", "ST lending", { tags: VNC }),
-      n("lending.mlt", "MLT lending", { tags: VNC }),
+      n("lending.mlt", "MLT lending", { aliases: ["mutui", "mutuo"], tags: VNC }),
       n("lending.leasing", "Leasing", { tags: VNC }),
       n("lending.factoring", "Factoring", { tags: VNC }),
       n("lending.structured", "Structured Finance", {
@@ -112,12 +117,13 @@ const products: TreeNode[] = [
   }),
 
   n("cards", "CARDS & ACQUIRING", {
+    aliases: ["carte", "carta"],
     children: [
       n("cards.issuing", "Card issuing", {
         tags: C,
         note: "income / expense",
         children: [
-          n("cards.issuing.revolving", "Revolving Credit Cards", { tags: VN }),
+          n("cards.issuing.revolving", "Revolving Credit Cards", { aliases: ["carte di credito", "carta revolving"], tags: VN }),
           n("cards.issuing.charge", "Charge Credit Cards", { tags: VN }),
         ],
       }),
@@ -131,8 +137,9 @@ const products: TreeNode[] = [
   }),
 
   n("direct", "DIRECT DEPOSITS", {
+    aliases: ["depositi", "raccolta diretta"],
     children: [
-      n("direct.ca", "Current Accounts", { tags: VC }),
+      n("direct.ca", "Current Accounts", { aliases: ["conti correnti", "conto corrente"], tags: VC }),
       n("direct.sightsaving", "Sight & Saving", {
         children: [
           n("direct.sightsaving.sight", "Sight Deposits", { tags: VC }),
@@ -140,6 +147,7 @@ const products: TreeNode[] = [
         ],
       }),
       n("direct.term", "Time/Term Deposits", {
+        aliases: ["depositi vincolati"],
         children: [
           n("direct.term.st", "ST", { tags: VC }),
           n("direct.term.mlt", "MLT", { tags: VC }),
@@ -152,6 +160,7 @@ const products: TreeNode[] = [
   }),
 
   n("indirect", "INDIRECT DEPOSITS", {
+    aliases: ["raccolta indiretta", "risparmio gestito"],
     note: "investment products",
     tags: C,
     children: [
@@ -173,7 +182,7 @@ const products: TreeNode[] = [
           n("indirect.aum.dpm", "Discretionary Portfolio Management"),
           n("indirect.aum.pension", "Pension Products", {
             children: [
-              n("indirect.aum.pension.funds", "Pension Funds"),
+              n("indirect.aum.pension.funds", "Pension Funds", { aliases: ["fondi pensione"] }),
               n("indirect.aum.pension.other", "Other Pension Products"),
             ],
           }),
@@ -185,6 +194,7 @@ const products: TreeNode[] = [
   }),
 
   n("insurance", "INSURANCE", {
+    aliases: ["assicurazione", "assicurazioni", "polizze"],
     note: "protection",
     tags: C,
     children: [
@@ -203,7 +213,7 @@ const products: TreeNode[] = [
       }),
       n("insurance.cpi", "CPI", {
         children: [
-          n("insurance.cpi.mortgages", "CPI Mortgages"),
+          n("insurance.cpi.mortgages", "CPI Mortgages", { aliases: ["mutui"] }),
           n("insurance.cpi.personal", "CPI Personal Loans"),
           n("insurance.cpi.card", "CPI Credit Card"),
           n("insurance.cpi.overdraft", "CPI Overdraft"),
@@ -236,7 +246,7 @@ const products: TreeNode[] = [
       }),
       n("transaction.trade", "Trade Finance", {
         children: [
-          n("transaction.trade.guarantees", "Trade Guarantees"),
+          n("transaction.trade.guarantees", "Trade Guarantees", { aliases: ["garanzie", "fideiussioni"] }),
           n("transaction.trade.financial", "Financial Guarantees/SBLC"),
           n("transaction.trade.lc", "Letter of Credit"),
           n("transaction.trade.other", "Other"),
@@ -313,17 +323,20 @@ export interface MarginStep {
   /** The operator the source file prints in front of the line. */
   op: "" | "+" | "=" | "−";
   label: string;
+  /** i18n key of the qualifier shown beside the line. */
+  noteKey?: string;
+  /** A qualifier that is source names, shown as written (not translated). */
   note?: string;
 }
 
 export const marginSteps: MarginStep[] = [
-  { op: "", label: "Commission income/expense", note: "by product" },
+  { op: "", label: "Commission income/expense", noteKey: "ux.products.margin.byProduct" },
   { op: "+", label: "Trading income/expense" },
   { op: "+", label: "Other operating income/expense", note: "Cards, Other" },
   { op: "=", label: "NON INTEREST MARGIN" },
-  { op: "=", label: "NET OPERATING MARGIN", note: "and excl. Waivers" },
+  { op: "=", label: "NET OPERATING MARGIN", noteKey: "ux.products.margin.exclWaivers" },
   { op: "−", label: "Provisions" },
-  { op: "=", label: "NET OPERATING MARGIN AFTER PROVISIONS", note: "and excl. Waivers" },
+  { op: "=", label: "NET OPERATING MARGIN AFTER PROVISIONS", noteKey: "ux.products.margin.exclWaivers" },
   { op: "−", label: "Levies" },
 ];
 
@@ -336,15 +349,15 @@ export const sections: TreeSection[] = [
 /** The section holding the product families, for the overview graphic. */
 export const PRODUCTS_SECTION = "products";
 
-/** Abbreviations, as the source file lists them. */
+/** Abbreviations, as the source file lists them: [abbreviation, i18n key of its meaning]. */
 export const glossary: [string, string][] = [
-  ["ST", "short term"],
-  ["MLT", "medium/long term"],
-  ["AuM", "assets under management"],
-  ["AuC", "assets under custody"],
-  ["CPI", "credit protection insurance"],
-  ["SBLC", "standby letter of credit"],
-  ["FTP", "funds transfer pricing"],
+  ["ST", "ux.products.gloss.ST"],
+  ["MLT", "ux.products.gloss.MLT"],
+  ["AuM", "ux.products.gloss.AuM"],
+  ["AuC", "ux.products.gloss.AuC"],
+  ["CPI", "ux.products.gloss.CPI"],
+  ["SBLC", "ux.products.gloss.SBLC"],
+  ["FTP", "ux.products.gloss.FTP"],
 ];
 
 /** Section 4 of the source: what was changed versus the raw sheets. */
@@ -366,8 +379,26 @@ export function countLeaves(node: TreeNode): number {
   return node.children.reduce((sum, c) => sum + countLeaves(c), 0);
 }
 
-const matches = (node: TreeNode, q: string) =>
+/** Whether the query is in the label or note (what the row highlights). */
+const inText = (node: TreeNode, q: string) =>
   node.label.toLowerCase().includes(q) || (node.note?.toLowerCase().includes(q) ?? false);
+
+/**
+ * The Italian alias a query found a line by, when its label and note do not
+ * hold the query (so the row can say why it is listed). Undefined otherwise.
+ */
+export function aliasMatch(node: TreeNode, query: string): string | undefined {
+  const q = query.trim().toLowerCase();
+  if (q.length < ALIAS_MIN || inText(node, q)) return undefined;
+  return node.aliases?.find((a) => a.includes(q));
+}
+
+// Aliases count from three letters, so a short query ("co") still finds only
+// what the rows show.
+const ALIAS_MIN = 3;
+
+const matches = (node: TreeNode, q: string) =>
+  inText(node, q) || (q.length >= ALIAS_MIN && (node.aliases?.some((a) => a.includes(q)) ?? false));
 
 /**
  * Ids worth keeping on screen for a query and/or a tag, plus the text matches

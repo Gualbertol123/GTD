@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Board, Op, Priority, Task } from "../lib/types";
+import type { Board, Op, Task } from "../lib/types";
 import { PRIORITY_DOT } from "../lib/constants";
 import { sameDay, toISODate } from "../lib/dates";
 import { localeCode, monthName, weekdayNames, useT } from "../lib/i18n";
@@ -19,11 +19,6 @@ let lastMonth: Date | null = null;
 
 // Chips shown per day before the "+n more" button.
 const CAP = 3;
-
-// The shared P4 dot is a dashed #E8E6E1 ring that disappears on the chip
-// background; the calendar uses a visible hollow ring instead.
-const dotClass = (p: Priority) =>
-  p === "P4" ? "bg-transparent border border-[#8A8A8A]" : PRIORITY_DOT[p];
 
 const isTextTarget = (el: EventTarget | null) => {
   const n = el as HTMLElement | null;
@@ -262,7 +257,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                       tk.status !== "DONE" && selectedDay < todayIso ? "border-l-2 border-l-[#DC2626]" : ""
                     }`}
                   >
-                    <span title={tk.priority} className={`w-2 h-2 rounded-full shrink-0 ${dotClass(tk.priority)}`} />
+                    <span title={tk.priority} className={`w-2 h-2 rounded-full shrink-0 ${PRIORITY_DOT[tk.priority]}`} />
                     <span
                       className={`text-[12px] text-[#0A1931] truncate ${
                         tk.status === "DONE" ? "line-through opacity-60" : ""
@@ -313,7 +308,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                     aria-label={`${tk.title}, ${tk.priority}`}
                     className={rowClass(tk)}
                   >
-                    <span title={tk.priority} className={`w-2 h-2 rounded-full shrink-0 ${dotClass(tk.priority)}`} />
+                    <span title={tk.priority} className={`w-2 h-2 rounded-full shrink-0 ${PRIORITY_DOT[tk.priority]}`} />
                     <span className="text-[12px] text-[#0A1931] truncate">{tk.title}</span>
                   </button>
                 ))}
@@ -431,7 +426,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                             isSel ? "bg-[#0A1931]" : "bg-[#F5F3EF] hover:bg-[#EFECE6]"
                           } ${overdue ? "border-l-2 border-[#DC2626]" : ""}`}
                         >
-                          <span title={tk.priority} className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass(tk.priority)}`} />
+                          <span title={tk.priority} className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITY_DOT[tk.priority]}`} />
                           <span
                             className={`text-[11px] leading-tight line-clamp-2 break-words min-w-0 ${
                               isSel ? "text-white" : "text-[#0A1931]"

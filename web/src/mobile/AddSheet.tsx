@@ -88,6 +88,8 @@ export function AddSheet({
       projectId,
       updatedAt: now,
       createdAt: now,
+      // Same as a task moved to WAITING: the day the wait started.
+      ...(status === "WAITING" ? { waitingSince: toISODate(new Date()) } : {}),
     };
     send({ type: "addTask", task }, (m) => toast(`${t("m.notSaved")} ${m}`));
     toast(t("m.toast.added").replace("{title}", v));

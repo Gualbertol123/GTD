@@ -4,6 +4,7 @@ import { STATUS_ORDER } from "../lib/constants";
 import { useT } from "../lib/i18n";
 import { useMe } from "../lib/identity";
 import { useSyncedField } from "../lib/useSyncedField";
+import { useAutosave } from "../lib/useAutosave";
 import { newProject, projectColor, projectStats, type Health, type ProjectStats } from "../lib/projects";
 import { AutoTextarea } from "../components/AutoTextarea";
 import { Avatar, Ring, Sheet, STATUS_VAR, shortDay } from "./ui";
@@ -164,6 +165,10 @@ export function ProjectSheet({
   const s = projectStats(p, board.tasks);
   const color = projectColor(p);
   const notes = useSyncedField(p.notes ?? "");
+  // Notes save while typing and when the sheet closes (Back, swipe) without a blur.
+  const notesSave = useAutosave(notes.value, p.notes ?? "", (v) =>
+    send({ type: "projectUpdate", id: p.id, patch: { notes: v } })
+  );
   const [showDone, setShowDone] = useState(false);
   const v2 = !!board.projectsV2Available;
 
@@ -228,7 +233,7 @@ export function ProjectSheet({
             <div className="m-label" style={{ display: "flex", alignItems: "center", gap: 7 }}>
               <span className="m-dot" style={{ background: STATUS_VAR[st] }} /> {t(`m.status.${st}`)} · {list.length}
             </div>
-            <TaskList tasks={list} send={send} />
+            <TaskList tasks={list} send={send} hideProject />
           </div>
         );
       })}
@@ -239,7 +244,7 @@ export function ProjectSheet({
           </button>
           {showDone && (
             <div style={{ marginTop: 10 }}>
-              <TaskList tasks={byStatus.get("DONE")!} send={send} />
+              <TaskList tasks={byStatus.get("DONE")!} send={send} hideProject />
             </div>
           )}
         </>
@@ -257,7 +262,7 @@ export function ProjectSheet({
             onFocus={notes.onFocus}
             onBlur={() => {
               notes.onBlur();
-              if (notes.value !== (p.notes ?? "")) send({ type: "projectUpdate", id: p.id, patch: { notes: notes.value } });
+              notesSave.flush();
             }}
           />
         </div>

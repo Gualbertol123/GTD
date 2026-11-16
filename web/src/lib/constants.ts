@@ -55,7 +55,7 @@ export const PRIORITY_DOT: Record<Priority, string> = {
   P1: "bg-[#DC2626]",
   P2: "bg-[#C9A96E]",
   P3: "bg-[#C9C5BE]",
-  P4: "bg-transparent border border-dashed border-[#E8E6E1]",
+  P4: "bg-[#8BA1C2]",
 };
 
 export const UNASSIGNED = "Unassigned";

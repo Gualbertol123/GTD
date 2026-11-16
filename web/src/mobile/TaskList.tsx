@@ -8,11 +8,14 @@ export function TaskList({
   tasks,
   send,
   showStatus,
+  hideProject,
   swipe = true,
 }: {
   tasks: Task[];
   send: Send;
   showStatus?: boolean;
+  /** Hide each card's project-name chip (in that project's own sheet). */
+  hideProject?: boolean;
   /** Card swipe actions; off on the Board, where sideways swipes change column. */
   swipe?: boolean;
 }) {
@@ -25,6 +28,7 @@ export function TaskList({
           key={tk.id}
           task={tk}
           showStatus={showStatus}
+          hideProject={hideProject}
           swipe={swipe}
           onOpen={() => nav.openTask(tk.id)}
           onToggleDone={() => toggleDone(tk)}

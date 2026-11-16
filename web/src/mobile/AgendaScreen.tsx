@@ -71,16 +71,22 @@ export function AgendaScreen({ board, send }: { board: Board; send: Send }) {
       ? t("m.when.today")
       : new Date(iso + "T00:00:00").toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" });
 
+  // The arrows move the selected day with the week, so the list below follows.
+  const shiftWeek = (n: number) => {
+    setWeekStart((w) => plus(w, n));
+    setDay((d) => toISODate(plus(new Date(d + "T00:00:00"), n)));
+  };
+
   return (
     <div className="m-page">
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <button className="m-iconbtn" aria-label={t("m.prevWeek")} onClick={() => setWeekStart((w) => plus(w, -7))}>
+        <button className="m-iconbtn" aria-label={t("m.prevWeek")} onClick={() => shiftWeek(-7)}>
           <IconBack size={18} />
         </button>
         <div style={{ flex: 1, textAlign: "center", fontSize: 18, fontWeight: 700, textTransform: "capitalize" }}>
           {monthLabel}
         </div>
-        <button className="m-iconbtn" aria-label={t("m.nextWeek")} onClick={() => setWeekStart((w) => plus(w, 7))}>
+        <button className="m-iconbtn" aria-label={t("m.nextWeek")} onClick={() => shiftWeek(7)}>
           <IconChevron size={18} />
         </button>
       </div>
@@ -95,12 +101,13 @@ export function AgendaScreen({ board, send }: { board: Board; send: Send }) {
               className="m-day"
               aria-pressed={iso === day}
               aria-label={`${d.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" })}${n ? ` · ${t("ux.m.dayDue").replace("{n}", String(n))}` : ""}`}
+              aria-current={iso === todayIso ? "date" : undefined}
               data-today={iso === todayIso}
               onClick={() => setDay(iso)}
             >
               {d.toLocaleDateString(loc, { weekday: "narrow" })}
               <b>{d.getDate()}</b>
-              <span className="m-day__dots">
+              <span className="m-day__dots" aria-hidden="true">
                 {Array.from({ length: Math.min(n, 3) }, (_, i) => (
                   <i key={i} />
                 ))}
