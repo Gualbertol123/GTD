@@ -152,27 +152,111 @@ export function suggest(q: string): Promise<string[]> {
   });
 }
 
+/**
+ * A short radio (~24-27 songs) is YouTube's generic fallback, with little to
+ * do with the song: mix in more by the same artist (two of theirs, then one
+ * of the list), seed first.
+ */
+async function mixArtist(yt: Innertube, list: Song[], max: number): Promise<Song[]> {
+  if (list.length >= 40 || !list[0]) return list;
+  const artist = list[0].channel.replace(/VEVO$/i, "").replace(/([a-z])([A-Z])/g, "$1 $2").trim();
+  if (!artist) return list;
+  const same = (await yt.search(artist, { type: "video" }).then((r) => songs(r.videos as any[])).catch(() => [] as Song[]))
+    .filter((x) => !list.some((y) => y.id === x.id));
+  const mixed: Song[] = [list[0]];
+  const rest = list.slice(1);
+  while (same.length || rest.length) {
+    if (same.length) mixed.push(same.shift()!);
+    if (same.length) mixed.push(same.shift()!);
+    if (rest.length) mixed.push(rest.shift()!);
+  }
+  return mixed.slice(0, max);
+}
+
 /** "Radio": the song, then ~50 songs like it (YouTube Music's automix). */
 export function radio(videoId: string): Promise<Song[]> {
   return cached(`radio:${videoId}`, 10 * MIN, async (yt) => {
     const panel = await yt.music.getUpNext(videoId, true);
-    const list = songs(panel.contents as any[]);
-    // A real radio has ~50 songs. A short one (~24) is YouTube's generic
-    // fallback with little to do with the song: mix in more by the same artist.
-    if (list.length >= 40 || !list[0]) return list;
-    const artist = list[0].channel.replace(/VEVO$/i, "").replace(/([a-z])([A-Z])/g, "$1 $2").trim();
-    if (!artist) return list;
-    const same = (await yt.search(artist, { type: "video" }).then((r) => songs(r.videos as any[])).catch(() => [] as Song[]))
-      .filter((x) => !list.some((y) => y.id === x.id));
-    const mixed: Song[] = [list[0]];
-    const rest = list.slice(1);
-    while (same.length || rest.length) {
-      if (same.length) mixed.push(same.shift()!);
-      if (same.length) mixed.push(same.shift()!);
-      if (rest.length) mixed.push(rest.shift()!);
-    }
-    return mixed.slice(0, 50);
+    return mixArtist(yt, songs(panel.contents as any[]), 50);
   });
+}
+
+/**
+ * The longest radio YouTube gives for a song (a saved "radio playlist"):
+ * YouTube Music's up-next mix "RDAMVM<id>", following its continuations.
+ *
+ * Measured from a server (Nov 2026): the first page has ~50 songs; each
+ * continuation page repeats most of them and adds 1-10 new ones, and after
+ * 4-15 pages it only repeats. A real radio ends at ~60-100 distinct songs
+ * (61-66, 71, 96 on the songs tried). The watch-next mix "RD<id>" gives the
+ * same or fewer (64, 70, 82). Neither ever reached 200, which stays the cap.
+ *
+ * Stops when there is no continuation, after 3 pages that add nothing, at
+ * RADIO_MAX songs, or at `until` (a Date.now() value): whatever was found by
+ * then is returned. The seed is always first; no song twice. A complete
+ * answer is kept 6 hours, one cut short by time only 10 minutes.
+ */
+export const RADIO_MAX = 200;
+const FULL_TTL = 6 * 60 * MIN;
+const fullKept = new Map<string, { until: number; p: Promise<Song[]> }>();
+
+export function radioFull(videoId: string, until = Date.now() + BUDGET_MS - 1500): Promise<Song[]> {
+  const hit = fullKept.get(videoId);
+  if (hit && hit.until > Date.now()) return hit.p;
+  if (fullKept.size > 200) for (const [k, e] of fullKept) if (e.until <= Date.now()) fullKept.delete(k);
+  let ttl = FULL_TTL;
+  const run = async (yt: Innertube): Promise<Song[]> => {
+    const list = `RDAMVM${videoId}`;
+    const out: Song[] = [];
+    const seen = new Set<string>();
+    const take = (nodes: any[] | undefined) => {
+      let added = 0;
+      for (const n of nodes ?? []) {
+        const s = toSong(n?.primary ?? n); // PlaylistPanelVideoWrapper → its video
+        if (s && !seen.has(s.id)) {
+          seen.add(s.id);
+          out.push(s);
+          added++;
+          if (out.length >= RADIO_MAX) break;
+        }
+      }
+      return added;
+    };
+    const first: any = await yt.actions.execute("/next", { client: "YTMUSIC", videoId, playlistId: list, parse: true });
+    const { PlaylistPanel } = (await import("youtubei.js")).YTNodes;
+    const panel: any = first.contents_memo?.getType(PlaylistPanel)?.[0];
+    if (!panel) throw new NotFoundError("no radio");
+    take(panel.contents);
+    let token: string | null = panel.continuation ?? null;
+    let idle = 0;
+    while (token && idle < 3 && out.length < RADIO_MAX) {
+      if (Date.now() > until - 600) {
+        ttl = 10 * MIN; // cut short: ask again sooner
+        break;
+      }
+      const page: any = await yt.actions.execute("/next", { client: "YTMUSIC", playlistId: list, continuation: token, parse: true });
+      const c = page.continuation_contents;
+      idle = take(c?.contents) ? 0 : idle + 1;
+      token = c?.continuation ?? null;
+    }
+    // The seed first, even when YouTube put it elsewhere or left it out.
+    const at = out.findIndex((s) => s.id === videoId);
+    if (at > 0) out.unshift(...out.splice(at, 1));
+    if (!out.length) throw new NotFoundError("no radio");
+    return Date.now() < until - 1500 ? mixArtist(yt, out, 50) : out;
+  };
+  const p = withClient(run, Math.max(1, until - Date.now()));
+  const entry = { until: Date.now() + FULL_TTL, p };
+  fullKept.set(videoId, entry);
+  p.then(
+    () => {
+      entry.until = Date.now() + ttl;
+    },
+    () => {
+      if (fullKept.get(videoId) === entry) fullKept.delete(videoId);
+    }
+  );
+  return p;
 }
 
 /** YouTube Music's Explore page: its sections of songs (trends, new videos…). */
