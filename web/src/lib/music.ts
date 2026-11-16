@@ -2019,6 +2019,16 @@ export async function fetchSuggestions(q: string, opts?: CallOpts): Promise<stri
 }
 
 /**
+ * A song's radio, without playing it: ~50 songs, or with `full` the longest
+ * radio YouTube gives (up to 200, ~60-100 in practice), seed first. Used by
+ * the radio playlists (lib/musicDb.ts).
+ */
+export function fetchRadio(videoId: string, opts: CallOpts & { full?: boolean } = {}) {
+  const { full, ...call } = opts;
+  return browse<{ tracks: Track[] }>(full ? { radio: videoId, full: "1" } : { radio: videoId }, call);
+}
+
+/**
  * "Radio": the song plays at once, then ~50 like it are added after it when
  * they arrive (dropped if the user has played something else meanwhile).
  * Returns an error code, "empty", or null.

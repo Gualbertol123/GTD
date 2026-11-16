@@ -676,6 +676,40 @@ create trigger music_playlists_stamp
   before insert or update on public.music_playlists
   for each row execute function public.music_playlists_stamp();
 
+-- ---- Radio playlists, updated daily (migration 021) ------------------------
+-- "Salva radio come playlist": a song's radio saved as a team playlist that a
+-- team browser refreshes once a day. radio_seed null = an ordinary playlist
+-- (or a radio whose songs were edited by hand, which stops the updates).
+alter table public.music_playlists add column if not exists radio_seed         text   null;
+alter table public.music_playlists add column if not exists radio_title        text   null;
+alter table public.music_playlists add column if not exists radio_refreshed_at bigint null;
+
+-- Refreshes a radio playlist only if it is still a radio and was last checked
+-- more than p_stale_ms ago (database clock), so two browsers can't both do
+-- it. p_tracks null: songs unchanged, only the check is stamped. Returns the
+-- row, or nothing when not due. Runs with the caller's rights.
+create or replace function public.music_playlist_radio_refresh(p_id text, p_tracks jsonb, p_stale_ms bigint)
+returns setof public.music_playlists
+language sql
+security invoker
+set search_path = ''
+as $$
+  update public.music_playlists as m
+     set tracks = case
+           when p_tracks is not null and jsonb_typeof(p_tracks) = 'array' then p_tracks
+           else m.tracks
+         end,
+         radio_refreshed_at = (extract(epoch from clock_timestamp()) * 1000)::bigint,
+         updated_at = (extract(epoch from clock_timestamp()) * 1000)::bigint
+   where m.id = p_id
+     and m.radio_seed is not null
+     and (m.radio_refreshed_at is null
+          or m.radio_refreshed_at < (extract(epoch from clock_timestamp()) * 1000)::bigint - coalesce(p_stale_ms, 0))
+  returning m.*;
+$$;
+revoke all on function public.music_playlist_radio_refresh(text, jsonb, bigint) from public, anon;
+grant execute on function public.music_playlist_radio_refresh(text, jsonb, bigint) to authenticated;
+
 -- ---- Realtime --------------------------------------------------------------
 -- Change events for the board tables (they respect the policies above).
 -- reflection_access is deliberately NOT published.
