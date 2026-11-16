@@ -1,36 +1,52 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useT } from "../lib/i18n";
 import { useBackClose } from "../lib/history";
 import {
   ARTISTS,
+  attachPlayer,
   coverOf,
+  forgetMusicFailures,
+  detachPlayer,
   fetchExplore,
+  fetchSuggestions,
   formatTime,
-  getMusic,
   music,
+  musicErrorText,
+  musicUsedThisSession,
+  onYtError,
+  onYtState,
   parseYouTube,
-  registerController,
+  registerDockTarget,
   searchMusic,
   setMusic,
-  useMusic,
+  setMusicTranslator,
+  sourceLabel,
+  useLastRequest,
+  useMusicSel,
+  useMusicTime,
   youtubeSearchUrl,
-  type Artist,
-  type Source,
+  type MusicErrorCode,
   type Track,
+  type YtLike,
 } from "../lib/music";
-import { usePlaylists } from "../lib/musicDb";
-import { readPref, writePref } from "../lib/prefs";
-import { SongMenuHost, songMenuProps } from "./SongMenu";
+import { usePlaylist, usePlaylists } from "../lib/musicDb";
+import { SongMenuHost, openSongMenu, songMenuProps } from "./SongMenu";
 import {
+  IconBack,
   IconChevronDown,
   IconClose,
   IconExpand,
   IconExternal,
+  IconMore,
   IconNext,
   IconNote,
   IconPause,
   IconPlay,
   IconPrev,
+  IconQueue,
+  IconShuffle,
+  IconSpinner,
   IconSwap,
   IconTrend,
   IconVideo,
@@ -47,34 +63,20 @@ import "../styles/music.css";
 //           the 200 × 200 video (video mode)
 //   closed  stopped and out of sight
 //   tab     the desktop Music tab is on screen and shows the controls itself;
-//           in video mode the video is placed inside the tab (state.dock)
+//           in video mode the video is placed inside the tab (setDockRect)
 //
 // Music only (the default) keeps the YouTube frame on the page but out of
 // sight. YouTube's embedding rules ask for a visible player of at least
 // 200 × 200 px, which is what Video mode shows.
+//
+// This file makes the frame and forwards YouTube's events; what to play and
+// when is decided by the engine in lib/music.ts. Each piece of the UI below
+// reads only the part of the state it shows, so the time ticking re-renders
+// the seek bar alone.
 // -----------------------------------------------------------------------------
 
-interface YTPlayer {
-  loadPlaylist(arg: string[] | { list: string; listType: "playlist"; index?: number }, index?: number, startSeconds?: number): void;
-  playVideo(): void;
-  pauseVideo(): void;
-  stopVideo(): void;
-  nextVideo(): void;
-  previousVideo(): void;
-  playVideoAt(i: number): void;
-  seekTo(s: number, allowSeekAhead: boolean): void;
-  setVolume(v: number): void;
-  mute(): void;
-  unMute(): void;
-  setShuffle(on: boolean): void;
-  setLoop(on: boolean): void;
-  getPlaylist(): string[] | null;
-  getPlaylistIndex(): number;
-  getCurrentTime(): number;
-  getDuration(): number;
-  getVolume(): number;
-  isMuted(): boolean;
-  getVideoData(): { video_id?: string; title?: string; author?: string };
+interface YTPlayer extends YtLike {
+  destroy(): void;
 }
 interface YTNamespace {
   Player: new (el: HTMLIFrameElement, opts: { events?: Record<string, (e: { data: number }) => void> }) => YTPlayer;
@@ -86,353 +88,342 @@ declare global {
   }
 }
 
-const ENDED = 0;
-const PLAYING = 1;
-const PAUSED = 2;
+const API_URL = "https://www.youtube.com/iframe_api";
+const API_TIMEOUT_MS = 12000;
 
 let apiPromise: Promise<YTNamespace> | null = null;
+/** YouTube's IFrame API script, once. A failure or a timeout can be retried. */
 function loadApi(): Promise<YTNamespace> {
   if (apiPromise) return apiPromise;
   apiPromise = new Promise((resolve, reject) => {
     if (window.YT?.Player) return resolve(window.YT);
     const prev = window.onYouTubeIframeAPIReady;
+    const s = document.createElement("script");
+    const fail = () => {
+      clearTimeout(timer);
+      apiPromise = null;
+      window.onYouTubeIframeAPIReady = prev;
+      s.remove();
+      reject(new Error("YouTube could not be reached"));
+    };
+    const timer = setTimeout(fail, API_TIMEOUT_MS);
     window.onYouTubeIframeAPIReady = () => {
+      clearTimeout(timer);
       prev?.();
       resolve(window.YT!);
     };
-    const s = document.createElement("script");
-    s.src = "https://www.youtube.com/iframe_api";
+    s.src = API_URL;
     s.async = true;
-    s.onerror = () => {
-      apiPromise = null;
-      reject(new Error("YouTube could not be reached"));
-    };
+    s.onerror = fail;
     document.head.appendChild(s);
   });
   return apiPromise;
 }
 
-function shuffled<T>(a: T[]): T[] {
-  const r = a.slice();
-  for (let i = r.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [r[i], r[j]] = [r[j], r[i]];
-  }
-  return r;
-}
-
 /** The player itself. Render once, at the app's root. */
 export function MusicPlayer({ mobile }: { mobile: boolean }) {
   const { t } = useT();
-  const st = useMusic();
+  const view = useMusicSel((s) => s.view);
+  const mode = useMusicSel((s) => s.mode);
+  const tab = useMusicSel((s) => s.tab);
+  const docked = useMusicSel((s) => s.docked);
+  const side = useMusicSel((s) => s.side);
+  const failed = useMusicSel((s) => s.failed);
+  const premium = useMusicSel((s) => s.premium);
+  // Made the first time it is needed: a panel or the tab opened, something
+  // played, or a music control about to be used (music.warm).
+  const wanted = useMusicSel((s) => s.view !== "closed" || s.tab || s.warm || !!s.source);
+  const root = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const player = useRef<YTPlayer | null>(null);
-  const mix = useRef<{ order: Artist[]; pos: number }>({ order: [], pos: 0 });
-  const shufflePending = useRef(false);
-  const [failed, setFailed] = useState<string | null>(null);
+  const creating = useRef(false);
+  const mounted = useRef(true);
+  const builtFor = useRef(premium);
   const [ready, setReady] = useState(false);
 
-  const loadArtist = useCallback((a: Artist) => {
-    shufflePending.current = true; // start somewhere random in the artist's songs
-    setMusic({ queue: [], index: -1, shuffle: true, now: null });
-    player.current?.loadPlaylist({ list: a.list, listType: "playlist", index: 0 });
+  // The engine's own messages follow the UI language.
+  useEffect(() => setMusicTranslator(t), [t]);
+
+  useEffect(() => {
+    mounted.current = true;
+    registerDockTarget(root.current);
+    return () => {
+      mounted.current = false;
+      registerDockTarget(null);
+      detachPlayer();
+      try {
+        player.current?.destroy();
+      } catch {
+        /* already gone */
+      }
+      player.current = null;
+    };
   }, []);
 
-  const advanceMix = useCallback(() => {
-    const m = mix.current;
-    m.pos = (m.pos + 1) % m.order.length;
-    loadArtist(m.order[m.pos]);
-  }, [loadArtist]);
+  // Music was played earlier in this session: get YouTube ready while idle.
+  useEffect(() => {
+    if (!musicUsedThisSession()) return;
+    const w = window as Window & { requestIdleCallback?: (f: () => void) => number; cancelIdleCallback?: (id: number) => void };
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(() => music.warm());
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const id = setTimeout(() => music.warm(), 2000);
+    return () => clearTimeout(id);
+  }, []);
 
-  const atEnd = () => {
-    const p = player.current;
-    const len = p?.getPlaylist()?.length ?? 0;
-    return !!p && len > 0 && p.getPlaylistIndex() >= len - 1;
+  /** Make the frame and the player (one at a time: never two frames). */
+  const build = (YT: YTNamespace) => {
+    const box = host.current;
+    if (!mounted.current || !box || player.current || box.querySelector("iframe")) {
+      creating.current = false;
+      return;
+    }
+    // The frame is made here, not by the API, for one attribute: since 2025
+    // YouTube refuses to play an embed whose page sends no referrer ("Error
+    // 153"), and this site sends none (netlify.toml). So this one frame tells
+    // YouTube the site's address (origin only, no path); every other request
+    // still sends nothing.
+    const frame = document.createElement("iframe");
+    const vars = new URLSearchParams({
+      enablejsapi: "1",
+      origin: window.location.origin,
+      playsinline: "1",
+      rel: "0",
+      controls: "1",
+      fs: "0",
+      iv_load_policy: "3",
+    });
+    // youtube-nocookie keeps YouTube's cookies out (more private), but that
+    // also leaves out a YouTube Premium login, so Premium members would still
+    // see ads. "Ho YouTube Premium" switches to youtube.com, where their login
+    // (and so no ads) applies.
+    const premiumNow = builtFor.current;
+    const ytHost = premiumNow ? "www.youtube.com" : "www.youtube-nocookie.com";
+    frame.src = `https://${ytHost}/embed/?${vars}`;
+    frame.referrerPolicy = "strict-origin-when-cross-origin";
+    frame.allow = "autoplay; encrypted-media; picture-in-picture";
+    frame.title = "YouTube";
+    box.appendChild(frame);
+    const p: YTPlayer = new YT.Player(frame, {
+      events: {
+        onReady: () => {
+          if (player.current !== p) return;
+          setReady(true);
+          attachPlayer(p);
+        },
+        onStateChange: (e) => {
+          if (player.current === p) onYtState(e.data);
+        },
+        onError: (e) => {
+          if (player.current === p) onYtError(e.data);
+        },
+      },
+    });
+    // Kept at once (not on ready), so a quick close and reopen cannot make a second one.
+    player.current = p;
+    creating.current = false;
   };
 
-  // Create the player the first time it is needed (panel opened, or the Music tab).
-  const wanted = st.view !== "closed" || st.tab;
-  useEffect(() => {
-    if (!wanted || player.current || !host.current) return;
-    let alive = true;
+  const create = () => {
+    if (creating.current || player.current || host.current?.querySelector("iframe")) return;
+    creating.current = true;
     loadApi()
-      .then((YT) => {
-        if (!alive || player.current || !host.current) return;
-        // The frame is made here, not by the API, for one attribute: since
-        // 2025 YouTube refuses to play an embed whose page sends no referrer
-        // ("Error 153"), and this site sends none (netlify.toml). So this one
-        // frame tells YouTube the site's address (origin only, no path); every
-        // other request still sends nothing.
-        const frame = document.createElement("iframe");
-        const vars = new URLSearchParams({
-          enablejsapi: "1",
-          origin: window.location.origin,
-          playsinline: "1",
-          rel: "0",
-          controls: "1",
-          fs: "0",
-          iv_load_policy: "3",
-        });
-        // youtube-nocookie keeps YouTube's cookies out (more private), but
-        // that also leaves out a YouTube Premium login, so Premium members
-        // would still see ads. "Ho YouTube Premium" switches to youtube.com,
-        // where their login (and so no ads) applies.
-        const ytHost = readPref("musicPremium") === "1" ? "www.youtube.com" : "www.youtube-nocookie.com";
-        frame.src = `https://${ytHost}/embed/?${vars}`;
-        frame.referrerPolicy = "strict-origin-when-cross-origin";
-        frame.allow = "autoplay; encrypted-media; picture-in-picture";
-        frame.title = "YouTube";
-        host.current.appendChild(frame);
-        const p = new YT.Player(frame, {
-          events: {
-            onReady: () => {
-              player.current = p;
-              setReady(true);
-              p.setVolume(getMusic().volume);
-              registerController({
-                play: (s: Source) => playSource(s),
-                toggle: () => (getMusic().playing ? p.pauseVideo() : p.playVideo()),
-                next: () => {
-                  if (getMusic().source?.kind === "mix" && atEnd()) advanceMix();
-                  else p.nextVideo();
-                },
-                prev: () => (p.getCurrentTime() > 4 ? p.seekTo(0, true) : p.previousVideo()),
-                stop: () => p.stopVideo(),
-                seek: (sec) => {
-                  p.seekTo(sec, true);
-                  setMusic({ time: sec });
-                },
-                setVolume: (v) => {
-                  p.setVolume(v);
-                  if (v > 0) p.unMute();
-                },
-                setMuted: (m) => (m ? p.mute() : p.unMute()),
-                setShuffle: (on) => p.setShuffle(on),
-                setRepeat: (on) => p.setLoop(on),
-                playAt: (i) => p.playVideoAt(i),
-                enqueue: (tracks, where) => enqueue(p, tracks, where),
-              });
-            },
-            onStateChange: (e) => {
-              if (e.data === PLAYING) {
-                if (shufflePending.current) {
-                  shufflePending.current = false;
-                  p.setShuffle(true);
-                  p.playVideoAt(0);
-                  return;
-                }
-                const d = p.getVideoData();
-                setMusic({
-                  playing: true,
-                  now: d.video_id ? { id: d.video_id, title: d.title ?? "", author: d.author ?? "" } : null,
-                  index: p.getPlaylistIndex(),
-                  duration: p.getDuration(),
-                });
-              } else if (e.data === PAUSED) {
-                setMusic({ playing: false });
-              } else if (e.data === ENDED) {
-                setMusic({ playing: false });
-                if (getMusic().source?.kind === "mix" && atEnd()) advanceMix();
-              }
-            },
-            onError: () => {
-              // Not found, or its owner does not allow playing it elsewhere: skip it.
-              setMusic({ notice: t("music.unavailable") });
-              setTimeout(() => {
-                setMusic({ notice: null });
-                if (getMusic().source?.kind === "mix" && atEnd()) advanceMix();
-                else p.nextVideo();
-              }, 1200);
-            },
-          },
-        });
-      })
-      .catch((e: unknown) => setFailed(e instanceof Error ? e.message : String(e)));
-    return () => {
-      alive = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wanted]);
-
-  useEffect(() => () => registerController(null), []);
-
-  // Keep every view in step with the player itself: position, length, and
-  // volume / mute (which YouTube's own controls can change in Video mode).
-  // Fast while playing, slower while paused.
-  const loaded = !!st.source;
-  useEffect(() => {
-    if (!loaded) return;
-    const id = setInterval(
-      () => {
-        const p = player.current;
-        if (!p) return;
-        const cur = getMusic();
-        const patch: Partial<typeof cur> = {};
-        const time = p.getCurrentTime() || 0;
-        const duration = p.getDuration() || 0;
-        if (Math.abs(time - cur.time) >= 0.25) patch.time = time;
-        if (duration !== cur.duration) patch.duration = duration;
-        const vol = p.getVolume();
-        if (typeof vol === "number" && vol !== cur.volume && !p.isMuted()) patch.volume = vol;
-        const muted = p.isMuted();
-        if (muted !== cur.muted) patch.muted = muted;
-        if (Object.keys(patch).length) setMusic(patch);
-      },
-      st.playing ? 500 : 1500
-    );
-    return () => clearInterval(id);
-  }, [loaded, st.playing]);
-
-  /**
-   * Adds songs to what is playing without stopping it: the player's list is
-   * reloaded with the new songs in it, at the same song and second. A mix,
-   * an artist or a pasted playlist become a plain list of songs here (their
-   * remaining songs keep their ids; titles show once they play).
-   */
-  function enqueue(p: YTPlayer, tracks: Track[], where: "next" | "end") {
-    const cur = getMusic();
-    const ids = p.getPlaylist() ?? [];
-    let index = p.getPlaylistIndex();
-    let queue: Track[] =
-      cur.queue.length && cur.queue.length === ids.length
-        ? cur.queue.slice()
-        : ids.map((id) => cur.queue.find((x) => x.id === id) ?? (cur.now?.id === id ? { id, title: cur.now.title, channel: cur.now.author } : { id, title: "", channel: "" }));
-    if (index < 0 || !queue.length) {
-      queue = cur.now ? [{ id: cur.now.id, title: cur.now.title, channel: cur.now.author }] : [];
-      index = 0;
-    }
-    const adding = tracks.filter((t) => t.id !== queue[index]?.id);
-    const at = where === "next" ? index + 1 : queue.length;
-    queue.splice(at, 0, ...adding);
-    const time = p.getCurrentTime() || 0;
-    const wasPlaying = cur.playing;
-    // The player's own shuffle would reorder the new list: our order wins.
-    if (cur.shuffle) {
-      p.setShuffle(false);
-      setMusic({ shuffle: false });
-    }
-    const label = cur.source?.kind === "videos" ? cur.source.label : cur.now?.title ?? "";
-    setMusic({ queue, index, source: { kind: "videos", label, tracks: queue, start: index } });
-    p.loadPlaylist(
-      queue.map((x) => x.id),
-      index,
-      time
-    );
-    if (!wasPlaying) setTimeout(() => p.pauseVideo(), 400);
-  }
-
-  function playSource(s: Source) {
-    const p = player.current;
-    if (!p) return;
-    shufflePending.current = false;
-    setMusic({ time: 0, duration: 0 });
-    if (s.kind === "mix") {
-      mix.current = { order: shuffled(ARTISTS), pos: 0 };
-      loadArtist(mix.current.order[0]);
-    } else if (s.kind === "artist") {
-      const a = ARTISTS.find((x) => x.name === s.artist);
-      if (a) loadArtist(a);
-    } else if (s.kind === "videos") {
-      const first = s.tracks[s.start];
-      setMusic({
-        queue: s.tracks,
-        index: s.start,
-        now: first ? { id: first.id, title: first.title, author: first.channel } : null,
+      .then(build)
+      .catch(() => {
+        creating.current = false;
+        if (mounted.current) setMusic({ failed: "api", playing: false, status: "idle" });
       });
-      p.loadPlaylist(
-        s.tracks.map((x) => x.id),
-        s.start
-      );
-    } else {
-      setMusic({ queue: [], index: -1, now: null });
-      p.loadPlaylist({ list: s.list, listType: "playlist", index: 0 });
-    }
-    if (getMusic().shuffle && s.kind !== "mix" && s.kind !== "artist") setTimeout(() => p.setShuffle(true), 800);
-    if (getMusic().repeat) setTimeout(() => p.setLoop(true), 800);
-  }
+  };
 
-  const view = st.view;
-  const audio = st.mode === "audio";
+  useEffect(() => {
+    if (wanted && !failed) create();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wanted, failed]);
+
+  // "Ho YouTube Premium" changed: the player is rebuilt on the other host; the
+  // engine puts the song, second and queue back when the new one is ready.
+  useEffect(() => {
+    if (builtFor.current === premium) return;
+    builtFor.current = premium;
+    const p = player.current;
+    if (!p) return; // not made yet: it will use the new host
+    detachPlayer();
+    player.current = null;
+    setReady(false);
+    try {
+      p.destroy();
+    } catch {
+      /* already gone */
+    }
+    host.current?.querySelectorAll("iframe").forEach((f) => f.remove());
+    create();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [premium]);
+
+  const audio = mode === "audio";
   // On the Music tab the tab is the player: this one only hosts the frame
-  // (and, in video mode, shows the video where the tab put its slot).
-  const inTab = st.tab && !mobile;
-  const docked = inTab && !audio && !!st.dock;
-  const frameStyle = docked ? { left: st.dock!.x, top: st.dock!.y, width: st.dock!.w, height: st.dock!.h } : undefined;
+  // (and, in video mode, shows the video on the tab's slot).
+  const inTab = tab && !mobile;
+
+  // On the phone the page is told when the small player covers its bottom
+  // (<html data-music="mini" | "mini-video" | "open">), so mobile.css can pad
+  // the screens and the last card can be scrolled out from under it.
+  useEffect(() => {
+    if (!mobile) return;
+    const html = document.documentElement;
+    const v = view === "mini" ? (audio ? "mini" : "mini-video") : view === "open" ? "open" : "";
+    if (v) html.dataset.music = v;
+    else delete html.dataset.music;
+  }, [mobile, view, audio]);
+  useEffect(() => () => void delete document.documentElement.dataset.music, []);
+  const isDocked = inTab && !audio && docked;
   const cls = [
     "mp",
     inTab ? "mp--tab" : `mp--${view}`,
     `mp--${mobile ? "phone" : "desk"}`,
-    `mp--${st.side}`,
+    `mp--${side}`,
     audio ? "mp--audio" : "mp--video",
-    docked ? "mp--docked" : "",
+    isDocked ? "mp--docked" : "",
   ].join(" ");
 
   return (
-    <div className={cls} role="region" aria-label={t("music.title")} aria-hidden={!inTab && view === "closed"} data-ready={ready} style={frameStyle}>
+    <div ref={root} className={cls} role="region" aria-label={t("music.title")} aria-hidden={!inTab && view === "closed"} data-ready={ready}>
       {mobile && view === "open" && <BackToMini />}
-      {!inTab && view === "open" && (
-        <div className="mp-head">
-          <span className="mp-head__title"><IconNote size={17} /> {t("music.title")}</span>
-          <ModeSwitch />
-          <button className="mp-icon" onClick={music.minimize} aria-label={t("music.minimize")} title={t("music.minimize")}>
-            <IconChevronDown size={18} />
-          </button>
-          <button className="mp-icon" onClick={music.close} aria-label={t("music.close")} title={t("music.close")}>
-            <IconClose size={17} />
-          </button>
+      {!inTab && view === "open" && <Head />}
+      <div className="mp-video" ref={host} />
+      {!inTab && audio && view === "open" && <BigCover />}
+      {/* The song and its controls; on the phone they stay pinned while the rest scrolls.
+          The seek bar is always there in the panel, so nothing moves when a song starts. */}
+      {!inTab && (
+        <div className="mp-deck">
+          <Strip view={view} audio={audio} phone={mobile} />
+          {view === "open" && <Progress />}
         </div>
       )}
+      {!inTab && view === "open" && <MusicBrowser phone={mobile} />}
+      <MenuHost />
+      <MusicToast />
+    </div>
+  );
+}
 
-      <div className="mp-video" ref={host}>
-        {failed && <div className="mp-failed">{t("music.failed")}</div>}
-      </div>
+const MenuHost = memo(SongMenuHost);
 
-      {!inTab && audio && view === "open" && (
-        <div className="mp-cover">{st.now ? <Cover id={st.now.id} big /> : <div className="mp-cover__ph"><IconNote size={44} /></div>}</div>
+function Head() {
+  const { t } = useT();
+  return (
+    <div className="mp-head">
+      <span className="mp-head__title">
+        <IconNote size={17} /> <span className="mp-head__label">{t("music.title")}</span>
+      </span>
+      <ModeSwitch />
+      <button className="mp-icon" onClick={music.minimize} aria-label={t("music.minimize")} title={t("music.minimize")}>
+        <IconChevronDown size={18} />
+      </button>
+      <button className="mp-icon mp-icon--close" onClick={music.close} aria-label={t("music.close")} title={t("music.close")}>
+        <IconClose size={17} />
+      </button>
+    </div>
+  );
+}
+
+function BigCover() {
+  const id = useMusicSel((s) => s.now?.id);
+  return (
+    <div className="mp-cover">
+      {id ? (
+        <Cover id={id} big />
+      ) : (
+        <div className="mp-cover__ph">
+          <IconNote size={44} />
+        </div>
       )}
+    </div>
+  );
+}
 
-      {!inTab && (
-        <div className="mp-strip">
-          {audio && view === "mini" && <span className="mp-thumb">{st.now ? <Cover id={st.now.id} /> : <IconNote size={18} />}</span>}
-          <div className="mp-now">
-            <div className="mp-now__title">{st.notice ?? st.now?.title ?? (st.source ? "…" : t("music.nothing"))}</div>
-            {(view === "open" || audio) && st.now?.author && <div className="mp-now__author">{st.now.author}</div>}
-          </div>
-          <div className="mp-controls">
-            {view === "open" && (
-              <button className="mp-icon" onClick={music.prev} aria-label={t("music.prev")} disabled={!st.source}>
-                <IconPrev size={17} />
+/**
+ * The song and the controls, in the panel and in the small player. In the
+ * small player the cover and title are one big button that opens the panel.
+ * On the phone the small player has no Close (it is in the panel's header),
+ * so a missed tap on Open cannot stop the music.
+ */
+function Strip({ view, audio, phone }: { view: string; audio: boolean; phone: boolean }) {
+  const { t } = useT();
+  const nowId = useMusicSel((s) => s.now?.id);
+  const title = useMusicSel((s) => s.now?.title);
+  const author = useMusicSel((s) => s.now?.author);
+  const has = useMusicSel((s) => !!s.source);
+  // While a list loads (its songs not known yet), its name stands in for the title.
+  const label = useMusicSel((s) => sourceLabel(s.source, t));
+  const side = useMusicSel((s) => s.side);
+  const mini = view === "mini";
+  const name = title || label || t("music.nothing");
+  const info = (
+    <>
+      {audio && mini && <span className="mp-thumb">{nowId ? <Cover id={nowId} /> : <IconNote size={18} />}</span>}
+      <span className="mp-now">
+        <span className="mp-now__title">{name}</span>
+        {(view === "open" || audio) && author && <span className="mp-now__author">{author}</span>}
+      </span>
+    </>
+  );
+  return (
+    <div className="mp-strip">
+      {mini ? (
+        <button className="mp-open" onClick={music.open} aria-label={`${name}. ${t("music.expand")}`}>
+          {info}
+        </button>
+      ) : (
+        info
+      )}
+      <div className="mp-controls">
+        {view === "open" && (
+          <button className="mp-icon" onClick={music.prev} aria-label={t("music.prev")} disabled={!has}>
+            <IconPrev size={17} />
+          </button>
+        )}
+        <PlayButton className="mp-icon mp-icon--main" size={17} />
+        <button className="mp-icon" onClick={music.next} aria-label={t("music.next")} disabled={!has}>
+          <IconNext size={17} />
+        </button>
+        {mini && (
+          <>
+            <button className="mp-icon" onClick={music.open} aria-label={t("music.expand")}>
+              <IconExpand size={16} />
+            </button>
+            {!audio && (
+              <button className="mp-icon" onClick={() => setMusic({ side: side === "right" ? "left" : "right" })} aria-label={t("music.side")}>
+                <IconSwap size={16} />
               </button>
             )}
-            <button className="mp-icon mp-icon--main" onClick={music.toggle} aria-label={st.playing ? t("music.pause") : t("music.play")} disabled={!st.source}>
-              {st.playing ? <IconPause size={17} /> : <IconPlay size={17} />}
-            </button>
-            <button className="mp-icon" onClick={music.next} aria-label={t("music.next")} disabled={!st.source}>
-              <IconNext size={17} />
-            </button>
-            {view === "mini" && (
-              <>
-                <button className="mp-icon" onClick={music.open} aria-label={t("music.expand")}>
-                  <IconExpand size={16} />
-                </button>
-                {!audio && (
-                  <button className="mp-icon" onClick={() => setMusic({ side: st.side === "right" ? "left" : "right" })} aria-label={t("music.side")}>
-                    <IconSwap size={16} />
-                  </button>
-                )}
-                <button className="mp-icon" onClick={music.close} aria-label={t("music.close")}>
-                  <IconClose size={16} />
-                </button>
-              </>
+            {!phone && (
+              <button className="mp-icon mp-icon--close" onClick={music.close} aria-label={t("music.close")}>
+                <IconClose size={16} />
+              </button>
             )}
-          </div>
-        </div>
-      )}
-      {!inTab && view === "open" && st.duration > 0 && <Progress />}
-
-      {!inTab && view === "open" && <MusicBrowser />}
-      <SongMenuHost />
+          </>
+        )}
+      </div>
     </div>
+  );
+}
+
+/**
+ * Play / pause: the icon flips on the click (the intent); a ring turns while
+ * YouTube loads or buffers. Pausing works during the loading too.
+ */
+export function PlayButton({ className, size = 17 }: { className: string; size?: number }) {
+  const { t } = useT();
+  const playing = useMusicSel((s) => s.playing);
+  const busy = useMusicSel((s) => s.playing && (s.status === "loading" || s.status === "buffering"));
+  const has = useMusicSel((s) => !!s.source);
+  return (
+    <button className={`${className}${busy ? " is-busy" : ""}`} onClick={music.toggle} aria-label={playing ? t("music.pause") : t("music.play")} aria-busy={busy} disabled={!has}>
+      {playing ? <IconPause size={size} /> : <IconPlay size={size} />}
+      {busy && <IconSpinner className="mp-busy-ring" size={size + 24} title={t("music.loading")} />}
+    </button>
   );
 }
 
@@ -453,24 +444,30 @@ export function Cover({ id, src, big, className }: { id?: string; src?: string; 
 /** Video or music only. */
 export function ModeSwitch() {
   const { t } = useT();
-  const st = useMusic();
+  const mode = useMusicSel((s) => s.mode);
   return (
     <div className="mp-mode" role="group" aria-label={t("music.mode")}>
-      <button aria-pressed={st.mode === "audio"} onClick={() => music.setMode("audio")}>
+      <button aria-pressed={mode === "audio"} onClick={() => music.setMode("audio")}>
         <IconNote size={14} /> {t("music.audioOnly")}
       </button>
-      <button aria-pressed={st.mode === "video"} onClick={() => music.setMode("video")}>
+      <button aria-pressed={mode === "video"} onClick={() => music.setMode("video")}>
         <IconVideo size={14} /> {t("music.video")}
       </button>
     </div>
   );
 }
 
-/** Time played, a seek bar, and the length. */
-export function Progress() {
-  const st = useMusic();
+/**
+ * Time played, a seek bar, and the length. The only part that follows the
+ * time. After a seek the engine holds the new position until YouTube reports it.
+ */
+export function Progress({ hideEmpty }: { hideEmpty?: boolean }) {
+  const { t } = useT();
+  const { time, duration } = useMusicTime();
+  const has = useMusicSel((s) => !!s.source);
   const [drag, setDrag] = useState<number | null>(null);
-  const value = drag ?? st.time;
+  if (hideEmpty && !has) return null;
+  const value = drag ?? time;
   const commit = () => {
     if (drag !== null) music.seek(drag);
     setDrag(null);
@@ -481,16 +478,19 @@ export function Progress() {
       <input
         type="range"
         min={0}
-        max={Math.max(1, Math.floor(st.duration))}
+        max={Math.max(1, Math.floor(duration))}
         step={1}
         value={Math.floor(value)}
         onChange={(e) => setDrag(Number(e.target.value))}
         onPointerUp={commit}
         onKeyUp={commit}
-        aria-label="Seek"
-        style={{ ["--p" as string]: `${st.duration ? (value / st.duration) * 100 : 0}%` }}
+        onBlur={commit}
+        aria-label={t("music.seek")}
+        aria-valuetext={t("music.timeOf", { a: formatTime(value), b: formatTime(duration) })}
+        disabled={!has}
+        style={{ ["--p" as string]: `${duration ? Math.min(100, (value / duration) * 100) : 0}%` }}
       />
-      <span>{formatTime(st.duration)}</span>
+      <span>{formatTime(duration)}</span>
     </div>
   );
 }
@@ -501,21 +501,79 @@ function BackToMini() {
   return null;
 }
 
-/** Favourites, playlists, search and links: what to play. */
-function MusicBrowser() {
+/**
+ * Short messages ("Added to the queue", "can't play here") in their own pill,
+ * never in place of the song title, plus "YouTube can't be reached · Retry".
+ * Into <body>: the player itself may be hidden (aria-hidden) or closed.
+ */
+function MusicToast() {
   const { t } = useT();
-  const st = useMusic();
-  const { playlists } = usePlaylists();
+  const toast = useMusicSel((s) => s.toast);
+  const failed = useMusicSel((s) => s.failed);
+  return createPortal(
+    <div className="mp-toasts" role="status" aria-live="polite">
+      {failed && (
+        <div className="mp-toast mp-toast--error">
+          <span>{t("music.failed")}</span>
+          <button className="mp-toast__btn" onClick={music.retry}>
+            {t("music.retry")}
+          </button>
+        </div>
+      )}
+      {toast && (
+        <div key={toast.id} className={`mp-toast mp-toast--${toast.kind}`}>
+          <span>{toast.text}</span>
+        </div>
+      )}
+    </div>,
+    document.body
+  );
+}
+
+/** What the phone's list sheet shows: a team playlist, or the queue. */
+type ListView = { kind: "pl"; id: string } | { kind: "queue" };
+
+/** Favourites, playlists, search and links: what to play. */
+const MusicBrowser = memo(function MusicBrowser({ phone }: { phone: boolean }) {
+  const { t } = useT();
+  const srcKey = useMusicSel((s) => s.source?.key);
+  const nowId = useMusicSel((s) => s.now?.id);
+  const queued = useMusicSel((s) => s.queue.length);
+  const { playlists, loaded } = usePlaylists();
   const [q, setQ] = useState("");
+  const [searched, setSearched] = useState("");
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState<Track[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<MusicErrorCode | null>(null);
   const [link, setLink] = useState("");
   const [linkErr, setLinkErr] = useState(false);
-  const src = st.source;
   const [trendBusy, setTrendBusy] = useState(false);
   const [trendErr, setTrendErr] = useState(false);
   const [trendLabel, setTrendLabel] = useState(t("mt.trends"));
+  const [sheet, setSheet] = useState<ListView | null>(null);
+  const [typing, setTyping] = useState(false);
+  const [sugg, setSugg] = useState<string[]>([]);
+  const searchReq = useLastRequest();
+  const suggReq = useLastRequest();
+  const field = useRef<HTMLInputElement>(null);
+  const found = useRef<HTMLDivElement>(null);
+
+  // Suggestions while typing (the last request wins; a search drops them).
+  useEffect(() => {
+    const text = q.trim();
+    if (!typing || text.length < 2) {
+      suggReq.abort();
+      setSugg([]);
+      return;
+    }
+    const id = setTimeout(() => {
+      const signal = suggReq.next();
+      void fetchSuggestions(text, { signal }).then((list) => {
+        if (!signal.aborted) setSugg(list.filter((x) => x !== text.toLowerCase()).slice(0, 5));
+      });
+    }, 220);
+    return () => clearTimeout(id);
+  }, [q, typing, suggReq]);
 
   const playTrends = async () => {
     setTrendBusy(true);
@@ -525,18 +583,33 @@ function MusicBrowser() {
     const sec = "sections" in r ? r.sections?.[0] : undefined;
     if (!sec) return setTrendErr(true);
     setTrendLabel(sec.title);
-    music.play({ kind: "videos", label: sec.title, tracks: sec.tracks, start: 0 });
+    music.play({ kind: "videos", label: sec.title, key: "trends", tracks: sec.tracks, start: 0 });
   };
 
-  const search = async () => {
-    const text = q.trim();
+  const search = async (raw: string = q) => {
+    const text = raw.trim();
     if (!text) return;
+    suggReq.abort();
+    setSugg([]);
+    // On the phone the keyboard goes away, so the results can be seen.
+    if (phone) field.current?.blur();
+    // The last search wins: an older answer arriving late is dropped.
+    const signal = searchReq.next();
     setBusy(true);
     setError(null);
-    const r = await searchMusic(text);
+    const r = await searchMusic(text, { signal });
+    if (signal.aborted) return;
     setBusy(false);
+    setSearched(text);
     if ("tracks" in r) setResults(r.tracks);
     else setError(r.error);
+    // ...and the panel scrolls to them (below the pinned controls, see music.css).
+    if (phone) requestAnimationFrame(() => found.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  };
+
+  const pick = (text: string) => {
+    setQ(text);
+    void search(text);
   };
 
   const playLink = () => {
@@ -544,36 +617,59 @@ function MusicBrowser() {
     if (!p) return setLinkErr(true);
     setLinkErr(false);
     if (p.list) music.play({ kind: "list", label: t("music.link"), list: p.list, video: p.video });
-    else music.play({ kind: "videos", label: t("music.link"), tracks: [{ id: p.video!, title: "", channel: "" }], start: 0 });
+    else music.play({ kind: "videos", label: t("music.link"), key: `video:${p.video}`, tracks: [{ id: p.video!, title: "", channel: "" }], start: 0 });
     setLink("");
   };
 
   return (
     <div className="mp-body">
-      <button className={`mp-mix${src?.kind === "videos" && src.label === trendLabel ? " is-on" : ""}`} onClick={() => void playTrends()} disabled={trendBusy}>
-        <span className="mp-mix__icon">{trendBusy ? "…" : <IconTrend size={20} />}</span>
+      <button className={`mp-mix${srcKey === "trends" ? " is-on" : ""}`} onClick={() => void playTrends()} disabled={trendBusy} aria-busy={trendBusy}>
+        <span className="mp-mix__icon">{trendBusy ? <IconSpinner size={20} title={t("music.loading")} /> : <IconTrend size={20} />}</span>
         <span>
           <b>{trendLabel}</b>
           <small>{trendErr ? t("music.trendErr") : t("music.trendHint")}</small>
         </span>
       </button>
 
-      {playlists.length > 0 && (
-        <>
-          <div className="mp-label">{t("music.playlists")}</div>
-          <div className="mp-chips">
-            {playlists.map((pl) => (
-              <button
-                key={pl.id}
-                className={`mp-chip${src?.kind === "videos" && src.label === pl.name ? " is-on" : ""}`}
-                disabled={pl.tracks.length === 0}
-                onClick={() => music.play({ kind: "videos", label: pl.name, tracks: pl.tracks, start: 0 })}
-              >
-                {pl.name} · {pl.tracks.length}
-              </button>
-            ))}
-          </div>
-        </>
+      {/* The phone has no Music tab: the queue opens in a sheet. Always there, so nothing moves. */}
+      {phone && (
+        <button className="mp-qbtn" onClick={() => setSheet({ kind: "queue" })} disabled={!queued}>
+          <IconQueue size={18} />
+          <span>{t("music.queue")}</span>
+          <small>{queued ? t("music.songs", { n: queued }) : t("music.queueEmpty")}</small>
+        </button>
+      )}
+
+      {/* The row is kept while the playlists load (no jump under the finger). */}
+      <div className="mp-label">{t("music.playlists")}</div>
+      {!loaded ? (
+        <div className="mp-chips" aria-busy="true">
+          <span className="mp-chip mp-chip--ph" />
+          <span className="mp-chip mp-chip--ph" />
+          <span className="mp-chip mp-chip--ph" />
+        </div>
+      ) : playlists.length === 0 ? (
+        <div className="mp-chips">
+          <div className="mp-note mp-note--slot">{t("music.noPlaylists")}</div>
+        </div>
+      ) : (
+        <div className="mp-chips">
+          {playlists.map((pl) => (
+            <button
+              key={pl.id}
+              className={`mp-chip${srcKey === `pl:${pl.id}` ? " is-on" : ""}`}
+              disabled={!phone && pl.tracks.length === 0}
+              title={pl.name}
+              // On the phone a playlist opens to its songs; in the desktop panel it plays.
+              onClick={() =>
+                phone ? setSheet({ kind: "pl", id: pl.id }) : music.play({ kind: "videos", label: pl.name, key: `pl:${pl.id}`, tracks: pl.tracks, start: 0 })
+              }
+            >
+              <span className="mp-chip__name">{pl.name}</span>
+              <span className="mp-chip__n"> · {pl.tracks.length}</span>
+            </button>
+          ))}
+        </div>
       )}
 
       <div className="mp-label">{t("music.searchTitle")}</div>
@@ -584,31 +680,43 @@ function MusicBrowser() {
           void search();
         }}
       >
-        <input className="mp-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("music.searchPh")} enterKeyHint="search" aria-label={t("music.searchTitle")} />
-        <button className="mp-btn" type="submit" disabled={busy || !q.trim()}>
-          {busy ? "…" : t("music.search")}
+        <input
+          ref={field}
+          className="mp-input"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onFocus={() => setTyping(true)}
+          onBlur={() => setTyping(false)}
+          placeholder={t("music.searchPh")}
+          enterKeyHint="search"
+          aria-label={t("music.searchTitle")}
+          autoComplete="off"
+        />
+        <button className="mp-btn" type="submit" disabled={busy || !q.trim()} aria-busy={busy} aria-label={t("music.search")}>
+          {busy ? <IconSpinner size={18} /> : t("music.search")}
         </button>
       </form>
-      {error && <SearchError error={error} q={q} />}
-      {results && (
-        <div className="mp-results">
-          {results.length === 0 && <div className="mp-note">{t("music.noResults")}</div>}
-          {results.map((tr, i) => (
-            <button
-              key={tr.id}
-              className={`mp-result${st.now?.id === tr.id ? " is-on" : ""}`}
-              onClick={() => music.play({ kind: "videos", label: q, tracks: results, start: i })}
-              {...songMenuProps(tr, { list: { tracks: results, label: q, index: i } })}
-            >
-              <Cover id={tr.id} src={tr.thumb} className="mp-result__img" />
-              <span>
-                <b>{tr.title}</b>
-                <small>{tr.channel}</small>
-              </span>
+      {sugg.length > 0 && (
+        <div className="mp-sugg" role="group" aria-label={t("music.suggestions")}>
+          {sugg.map((s) => (
+            // pointerdown keeps the focus in the field, so the list is still there for the click.
+            <button key={s} type="button" className="mp-sugg__item" onPointerDown={(e) => e.preventDefault()} onClick={() => pick(s)}>
+              {s}
             </button>
           ))}
         </div>
       )}
+      <div ref={found} className="mp-found">
+        {error && <SearchError error={error} q={searched || q} onRetry={() => void search(searched || q)} />}
+        {results && (
+          <div className="mp-results">
+            {results.length === 0 && <div className="mp-note">{t("music.noResults")}</div>}
+            {results.map((tr, i) => (
+              <SongRow key={`${tr.id}:${i}`} tr={tr} i={i} tracks={results} label={searched} srcKey={`search:${searched}`} on={nowId === tr.id} />
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="mp-label">{t("music.linkTitle")}</div>
       <div className="mp-row">
@@ -631,13 +739,14 @@ function MusicBrowser() {
 
       <div className="mp-label">{t("mt.teamArtists")}</div>
       <div className="mp-chips">
-        <button className={`mp-chip${src?.kind === "mix" ? " is-on" : ""}`} onClick={() => music.play({ kind: "mix" })}>
+        <button className={`mp-chip${srcKey === "mix" ? " is-on" : ""}`} aria-pressed={srcKey === "mix"} onClick={() => music.play({ kind: "mix" })}>
           {t("music.mix")}
         </button>
         {ARTISTS.map((a) => (
           <button
             key={a.name}
-            className={`mp-chip${src?.kind === "artist" && src.artist === a.name ? " is-on" : ""}`}
+            className={`mp-chip${srcKey === `artist:${a.name}` ? " is-on" : ""}`}
+            aria-pressed={srcKey === `artist:${a.name}`}
             onClick={() => music.play({ kind: "artist", artist: a.name })}
           >
             {a.name}
@@ -647,51 +756,181 @@ function MusicBrowser() {
 
       <PremiumToggle />
       <p className="mp-fine">{t("music.adsNote")}</p>
+
+      {sheet && <ListSheet view={sheet} onClose={() => setSheet(null)} />}
+    </div>
+  );
+});
+
+/**
+ * One song in a list (search results, a playlist, the queue): a tap plays it
+ * in its list, "⋯" (or a long press) opens the song menu. Re-renders only when
+ * it starts or stops being the song playing.
+ */
+const SongRow = memo(function SongRow({
+  tr,
+  i,
+  tracks,
+  label,
+  srcKey,
+  on,
+  queue,
+  playlistId,
+}: {
+  tr: Track;
+  i: number;
+  tracks: Track[];
+  label: string;
+  srcKey: string;
+  on: boolean;
+  /** A row of the queue itself: a tap jumps there instead of starting a new list. */
+  queue?: boolean;
+  playlistId?: string;
+}) {
+  const { t } = useT();
+  const ctx = { list: { tracks, label, index: i, key: srcKey || undefined }, playlistId };
+  return (
+    <div className={`mp-result${on ? " is-on" : ""}`}>
+      <button
+        className="mp-result__main"
+        onClick={() => (queue ? music.playAt(i) : music.play({ kind: "videos", label, key: srcKey, tracks, start: i }))}
+        aria-current={on || undefined}
+        {...songMenuProps(tr, ctx)}
+      >
+        <Cover id={tr.id} src={tr.thumb} className="mp-result__img" />
+        <span className="mp-result__text">
+          <b>{tr.title}</b>
+          <small>{tr.channel}</small>
+        </span>
+      </button>
+      <button className="mp-result__more" aria-label={t("sm.more")} title={t("sm.more")} aria-haspopup="menu" onClick={(e) => openSongMenu(tr, ctx, e.currentTarget)}>
+        <IconMore size={18} />
+      </button>
+    </div>
+  );
+});
+
+/**
+ * The phone's song list for a team playlist (Play / Shuffle, pick a song, ⋯ to
+ * remove or add elsewhere) or for the queue. A sheet over the panel with its
+ * own Back entry: Back closes it before folding the player.
+ */
+function ListSheet({ view, onClose }: { view: ListView; onClose: () => void }) {
+  const { t } = useT();
+  useBackClose(onClose);
+  const pl = usePlaylist(view.kind === "pl" ? view.id : null);
+  const queue = useMusicSel((s) => s.queue);
+  const index = useMusicSel((s) => s.index);
+  const srcKey = useMusicSel((s) => s.source?.key);
+  const nowId = useMusicSel((s) => s.now?.id);
+  const back = useRef<HTMLButtonElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const isQueue = view.kind === "queue";
+  const tracks = isQueue ? queue : pl?.tracks ?? [];
+  const key = pl ? `pl:${pl.id}` : "";
+  const title = isQueue ? t("music.queue") : pl?.name ?? "";
+
+  useEffect(() => {
+    back.current?.focus({ preventScroll: true });
+    // The queue opens on the song playing.
+    if (isQueue) list.current?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: "center" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // The playlist was deleted meanwhile: nothing to show.
+  useEffect(() => {
+    if (!isQueue && !pl) onClose();
+  }, [isQueue, pl, onClose]);
+
+  const playAll = (shuffle: boolean) => {
+    if (!pl || !pl.tracks.length) return;
+    music.setShuffle(shuffle);
+    music.play({ kind: "videos", label: pl.name, key, tracks: pl.tracks, start: shuffle ? Math.floor(Math.random() * pl.tracks.length) : 0 });
+  };
+
+  return (
+    <div className="mp-sheet" role="dialog" aria-modal="true" aria-label={title} onKeyDown={(e) => e.key === "Escape" && onClose()}>
+      <div className="mp-sheet__head">
+        <button ref={back} className="mp-icon" onClick={onClose} aria-label={t("music.back")}>
+          <IconBack size={18} />
+        </button>
+        <span className="mp-sheet__title">
+          <b>{title}</b>
+          <small>{isQueue ? t("music.queueHint") : t("music.songs", { n: tracks.length })}</small>
+        </span>
+      </div>
+      {!isQueue && (
+        <div className="mp-sheet__actions">
+          <button className="mp-btn" onClick={() => playAll(false)} disabled={!tracks.length}>
+            <IconPlay size={16} /> {t("music.play")}
+          </button>
+          <button className="mp-btn mp-btn--ghost" onClick={() => playAll(true)} disabled={tracks.length < 2}>
+            <IconShuffle size={16} /> {t("music.shuffle")}
+          </button>
+        </div>
+      )}
+      <div ref={list} className="mp-results">
+        {!tracks.length && <div className="mp-note">{isQueue ? t("music.queueEmpty") : t("music.plEmpty")}</div>}
+        {tracks.map((tr, i) => (
+          <SongRow
+            key={`${tr.id}:${i}`}
+            tr={tr}
+            i={i}
+            tracks={tracks}
+            label={title}
+            srcKey={key}
+            queue={isQueue}
+            playlistId={pl?.id}
+            on={isQueue ? i === index : srcKey === key && nowId === tr.id}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
 /**
- * "Ho YouTube Premium": load the player from youtube.com so a Premium login in
- * this browser removes the ads. Takes effect on the next page load (the
- * player is created once).
+ * "Ho YouTube Premium": the player comes from youtube.com, so a Premium login
+ * in this browser removes the ads. Applied at once: the player is rebuilt and
+ * picks up the same song, second and queue.
  */
 export function PremiumToggle() {
   const { t } = useT();
-  const [on, setOn] = useState(() => readPref("musicPremium") === "1");
-  const [changed, setChanged] = useState(false);
+  const on = useMusicSel((s) => s.premium);
   return (
     <div className="mp-premium">
       <label>
-        <input
-          type="checkbox"
-          checked={on}
-          onChange={(e) => {
-            writePref("musicPremium", e.target.checked ? "1" : "0");
-            setOn(e.target.checked);
-            setChanged(true);
-          }}
-        />
+        <input type="checkbox" checked={on} onChange={(e) => music.setPremium(e.target.checked)} />
         <span>
           <b>{t("music.premium")}</b>
           <small>{t("music.premiumHint")}</small>
         </span>
       </label>
-      {changed && (
-        <button className="mp-btn" onClick={() => window.location.reload()}>
-          {t("music.reload")}
-        </button>
-      )}
     </div>
   );
 }
 
-/** What went wrong with a search, with YouTube's own search as a way out. */
-export function SearchError({ error, q }: { error: string; q: string }) {
+/**
+ * What went wrong with a search, in words (never a raw code), with Riprova
+ * when a retry is given and YouTube's own search as a way out.
+ */
+export function SearchError({ error, q, onRetry }: { error: string; q: string; onRetry?: () => void }) {
   const { t } = useT();
+  if (error === "aborted") return null;
   return (
-    <div className="mp-note">
-      {error === "no-key" ? t("music.noKey") : error === "quota" ? t("music.quota") : `${t("music.searchError")} ${error}`}{" "}
+    <div className="mp-note mp-note--error">
+      {musicErrorText(error, t)}{" "}
+      {onRetry && (
+        <button
+          type="button"
+          className="mp-retry"
+          onClick={() => {
+            forgetMusicFailures();
+            onRetry();
+          }}
+        >
+          {t("music.retry")}
+        </button>
+      )}{" "}
       {q.trim() && (
         <a href={youtubeSearchUrl(q)} target="_blank" rel="noopener noreferrer">
           {t("music.openYt")} <IconExternal size={13} />
@@ -701,18 +940,21 @@ export function SearchError({ error, q }: { error: string; q: string }) {
   );
 }
 
-/** The header button (desktop) that opens or folds the player. */
+/** The header button (desktop) that opens or folds the player. Pointing at it gets YouTube ready. */
 export function MusicButton() {
   const { t } = useT();
-  const st = useMusic();
+  const view = useMusicSel((s) => s.view);
   return (
     <button
-      onClick={() => (st.view === "open" ? music.minimize() : music.open())}
-      aria-pressed={st.view !== "closed"}
+      onClick={() => (view === "open" ? music.minimize() : music.open())}
+      onPointerEnter={music.warm}
+      onPointerDown={music.warm}
+      onFocus={music.warm}
+      aria-pressed={view !== "closed"}
       title={t("music.title")}
       aria-label={t("music.title")}
       className={`h-9 w-9 rounded-full border text-[15px] leading-none flex items-center justify-center transition-colors ${
-        st.view !== "closed" ? "bg-[#C9A96E] text-[#0A1931] border-[#C9A96E]" : "bg-transparent text-white border-white/35 hover:border-[#C9A96E]"
+        view !== "closed" ? "bg-[#C9A96E] text-[#0A1931] border-[#C9A96E]" : "bg-transparent text-white border-white/35 hover:border-[#C9A96E]"
       }`}
     >
       <IconNote size={17} />

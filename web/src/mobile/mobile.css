@@ -1287,3 +1287,9 @@ html[data-layout="mobile"] textarea:not(.m-title-input) {
 [aria-checked="true"] > .m-switch { background: var(--m-green); }
 [aria-checked="true"] > .m-switch::after { transform: translateX(20px); }
 .m-row:disabled { opacity: 0.55; }
+
+/* ---- The small music player (components/MusicPlayer.tsx) ---------------------
+   It floats above the tab bar; <html data-music> says it is there, so every
+   screen can scroll its last card out from under it. */
+html[data-music="mini"] .m-app { padding-bottom: calc(96px + 76px + env(safe-area-inset-bottom)); }
+html[data-music="mini-video"] .m-app { padding-bottom: calc(96px + 300px + env(safe-area-inset-bottom)); }

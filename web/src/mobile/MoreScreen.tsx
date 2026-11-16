@@ -77,8 +77,9 @@ export function MoreScreen({
     );
   }
 
-  const rows: { icon: React.ReactNode; tile: string; title: string; hint: string; onClick: () => void }[] = [
-    { icon: <IconNote size={18} />, tile: "var(--m-red)", title: t("music.title"), hint: t("music.more"), onClick: () => music.open() },
+  // Musica gets YouTube ready on the touch itself (music.warm), before the tap ends.
+  const rows: { icon: React.ReactNode; tile: string; title: string; hint: string; onClick: () => void; warm?: boolean }[] = [
+    { icon: <IconNote size={18} />, tile: "var(--m-red)", title: t("music.title"), hint: t("music.more"), onClick: () => music.open(), warm: true },
     { icon: <IconWeekly size={18} />, tile: "var(--m-indigo)", title: t("m.page.weekly"), hint: t("m.more.weekly"), onClick: () => setPage("weekly") },
     { icon: <IconMail size={18} />, tile: "var(--m-blue)", title: t("app.mail"), hint: t("m.more.mail"), onClick: onMail },
     { icon: <IconReport size={18} />, tile: "var(--m-orange)", title: t("m.page.report"), hint: t("m.more.report"), onClick: () => setPage("report") },
@@ -114,7 +115,7 @@ export function MoreScreen({
 
       <div className="m-panel m-list" style={{ marginTop: 18 }}>
         {rows.map((r) => (
-          <button key={r.title} className="m-row" onClick={r.onClick}>
+          <button key={r.title} className="m-row" onClick={r.onClick} onPointerDown={r.warm ? music.warm : undefined}>
             <span className="m-row__icon" style={{ ["--tile" as string]: r.tile }}>
               {r.icon}
             </span>
