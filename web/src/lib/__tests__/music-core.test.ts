@@ -27,11 +27,14 @@ import {
   onYtState,
   prevIndex,
   searchMusic,
+  selectMemo,
   setDockRect,
   setMusic,
   shuffleQueue,
   unshuffleQueue,
   YT_STATE as S,
+  type MusicState,
+  type SelMemo,
   type Track,
   type YtLike,
 } from "../music";
@@ -388,5 +391,92 @@ describe("network helpers", () => {
     expect(await searchMusic("q1")).toEqual({ error: "quota" });
     expect(await searchMusic("q1")).toEqual({ error: "quota" });
     expect(f).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("review fixes", () => {
+  it("F1: a play started in YouTube's frame (or a media key) is followed, not undone", () => {
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    ev(p, S.PLAYING);
+    music.toggle(); // the app's pause
+    ev(p, S.PAUSED); // YouTube confirms
+    p.log.length = 0;
+    ev(p, S.BUFFERING); // the user taps Play inside the frame
+    expect(p.log).not.toContain("pause");
+    expect(getMusic().playing).toBe(true);
+    expect(getMusic().status).toBe("buffering");
+    ev(p, S.PLAYING);
+    expect(p.log).not.toContain("pause");
+    expect(getMusic().status).toBe("playing");
+    expect(getMusic().now?.title).toBe("Song 0");
+  });
+
+  it("F1: a start from the frame after an autoplay block is followed too", () => {
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    setMusic({ playing: false, status: "paused" }); // as armBlocked does
+    p.log.length = 0;
+    ev(p, S.PLAYING);
+    expect(p.log).not.toContain("pause");
+    expect(getMusic().playing).toBe(true);
+  });
+
+  it("F1: the app's own pause still wins over a slow load starting later", () => {
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    music.toggle();
+    p.log.length = 0;
+    ev(p, S.BUFFERING);
+    expect(p.log).toContain("pause");
+    ev(p, S.PLAYING);
+    expect(getMusic().playing).toBe(false);
+  });
+
+  it("F5: two volume moves in one frame while muted still unmute YouTube", () => {
+    const frames: (() => void)[] = [];
+    vi.stubGlobal("requestAnimationFrame", (f: () => void) => frames.push(f));
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => {
+      frames[id - 1] = () => {};
+    });
+    try {
+      music.setMuted(true);
+      p.log.length = 0;
+      music.setVolume(30);
+      music.setVolume(40);
+      frames.forEach((f) => f());
+      expect(p.log).toEqual(["vol:40", "unmute"]);
+      expect(getMusic().muted).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("F6: a new selector is run again on the same state; an equal value keeps its reference", () => {
+    const s = getMusic();
+    const last: { current: SelMemo<string> | null } = { current: null };
+    const label = (lang: string) => (st: MusicState) => `${lang}:${st.view}`;
+    expect(selectMemo(last, s, label("it"))).toBe("it:closed");
+    // Same state, new closure (the language changed): not the stale value.
+    expect(selectMemo(last, s, label("en"))).toBe("en:closed");
+    const objs: { current: SelMemo<{ v: string }> | null } = { current: null };
+    const a = selectMemo(objs, s, (st) => ({ v: st.view }), (x, y) => x.v === y.v);
+    const b = selectMemo(objs, s, (st) => ({ v: st.view }), (x, y) => x.v === y.v);
+    expect(b).toBe(a);
+  });
+
+  it("F7: a title filled in by YouTube keeps the shuffled and original orders in step", () => {
+    const q = list(6).map((t) => ({ id: t.id, title: "", channel: "" }));
+    music.setShuffle(true);
+    music.play({ kind: "videos", label: "L", tracks: q, start: 2 });
+    const shuffledQ = getMusic().queue;
+    p.ids = shuffledQ.map((t) => t.id);
+    p.index = 0;
+    ev(p, S.PLAYING);
+    expect(getMusic().queue[0].title).toMatch(/^YT raw/);
+    music.enqueue([tr(50)], "next", "x");
+    music.setShuffle(false);
+    const s = getMusic();
+    // Back at the same song, with its title, and the added song right after it.
+    expect(s.queue[s.index].id).toBe(q[2].id);
+    expect(s.queue[s.index].title).toMatch(/^YT raw/);
+    expect(s.queue[s.index + 1].id).toBe(tr(50).id);
   });
 });

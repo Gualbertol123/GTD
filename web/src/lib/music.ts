@@ -238,20 +238,29 @@ export function shallowEq<T>(a: T, b: T): boolean {
  * (e.g. shallowEq) for a small object.
  */
 export function useMusicSel<T>(sel: (s: MusicState) => T, eq: (a: T, b: T) => boolean = Object.is): T {
-  const last = useRef<{ s: MusicState; v: T } | null>(null);
-  const get = () => {
-    const s = state;
-    const l = last.current;
-    if (l && l.s === s) return l.v;
-    const v = sel(s);
-    if (l && eq(l.v, v)) {
-      last.current = { s, v: l.v };
-      return l.v;
-    }
-    last.current = { s, v };
-    return v;
-  };
+  const last = useRef<SelMemo<T> | null>(null);
+  const get = () => selectMemo(last, state, sel, eq);
   return useSyncExternalStore(subscribe, get, get);
+}
+
+/** useMusicSel's cache: the last state, selector and value. */
+export type SelMemo<T> = { s: MusicState; sel: (s: MusicState) => T; v: T };
+
+/**
+ * The value for `sel` on `s`, cached on both. A new selector (one that closes
+ * over a new `t` or prop) is run again even if the state did not change; an
+ * equal result still gives back the previous reference, so React stays calm.
+ */
+export function selectMemo<T>(last: { current: SelMemo<T> | null }, s: MusicState, sel: (s: MusicState) => T, eq: (a: T, b: T) => boolean = Object.is): T {
+  const l = last.current;
+  if (l && l.s === s && l.sel === sel) return l.v;
+  const v = sel(s);
+  if (l && eq(l.v, v)) {
+    last.current = { s, sel, v: l.v };
+    return l.v;
+  }
+  last.current = { s, sel, v };
+  return v;
 }
 
 /** Is the list with this key the one playing? (See Source.key.) */
@@ -482,6 +491,8 @@ let seekTarget: number | null = null;
 let seekAt = 0;
 let localVolAt = 0;
 let lastCmd = { kind: "", at: 0 };
+/** The app asked YouTube to pause and it has not confirmed yet: a late start is undone. */
+let pausePending = false;
 let blockTimer: ReturnType<typeof setTimeout> | undefined;
 let tickTimer: ReturnType<typeof setInterval> | undefined;
 let tickN = 0;
@@ -491,6 +502,12 @@ const now = () => (typeof performance !== "undefined" ? performance.now() : Date
 
 function cmd(kind: string): void {
   lastCmd = { kind, at: now() };
+  pausePending = kind === "pause";
+}
+
+/** A start YouTube reports now is the echo of a load the app has since paused. */
+function ownPauseWanted(): boolean {
+  return pausePending && now() - lastCmd.at < 10000;
 }
 
 /** YouTube's player is ready (MusicPlayer). Everything asked before now is applied. */
@@ -702,7 +719,12 @@ export function onYtState(s: number): void {
   if (s === S.BUFFERING) {
     if (!state.playing) {
       // Paused while it loaded: keep it paused.
-      p.pauseVideo();
+      if (ownPauseWanted() || !state.source) {
+        p.pauseVideo();
+        return;
+      }
+      // Play pressed in YouTube's frame, or a media key: the user's wish.
+      setMusic({ playing: true, status: "buffering" });
       return;
     }
     setMusic({ status: "buffering" });
@@ -714,9 +736,13 @@ export function onYtState(s: number): void {
     errCount = 0;
     if (adopting) adopt();
     if (!state.playing) {
-      p.pauseVideo();
-      setMusic({ status: "paused" });
-      return;
+      if (ownPauseWanted() || !state.source) {
+        p.pauseVideo();
+        setMusic({ status: "paused" });
+        return;
+      }
+      // Started from YouTube's frame or a media key: follow it.
+      setMusic({ playing: true });
     }
     if (loopApplied !== state.repeat) {
       p.setLoop(state.repeat);
@@ -732,6 +758,14 @@ export function onYtState(s: number): void {
       if (!t.title && d.title) {
         q = q.slice();
         q[index] = { ...t, title: d.title, channel: t.channel || d.author || "" };
+        // The same entry in the unshuffled order, so the two still match by identity.
+        if (original) {
+          const oi = original.indexOf(t);
+          if (oi >= 0) {
+            original = original.slice();
+            original[oi] = q[index];
+          }
+        }
       }
       np = nowOf(q[index]);
     } else if (vid) {
@@ -743,6 +777,7 @@ export function onYtState(s: number): void {
     return;
   }
   if (s === S.PAUSED) {
+    pausePending = false;
     // Our own pause echoing back after a quick Play: not the user's wish.
     if (state.playing && lastCmd.kind === "play" && now() - lastCmd.at < 900) return;
     if (state.playing || state.status !== "paused") setMusic({ playing: false, status: "paused" });
@@ -840,6 +875,7 @@ export const music = {
   minimize: () => setMusic({ view: state.source ? "mini" : "closed" }),
   close: () => {
     clearTimeout(blockTimer);
+    cmd("pause");
     yt?.stopVideo();
     setMusic({ view: "closed", playing: false, status: "idle" });
   },
@@ -943,17 +979,17 @@ export const music = {
   setVolume: (v: number) => {
     v = Math.max(0, Math.min(100, Math.round(v)));
     localVolAt = now();
-    const wasMuted = state.muted;
     setMusic({ volume: v, muted: v === 0 });
     const p = yt;
     if (!p) return;
-    // One command per frame, however fast the slider moves.
+    // One command per frame, however fast the slider moves. It reads the state
+    // then, not a flag from this call: a later call in the same frame cancels this one.
     cancelAnimationFrameSafe(volRaf);
     volRaf = requestAnimationFrameSafe(() => {
       if (state.volume === 0) p.mute();
       else {
         p.setVolume(state.volume);
-        if (wasMuted) p.unMute();
+        if (!state.muted) p.unMute();
       }
     });
   },
@@ -1060,6 +1096,8 @@ export function __resetMusicForTests(): void {
   adopting = null;
   mix = null;
   errCount = 0;
+  pausePending = false;
+  lastCmd = { kind: "", at: 0 };
   resumeAt = 0;
   seekTarget = null;
   memo.clear();
