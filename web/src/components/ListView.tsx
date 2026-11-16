@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 import type { Op, Task } from "../lib/types";
 import { PRIORITY_DOT } from "../lib/constants";
-import { ownerLabel, statusLabel, useT, localeCode } from "../lib/i18n";
+import { ownerLabel, priorityLabel, statusLabel, useT, localeCode } from "../lib/i18n";
 import { TaskDetails } from "./TaskDetails";
 import { ownersLabel } from "../lib/owners";
 
@@ -13,8 +13,12 @@ interface Props {
   multiAssign?: boolean;
 }
 
-// Flat list of every activity in the viewable columns. Click a row to expand
-// its full details inline (no popup).
+// Flat list of every activity in the viewable columns. Click a row (or its
+// title button, from the keyboard) to expand its full details inline.
+//
+// Row tints use #F5F3EF, never #FAF9F6: the glass skin turns #FAF9F6 into a
+// blurred panel with a ::before sheen, and on a <tr> that pseudo-element
+// becomes an extra table cell that shifts every column by one.
 export function ListView({ tasks, members, send, showNames = true, multiAssign = true }: Props) {
   const { t, lang } = useT();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -32,7 +36,7 @@ export function ListView({ tasks, members, send, showNames = true, multiAssign =
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[680px]">
           <thead>
-            <tr className="text-[10px] uppercase tracking-wide text-[#8A8A8A] bg-[#FAF9F6]">
+            <tr className="text-[10px] uppercase tracking-wide text-[#8A8A8A] bg-[#F5F3EF]">
               <th className="font-semibold px-4 py-2.5">{t("list.task")}</th>
               <th className="font-semibold px-3 py-2.5">{t("list.owner")}</th>
               <th className="font-semibold px-3 py-2.5">{t("list.priority")}</th>
@@ -47,28 +51,41 @@ export function ListView({ tasks, members, send, showNames = true, multiAssign =
               const total = tk.subtasks.length;
               const dueFmt = tk.dueDate ? new Date(tk.dueDate).toLocaleDateString(localeCode(lang)) : "—";
               const isOpen = openId === tk.id;
+              const toggle = () => setOpenId(isOpen ? null : tk.id);
+              const detailsId = `list-details-${tk.id}`;
               return (
                 <Fragment key={tk.id}>
                   <tr
-                    onClick={() => setOpenId(isOpen ? null : tk.id)}
-                    className={`border-t border-[#F0EDE8] cursor-pointer hover:bg-[#FAF9F6] ${
-                      isOpen ? "bg-[#FAF9F6]" : ""
+                    onClick={toggle}
+                    className={`border-t border-[#F0EDE8] cursor-pointer ${
+                      isOpen ? "bg-[#F5F3EF]" : "hover:bg-[#C9A96E]/[0.07]"
                     }`}
                   >
                     <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full shrink-0 mt-1 ${PRIORITY_DOT[tk.priority]}`} />
-                        <span className="text-[13px] font-medium text-[#0A1931] break-words [overflow-wrap:anywhere]">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          // The row's own click would toggle a second time.
+                          e.stopPropagation();
+                          toggle();
+                        }}
+                        aria-expanded={isOpen}
+                        aria-controls={isOpen ? detailsId : undefined}
+                        className="flex items-center gap-2 text-left rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E] focus-visible:ring-offset-2"
+                      >
+                        <span aria-hidden="true" className={`w-2 h-2 rounded-full shrink-0 mt-1 ${PRIORITY_DOT[tk.priority]}`} />
+                        <span className="sr-only">{t("ux.board.priority", { p: priorityLabel(t, tk.priority) })}:</span>
+                        <span className="text-[13px] font-medium text-[#0A1931] break-words">
                           {tk.title}
                         </span>
-                      </div>
+                      </button>
                     </td>
                     <td className="px-3 py-2.5 text-[12px] text-[#6B6B6B]">
                       {showNames ? ownersLabel(tk, (name) => ownerLabel(t, name)) : "—"}
                     </td>
                     <td className="px-3 py-2.5 text-[12px] font-semibold text-[#0A1931]">{tk.priority}</td>
                     <td className="px-3 py-2.5">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full bg-[#0A1931] text-[#C9A96E]">
+                      <span className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full bg-[#0A1931] text-[#C9A96E]">
                         {statusLabel(lang, tk.status)}
                       </span>
                     </td>
@@ -78,7 +95,7 @@ export function ListView({ tasks, members, send, showNames = true, multiAssign =
                     </td>
                   </tr>
                   {isOpen && (
-                    <tr className="bg-[#FAF9F6]">
+                    <tr id={detailsId} className="bg-[#F5F3EF]">
                       <td colSpan={6} className="px-4 py-3">
                         <div className="max-w-[560px]">
                           <TaskDetails

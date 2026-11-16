@@ -28,12 +28,15 @@ export function PriorityDistribution({ tasks }: { tasks: Task[] }) {
   return (
     <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-4">
       <button
+        type="button"
         onClick={toggle}
+        aria-expanded={!collapsed}
+        aria-controls={collapsed ? undefined : "prio-distribution-body"}
         className="w-full flex items-center justify-between"
         title={t("prio.distribution")}
       >
         <span className="flex items-center gap-2">
-          <span className={`text-[#8A8A8A] text-[11px] transition-transform ${collapsed ? "" : "rotate-90"}`}>▶</span>
+          <span aria-hidden="true" className={`text-[#8A8A8A] text-[11px] transition-transform ${collapsed ? "" : "rotate-90"}`}>▶</span>
           <span className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">
             {t("prio.distribution")}
           </span>
@@ -45,7 +48,7 @@ export function PriorityDistribution({ tasks }: { tasks: Task[] }) {
           {PRIOS.map(({ p, dot }, i) =>
             counts[i] > 0 ? (
               <span key={p} className="inline-flex items-center gap-1 text-[11px] text-[#6B6B6B]">
-                <span className={`w-2 h-2 rounded-full ${dot}`} />
+                <span aria-hidden="true" className={`w-2 h-2 rounded-full ${dot}`} />
                 {p} <span className="font-semibold text-[#0A1931]">{counts[i]}</span>
               </span>
             ) : null
@@ -53,11 +56,11 @@ export function PriorityDistribution({ tasks }: { tasks: Task[] }) {
         </div>
       )}
       {!collapsed && (
-      <div className="space-y-2.5 mt-3">
+      <div id="prio-distribution-body" className="space-y-2.5 mt-3">
         {PRIOS.map(({ p, bar, dot }, i) => (
           <div key={p} className="flex items-center gap-3">
             <span className="w-16 shrink-0 flex items-center gap-1.5 text-[11px] font-semibold text-[#0A1931]">
-              <span className={`w-2 h-2 rounded-full ${dot}`} />
+              <span aria-hidden="true" className={`w-2 h-2 rounded-full ${dot}`} />
               {p}
             </span>
             <span className="w-20 shrink-0 text-[10px] uppercase tracking-wide text-[#8A8A8A]">

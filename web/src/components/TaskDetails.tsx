@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import type { Op, Priority, Status, Task } from "../lib/types";
 import { STATUS_ORDER, UNASSIGNED, genId } from "../lib/constants";
 import { ownerInitial, ownersLabel, ownersPatch, taskOwners } from "../lib/owners";
@@ -19,7 +20,100 @@ interface Props {
   showNames?: boolean; // false hides the owner name (screenshot mode)
   /** False before migration 009: a task can still only be held by one person. */
   multiAssign?: boolean;
-  onDeleted?: () => void;
+  /** Called after the task is deleted; it gets the deleted task (for an undo). */
+  onDeleted?: (task: Task) => void;
+}
+
+// ---- Undo toast -------------------------------------------------------------
+// One small store shared by every board surface (task delete, subtask delete,
+// mark done, member removal). It lives outside any card, so the toast survives
+// the card that raised it unmounting. Only the first mounted host renders it.
+interface UndoToast {
+  id: number;
+  text: string;
+  onUndo: () => void;
+  ms: number;
+}
+let toastNow: UndoToast | null = null;
+let toastSeq = 0;
+const toastListeners = new Set<() => void>();
+const toastHosts: number[] = [];
+const emitToast = () => toastListeners.forEach((l) => l());
+const subscribeToast = (l: () => void) => {
+  toastListeners.add(l);
+  return () => {
+    toastListeners.delete(l);
+  };
+};
+
+/** Shows "text · Annulla" for a few seconds; Annulla runs onUndo. */
+export function showUndo(text: string, onUndo: () => void, ms = 6000) {
+  toastNow = { id: ++toastSeq, text, onUndo, ms };
+  emitToast();
+}
+function clearToast(id: number) {
+  if (toastNow?.id === id) {
+    toastNow = null;
+    emitToast();
+  }
+}
+
+/** Mount once per screen (BoardView does); extra hosts stay silent. */
+export function UndoToastHost() {
+  const { t } = useT();
+  const [hostId] = useState(() => ++toastSeq);
+  const [, force] = useState(0);
+  useEffect(() => {
+    toastHosts.push(hostId);
+    emitToast();
+    return () => {
+      const i = toastHosts.indexOf(hostId);
+      if (i >= 0) toastHosts.splice(i, 1);
+      emitToast();
+    };
+  }, [hostId]);
+  const toast = useSyncExternalStore(subscribeToast, () => toastNow);
+  useEffect(() => subscribeToast(() => force((n) => n + 1)), []);
+  useEffect(() => {
+    if (!toast) return;
+    const h = window.setTimeout(() => clearToast(toast.id), toast.ms);
+    return () => window.clearTimeout(h);
+  }, [toast]);
+  if (toastHosts[0] !== hostId || typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] pointer-events-none max-w-[calc(100vw-32px)]"
+    >
+      {toast && (
+        <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-[#1C1C1E] text-white shadow-xl pl-4 pr-1.5 py-1.5 text-[13px]">
+          <span className="min-w-0 truncate">{toast.text}</span>
+          <button
+            type="button"
+            onClick={() => {
+              toast.onUndo();
+              clearToast(toast.id);
+            }}
+            className="shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold text-[#E9C989] hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
+          >
+            {t("ux.board.undo")}
+          </button>
+          <button
+            type="button"
+            onClick={() => clearToast(toast.id)}
+            aria-label={t("ux.board.dismiss")}
+            className="shrink-0 h-8 w-8 rounded-full inline-flex items-center justify-center text-white/70 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+      )}
+    </div>,
+    document.body
+  );
 }
 
 // The full editable body for a task. Reused by the inline board card and the
@@ -44,6 +138,60 @@ export function TaskDetails({
   const desc = useSyncedField(task.desc);
   const fileDir = useSyncedField(task.fileDir ?? "");
   const [copied, setCopied] = useState(false);
+  const [titleHint, setTitleHint] = useState(false);
+  const titleCancelled = useRef(false);
+  const noRef = useRef<HTMLButtonElement>(null);
+  const delRef = useRef<HTMLButtonElement>(null);
+  const wasConfirming = useRef(false);
+  useEffect(() => {
+    // "No" gets the focus (never the destructive "Sì"); cancelling hands it
+    // back to the Elimina button.
+    if (confirmDel) noRef.current?.focus();
+    else if (wasConfirming.current) delRef.current?.focus();
+    wasConfirming.current = confirmDel;
+  }, [confirmDel]);
+  useEffect(() => {
+    if (!titleHint) return;
+    const h = window.setTimeout(() => setTitleHint(false), 3000);
+    return () => window.clearTimeout(h);
+  }, [titleHint]);
+
+  const commitTitle = () => {
+    if (titleCancelled.current) {
+      titleCancelled.current = false;
+      return;
+    }
+    const v = title.value.trim();
+    if (!v) {
+      // An empty title is never saved: bring the old one back and say why.
+      title.setValue(task.title);
+      setTitleHint(true);
+      return;
+    }
+    if (v !== task.title) patch({ title: v });
+  };
+
+  const deleteTask = () => {
+    const snapshot: Task = { ...task, subtasks: task.subtasks.map((s) => ({ ...s })) };
+    send({ type: "deleteTask", id: task.id });
+    onDeleted?.(snapshot);
+    showUndo(t("ux.board.taskDeleted", { title: snapshot.title }), () =>
+      send({ type: "addTask", task: snapshot })
+    );
+  };
+
+  const deleteSub = (subtaskId: string) => {
+    const sub = task.subtasks.find((s) => s.id === subtaskId);
+    if (!sub) return;
+    const order = task.subtasks.map((s) => s.id);
+    const wasLast = order[order.length - 1] === subtaskId;
+    send({ type: "deleteSubtask", taskId: task.id, subtaskId });
+    // addSubtask appends at the end, so a reorder puts it back where it was.
+    showUndo(t("ux.board.subtaskDeleted"), () => {
+      send({ type: "addSubtask", taskId: task.id, subtask: { ...sub } });
+      if (!wasLast) send({ type: "reorderSubtasks", taskId: task.id, ids: order });
+    });
+  };
 
   const copyFileDir = async () => {
     if (!fileDir.value) return;
@@ -91,16 +239,40 @@ export function TaskDetails({
 
   return (
     <div className="space-y-3">
-      <AutoTextarea
-        value={title.value}
-        onFocus={title.onFocus}
-        onChange={(e) => title.setValue(e.target.value)}
-        onBlur={() => {
-          title.onBlur();
-          if (title.value.trim() && title.value !== task.title) patch({ title: title.value.trim() });
-        }}
-        className="w-full font-semibold text-[14px] leading-snug text-[#0A1931] bg-[#F5F3EF] rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-[#C9A96E]"
-      />
+      <div>
+        <AutoTextarea
+          value={title.value}
+          onFocus={title.onFocus}
+          onChange={(e) => {
+            title.setValue(e.target.value);
+            if (titleHint) setTitleHint(false);
+          }}
+          onKeyDown={(e) => {
+            // Enter saves (the title is one line); Escape reverts.
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              e.currentTarget.blur();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              titleCancelled.current = true;
+              title.setValue(task.title);
+              e.currentTarget.blur();
+            }
+          }}
+          onBlur={() => {
+            title.onBlur();
+            commitTitle();
+          }}
+          aria-label={t("ux.board.taskTitle")}
+          aria-describedby={titleHint ? `title-hint-${task.id}` : undefined}
+          className="w-full font-semibold text-[14px] leading-snug text-[#0A1931] bg-[#F5F3EF] rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-[#C9A96E]"
+        />
+        {titleHint && (
+          <p id={`title-hint-${task.id}`} role="status" className="mt-1 text-[11px] text-[#92400E]">
+            {t("ux.board.titleEmpty")}
+          </p>
+        )}
+      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -128,13 +300,13 @@ export function TaskDetails({
           )}
         </button>
 
-        <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full px-3 h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B]">
+        <label className="inline-flex flex-wrap items-center gap-x-1.5 min-w-0 max-w-full bg-[#F5F3EF] rounded-full px-3 min-h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B]">
           {t("task.due")}
           <input
             type="date"
             value={task.dueDate ?? ""}
             onChange={(e) => send({ type: "setDueDate", id: task.id, dueDate: e.target.value || undefined })}
-            className="bg-transparent outline-none text-[12px] text-[#0A1931]"
+            className="min-w-0 max-w-full bg-transparent outline-none text-[12px] text-[#0A1931]"
           />
         </label>
 
@@ -162,7 +334,16 @@ export function TaskDetails({
       </div>
 
       {showNames && assignOpen && (
-        <div className="rounded-[12px] border border-[#E8E6E1] bg-[#F5F3EF] p-2.5 space-y-2">
+        <div
+          className="rounded-[12px] border border-[#E8E6E1] bg-[#F5F3EF] p-2.5 space-y-2"
+          onKeyDown={(e) => {
+            // Escape closes the picker first (the card stays open).
+            if (e.key === "Escape") {
+              e.preventDefault();
+              setAssignOpen(false);
+            }
+          }}
+        >
           <div className="flex items-baseline justify-between gap-2 flex-wrap">
             <span className="font-trajan text-[10px] uppercase tracking-wide text-[#A8A29E]">
               {t("assign.title")}
@@ -253,7 +434,7 @@ export function TaskDetails({
           onText={(subtaskId, text) =>
             send({ type: "updateSubtask", taskId: task.id, subtaskId, patch: { text } })
           }
-          onDelete={(subtaskId) => send({ type: "deleteSubtask", taskId: task.id, subtaskId })}
+          onDelete={deleteSub}
         />
         <div className="flex items-center gap-1.5 mt-2">
           <span className="w-5 text-right text-[11px] font-semibold text-[#A8A29E] tabular-nums shrink-0">
@@ -312,7 +493,9 @@ export function TaskDetails({
           {t("task.fileDir")}
         </div>
         <div className="flex items-center gap-2 bg-[#F5F3EF] border border-[#E8E6E1] rounded-lg pl-2 pr-1 focus-within:border-[#C9A96E]">
-          <span className="text-[#A8A29E] text-[12px] shrink-0">🗂</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#A8A29E] shrink-0" aria-hidden="true">
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          </svg>
           <input
             value={fileDir.value}
             onFocus={fileDir.onFocus}
@@ -367,26 +550,44 @@ export function TaskDetails({
           </select>
         </div>
         {confirmDel ? (
-          <div className="flex items-center gap-2 text-[13px] bg-[#FEF2F2] border border-[#FECACA] rounded-full pl-3 pr-1 py-1">
-            <span className="text-[#DC2626] font-semibold">{t("task.confirmDelete")}</span>
-            <button
-              onClick={() => {
-                send({ type: "deleteTask", id: task.id });
-                onDeleted?.();
-              }}
-              className="h-8 px-4 rounded-full bg-[#DC2626] text-white text-[12px] font-semibold"
-            >
-              {t("task.yes")}
-            </button>
-            <button
-              onClick={() => setConfirmDel(false)}
-              className="h-8 px-4 rounded-full bg-white text-[#6B6B6B] border border-[#E8E6E1] text-[12px] font-semibold"
-            >
-              {t("task.no")}
-            </button>
+          <div
+            role="group"
+            aria-label={t("task.delete")}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setConfirmDel(false);
+              }
+            }}
+            className="flex flex-wrap items-center gap-2 min-w-0 max-w-full text-[13px] bg-[#FEF2F2] border border-[#FECACA] rounded-[18px] pl-3 pr-1 py-1"
+          >
+            <span className="min-w-0 flex-1 text-[#DC2626] font-semibold break-words">
+              {total > 0
+                ? t("ux.board.deleteConfirmSubs", { title: task.title, n: total })
+                : t("ux.board.deleteConfirm", { title: task.title })}
+            </span>
+            <span className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={deleteTask}
+                className="h-8 px-4 rounded-full bg-[#DC2626] text-white text-[12px] font-semibold"
+              >
+                {t("task.yes")}
+              </button>
+              <button
+                ref={noRef}
+                type="button"
+                onClick={() => setConfirmDel(false)}
+                className="h-8 px-4 rounded-full bg-white text-[#6B6B6B] border border-[#E8E6E1] text-[12px] font-semibold"
+              >
+                {t("task.no")}
+              </button>
+            </span>
           </div>
         ) : (
           <button
+            ref={delRef}
+            type="button"
             onClick={() => setConfirmDel(true)}
             className="h-8 px-4 rounded-full text-[12px] font-semibold text-[#8A8A8A] border border-[#E8E6E1] hover:text-[#DC2626] hover:border-[#FECACA]"
           >

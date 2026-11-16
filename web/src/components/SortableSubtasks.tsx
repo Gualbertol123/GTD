@@ -30,7 +30,11 @@ interface Props {
 // the cursor; the others slide (FLIP-animated) to their new positions; the
 // target slot is highlighted.
 export function SortableSubtasks({ items, onReorder, onToggle, onText, onDelete, renderExtra }: Props) {
+  const { t } = useT();
   const [order, setOrder] = useState<string[]>(() => items.map((i) => i.id));
+  const [announce, setAnnounce] = useState("");
+  const gripRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const refocus = useRef<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [pointerY, setPointerY] = useState(0);
 
@@ -84,8 +88,31 @@ export function SortableSubtasks({ items, onReorder, onToggle, onText, onDelete,
       }
     }
     prevTops.current = tops;
+    // A keyboard move can re-insert the focused row; give its grip the focus back.
+    if (refocus.current) {
+      const g = gripRefs.current[refocus.current];
+      if (g && document.activeElement !== g) g.focus();
+      refocus.current = null;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderKey]);
+
+  // Keyboard reorder: ArrowUp / ArrowDown on the grip moves the row one place.
+  const moveBy = (id: string, dir: -1 | 1) => {
+    const cur = orderRef.current;
+    const i = cur.indexOf(id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= cur.length) return;
+    const next = [...cur];
+    next.splice(i, 1);
+    next.splice(j, 0, id);
+    refocus.current = id;
+    setOrder(next);
+    const map: Record<string, Subtask> = {};
+    for (const it of itemsRef.current) map[it.id] = it;
+    onReorder(next.map((x) => map[x]).filter(Boolean) as Subtask[]);
+    setAnnounce(t("ux.board.subtaskMoved", { n: j + 1, total: next.length }));
+  };
 
   const onMove = (e: PointerEvent) => {
     const d = dragRef.current;
@@ -167,12 +194,20 @@ export function SortableSubtasks({ items, onReorder, onToggle, onText, onDelete,
             rowRefs.current[s.id] = el;
           }}
           onGrip={(e) => startDrag(e, s.id)}
+          gripRef={(el) => {
+            gripRefs.current[s.id] = el;
+          }}
+          onMoveKey={(dir) => moveBy(s.id, dir)}
           onToggle={(done) => onToggle(s.id, done)}
           onText={(text) => onText(s.id, text)}
           onDelete={() => onDelete(s.id)}
           extra={renderExtra?.(s)}
         />
       ))}
+
+      <span className="sr-only" aria-live="polite" role="status">
+        {announce}
+      </span>
 
       {/* Floating card that follows the cursor.
           Portalled to <body>: its coordinates come from getBoundingClientRect,
@@ -204,6 +239,8 @@ function SubtaskRow({
   isDragging,
   registerRef,
   onGrip,
+  gripRef,
+  onMoveKey,
   onToggle,
   onText,
   onDelete,
@@ -214,6 +251,8 @@ function SubtaskRow({
   isDragging: boolean;
   registerRef: (el: HTMLDivElement | null) => void;
   onGrip: (e: React.PointerEvent) => void;
+  gripRef: (el: HTMLButtonElement | null) => void;
+  onMoveKey: (dir: -1 | 1) => void;
   onToggle: (done: boolean) => void;
   onText: (text: string) => void;
   onDelete: () => void;
@@ -246,19 +285,29 @@ function SubtaskRow({
         isDragging ? "border-dashed border-[#C9A96E] ring-2 ring-[#C9A96E]/30 opacity-60" : "border-[#E8E6E1]"
       }`}
     >
-      <span
+      <button
+        type="button"
+        ref={gripRef}
         onPointerDown={onGrip}
-        title="↕"
-        className={`${lead} cursor-grab active:cursor-grabbing px-0.5`}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+            e.preventDefault();
+            onMoveKey(e.key === "ArrowUp" ? -1 : 1);
+          }
+        }}
+        aria-label={t("ux.board.subtaskMove", { n: index })}
+        title={t("ux.board.subtaskMove", { n: index })}
+        className={`${lead} cursor-grab active:cursor-grabbing px-0.5 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]`}
         style={{ touchAction: "none" }}
       >
         <Grip />
-      </span>
+      </button>
       <span className={lead}>
         <input
           type="checkbox"
           checked={s.done}
           onChange={(e) => onToggle(e.target.checked)}
+          aria-label={s.text || String(index)}
           className="accent-[#C9A96E]"
         />
       </span>
@@ -293,10 +342,15 @@ function SubtaskRow({
       />
       {extra}
       <button
+        type="button"
         onClick={onDelete}
-        className={`${lead} opacity-0 group-hover:opacity-100 text-[#DC2626] text-[12px]`}
+        aria-label={t("ux.board.subtaskDelete")}
+        title={t("ux.board.subtaskDelete")}
+        className={`${lead} px-0.5 rounded-sm opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-60 text-[#DC2626] outline-none focus-visible:ring-2 focus-visible:ring-[#DC2626]/50`}
       >
-        ✕
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6 6 18" />
+        </svg>
       </button>
     </div>
   );

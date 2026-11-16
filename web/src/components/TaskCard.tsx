@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Op, Task } from "../lib/types";
 import { PRIORITY_DOT } from "../lib/constants";
-import { ownerLabel, statusLabel, useT, localeCode } from "../lib/i18n";
+import { ownerLabel, priorityLabel, statusLabel, useT, localeCode } from "../lib/i18n";
 import { ownerInitial, ownersLabel, taskOwners } from "../lib/owners";
 import { daysSince, daysUntil } from "../lib/dates";
-import { TaskDetails } from "./TaskDetails";
+import { TaskDetails, showUndo } from "./TaskDetails";
 import { useProjects } from "../lib/projectsContext";
 import { projectColor, stepOf } from "../lib/projects";
 
@@ -17,6 +17,26 @@ interface Props {
   draggable: boolean;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: (e: React.DragEvent) => void;
+  /** Show the status pill (Done / Archived bars). A kanban column already says it. */
+  showStatus?: boolean;
+  /** Told when the card opens or closes (the board widens that column). */
+  onOpenChange?: (open: boolean) => void;
+}
+
+// The round "done" check, the same shape as the phone layout's.
+function CheckIcon({ done }: { done: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      {done ? (
+        <>
+          <circle cx="12" cy="12" r="10" fill="currentColor" />
+          <path d="m7.5 12.5 3 3 6-6.5" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        </>
+      ) : (
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" />
+      )}
+    </svg>
+  );
 }
 
 export function TaskCard({
@@ -28,9 +48,43 @@ export function TaskCard({
   draggable,
   onDragStart,
   onDragEnd,
+  showStatus = false,
+  onOpenChange,
 }: Props) {
   const { t, lang } = useT();
-  const [open, setOpen] = useState(false);
+  const [open, setOpenState] = useState(false);
+  const headRef = useRef<HTMLButtonElement>(null);
+  const setOpen = (v: boolean) => {
+    setOpenState(v);
+    onOpenChange?.(v);
+  };
+  // Unmounting while open (moved, filtered out, deleted) counts as closing.
+  const openRef = useRef(open);
+  openRef.current = open;
+  const openCb = useRef(onOpenChange);
+  openCb.current = onOpenChange;
+  useEffect(
+    () => () => {
+      if (openRef.current) openCb.current?.(false);
+    },
+    []
+  );
+  const isDone = task.status === "DONE";
+  const detailsId = `task-details-${task.id}`;
+
+  // One click completes a task (or reopens it), with an undo.
+  const toggleDone = () => {
+    const prev = task.status;
+    const prevWaiting = task.waitingSince;
+    const next = isDone ? "NEXT" : "DONE";
+    send({ type: "moveTask", id: task.id, status: next });
+    showUndo(t(isDone ? "ux.board.reopenToast" : "ux.board.doneToast", { title: task.title }), () => {
+      send({ type: "moveTask", id: task.id, status: prev });
+      if (prev === "WAITING" && prevWaiting) {
+        send({ type: "updateTask", id: task.id, patch: { waitingSince: prevWaiting } });
+      }
+    });
+  };
 
   const done = task.subtasks.filter((s) => s.done).length;
   const total = task.subtasks.length;
@@ -49,21 +103,48 @@ export function TaskCard({
       onDragEnd={onDragEnd}
       className="bg-white rounded-[12px] border border-[#E8E6E1] hover:border-[#C9A96E] transition-colors"
     >
-      <button onClick={() => setOpen((o) => !o)} className="w-full text-left p-3 flex items-start gap-2">
-        <span className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${PRIORITY_DOT[task.priority]}`} />
-        {open ? (
-          <span className="flex-1 min-w-0 text-[10px] font-semibold uppercase tracking-widest text-[#A8A29E] mt-0.5">
-            ▾ {t("task.collapse")}
-          </span>
-        ) : (
-          <span className="flex-1 min-w-0 font-semibold text-[13px] text-[#0A1931] leading-snug break-words [overflow-wrap:anywhere]">
-            {task.title}
-          </span>
-        )}
-        <span className="shrink-0 text-[10px] font-semibold tracking-wide uppercase px-2 py-1 rounded-full bg-[#0A1931] text-[#C9A96E]">
-          {statusLabel(lang, task.status)}
-        </span>
-      </button>
+      <div className="p-3 flex items-start gap-2">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleDone();
+          }}
+          aria-label={t(isDone ? "ux.board.reopen" : "ux.board.markDone")}
+          title={t(isDone ? "ux.board.reopen" : "ux.board.markDone")}
+          className={`shrink-0 -m-0.5 p-0.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E] transition-colors ${
+            isDone ? "text-[#065F46]" : "text-[#C9C5BE] hover:text-[#065F46]"
+          }`}
+        >
+          <CheckIcon done={isDone} />
+        </button>
+        <button
+          ref={headRef}
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          aria-controls={open ? detailsId : undefined}
+          className="flex-1 min-w-0 text-left flex items-start gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]"
+        >
+          <span aria-hidden="true" className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${PRIORITY_DOT[task.priority]}`} />
+          <span className="sr-only">{t("ux.board.priority", { p: priorityLabel(t, task.priority) })}:</span>
+          {open ? (
+            <span className="flex-1 min-w-0 text-[10px] font-semibold uppercase tracking-widest text-[#A8A29E] mt-0.5">
+              <span aria-hidden="true">▾ </span>
+              {t("task.collapse")}
+            </span>
+          ) : (
+            <span className="flex-1 min-w-0 font-semibold text-[13px] text-[#0A1931] leading-snug break-words">
+              {task.title}
+            </span>
+          )}
+          {showStatus && (
+            <span className="shrink-0 text-[10px] font-semibold tracking-wide uppercase px-2 py-1 rounded-full bg-[#0A1931] text-[#C9A96E]">
+              {statusLabel(lang, task.status)}
+            </span>
+          )}
+        </button>
+      </div>
 
       {!open && (
         <div className="px-3 pb-3 -mt-1 flex flex-wrap items-center gap-1.5">
@@ -95,7 +176,7 @@ export function TaskCard({
               {dueFmt}
             </span>
           )}
-          {task.status === "WAITING" && (
+          {task.status === "WAITING" && task.waitingSince && (
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F3EF] text-[#6B6B6B] border border-[#E8E6E1]">
               {waiting} {t("task.days")}
             </span>
@@ -119,7 +200,21 @@ export function TaskCard({
       )}
 
       {open && (
-        <div className="px-3 pb-3">
+        <div
+          id={detailsId}
+          className="px-3 pb-3"
+          onKeyDown={(e) => {
+            // Escape closes the card, unless a field inside already used it
+            // (subtask/title revert, the delete confirm, the assignee picker).
+            if (e.key !== "Escape" || e.defaultPrevented) return;
+            e.preventDefault();
+            // Blur first so the field being edited saves (its onBlur commits).
+            const a = document.activeElement;
+            if (a instanceof HTMLElement && e.currentTarget.contains(a)) a.blur();
+            setOpen(false);
+            headRef.current?.focus();
+          }}
+        >
           <TaskDetails
             task={task}
             members={members}

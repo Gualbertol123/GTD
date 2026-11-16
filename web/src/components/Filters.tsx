@@ -33,6 +33,7 @@ export function Filters({ filters, setFilters, members }: Props) {
         value={filters.search}
         onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
         placeholder={t("filters.search")}
+        aria-label={t("filters.search")}
         className={`${control} px-4 min-w-[160px] flex-1`}
       />
       <select
@@ -57,7 +58,9 @@ export function Filters({ filters, setFilters, members }: Props) {
         ))}
       </select>
       <button
+        type="button"
         onClick={() => setFilters((f) => ({ ...f, focusP1: !f.focusP1 }))}
+        aria-pressed={filters.focusP1}
         className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors ${
           filters.focusP1
             ? "bg-[#DC2626] text-white border-[#DC2626]"
@@ -67,10 +70,11 @@ export function Filters({ filters, setFilters, members }: Props) {
         {t("filters.focusP1")}
       </button>
       <button
+        type="button"
         onClick={reset}
         className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#8A8A8A] border border-[#E8E6E1] hover:border-[#C9A96E]"
       >
-        {t("filters.reset")}
+        {t("ux.board.resetFilters")}
       </button>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Op, Priority, Status, Task } from "../lib/types";
 import { STATUS_ORDER, UNASSIGNED, genId } from "../lib/constants";
 import { ownerInitial, ownersLabel, ownersPatch } from "../lib/owners";
@@ -13,13 +13,39 @@ interface Props {
   showNames?: boolean; // false hides the owner name (screenshot mode)
   /** False before migration 009: a new task can only be given to one person. */
   multiAssign?: boolean;
+  /** Where will a new task show? `filtered`: the filters hide it; `column`: its column is hidden. */
+  visibility?: (task: Task) => { filtered: boolean; column: boolean };
+  /** Clear what hides the task (filters and/or its hidden column). */
+  onReveal?: (task: Task) => void;
+}
+
+interface Added {
+  task: Task;
+  filtered: boolean;
+  column: boolean;
 }
 
 // Full new-task bar: choose who it goes to, priority, status and due date up
 // front — nothing is assumed. The assignee control holds as many people as you
 // like, the same as the picker inside a task.
-export function QuickAdd({ members, send, showNames = true, multiAssign = true }: Props) {
+export function QuickAdd({
+  members,
+  send,
+  showNames = true,
+  multiAssign = true,
+  visibility,
+  onReveal,
+}: Props) {
   const { t, lang } = useT();
+  const titleRef = useRef<HTMLInputElement>(null);
+  const [empty, setEmpty] = useState(false);
+  const [added, setAdded] = useState<Added | null>(null);
+  // The confirmation stays a little longer when the new task is out of sight.
+  useEffect(() => {
+    if (!added) return;
+    const h = window.setTimeout(() => setAdded(null), added.filtered || added.column ? 9000 : 4000);
+    return () => window.clearTimeout(h);
+  }, [added]);
   const { me } = useMe();
   const [title, setTitle] = useState("");
   const [owners, setOwners] = useState<string[]>([
@@ -50,7 +76,12 @@ export function QuickAdd({ members, send, showNames = true, multiAssign = true }
 
   const create = () => {
     const v = title.trim();
-    if (!v) return;
+    if (!v) {
+      // Say why nothing happened, and put the cursor where the title goes.
+      setEmpty(true);
+      titleRef.current?.focus();
+      return;
+    }
     const task: Task = {
       id: genId(),
       title: v,
@@ -61,10 +92,14 @@ export function QuickAdd({ members, send, showNames = true, multiAssign = true }
       notes: "",
       subtasks: [],
       dueDate: due || undefined,
+      // A task born in Waiting starts counting its days today.
+      ...(status === "WAITING" ? { waitingSince: new Date().toISOString().slice(0, 10) } : {}),
       updatedAt: Date.now(),
       createdAt: Date.now(),
     };
     send({ type: "addTask", task });
+    const vis = visibility?.(task) ?? { filtered: false, column: false };
+    setAdded({ task, ...vis });
     setTitle("");
     setDue("");
     setPickOpen(false);
@@ -77,11 +112,18 @@ export function QuickAdd({ members, send, showNames = true, multiAssign = true }
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
       <input
+        ref={titleRef}
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={(e) => {
+          setTitle(e.target.value);
+          if (empty) setEmpty(false);
+        }}
         onKeyDown={(e) => e.key === "Enter" && create()}
         placeholder={t("quick.title")}
-        className={`${field} flex-1 min-w-[200px] px-5`}
+        aria-label={t("quick.title")}
+        aria-invalid={empty || undefined}
+        aria-describedby={empty ? "quick-add-hint" : undefined}
+        className={`${field} flex-1 min-w-[200px] px-5 ${empty ? "!border-[#DC2626]" : ""}`}
       />
       {showNames ? (
         <button
@@ -128,6 +170,7 @@ export function QuickAdd({ members, send, showNames = true, multiAssign = true }
         value={priority}
         onChange={(e) => setPriority(e.target.value as Priority)}
         title={t("quick.priority")}
+        aria-label={t("quick.priority")}
         className={`${field} px-3`}
       >
         {PRIOS.map((p) => (
@@ -138,25 +181,64 @@ export function QuickAdd({ members, send, showNames = true, multiAssign = true }
         value={status}
         onChange={(e) => setStatus(e.target.value as Status)}
         title={t("quick.status")}
+        aria-label={t("quick.status")}
         className={`${field} px-3`}
       >
         {STATUS_ORDER.map((s) => (
           <option key={s} value={s}>{statusLabel(lang, s)}</option>
         ))}
       </select>
-      <input
-        type="date"
-        value={due}
-        onChange={(e) => setDue(e.target.value)}
-        title={t("quick.due")}
-        className={`${field} px-3`}
-      />
+      <label className={`${field} pl-4 pr-3 inline-flex items-center gap-1.5 text-[#6B6B6B] focus-within:border-[#C9A96E]`}>
+        <span className="text-[12px]">{t("quick.due")}</span>
+        <input
+          type="date"
+          value={due}
+          onChange={(e) => setDue(e.target.value)}
+          title={t("quick.due")}
+          className="min-w-0 bg-transparent outline-none text-[13px] text-[#0A1931]"
+        />
+      </label>
       <button
+        type="button"
         onClick={create}
         className="h-11 px-6 rounded-full bg-[#0A1931] text-[#C9A96E] text-[13px] font-semibold tracking-wide hover:bg-[#112040] uppercase"
       >
         + {t("quick.add")}
       </button>
+      </div>
+
+      {/* Feedback for the last submit: an empty title, or where the task went. */}
+      <div aria-live="polite" role="status" className={empty || added ? "" : "!mt-0"}>
+        {empty ? (
+          <p id="quick-add-hint" className="px-2 text-[12px] font-semibold text-[#DC2626]">
+            {t("ux.board.titleRequired")}
+          </p>
+        ) : added ? (
+          <p className="px-2 text-[12px] text-[#6B6B6B] flex flex-wrap items-center gap-x-1.5 gap-y-1">
+            <span>{t("ux.board.added", { status: statusLabel(lang, added.task.status) })}</span>
+            {(added.filtered || added.column) && (
+              <>
+                <span className="text-[#92400E] font-semibold">
+                  {added.column && !added.filtered
+                    ? t("ux.board.addedHiddenCol", { status: statusLabel(lang, added.task.status) })
+                    : t("ux.board.addedHidden")}
+                </span>
+                {onReveal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onReveal(added.task);
+                      setAdded({ ...added, filtered: false, column: false });
+                    }}
+                    className="h-7 px-3 rounded-full text-[11px] font-semibold bg-white text-[#0A1931] border border-[#E8E6E1] hover:border-[#C9A96E]"
+                  >
+                    {t("ux.board.show")}
+                  </button>
+                )}
+              </>
+            )}
+          </p>
+        ) : null}
       </div>
 
       {showNames && pickOpen && (

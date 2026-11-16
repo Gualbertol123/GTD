@@ -4,6 +4,7 @@ import type { Board, Op, Priority, Status, Task } from "../lib/types";
 import { STATUS_ORDER, PRIORITY_ORDER, isArchived } from "../lib/constants";
 import { priorityLabel, statusLabel, useT } from "../lib/i18n";
 import { TaskCard } from "./TaskCard";
+import { UndoToastHost } from "./TaskDetails";
 import { isOwnedBy } from "../lib/owners";
 import { QuickAdd } from "./QuickAdd";
 import { MembersBar } from "./MembersBar";
@@ -31,6 +32,46 @@ interface Props {
 
 const PRIOS: Priority[] = ["P1", "P2", "P3", "P4"];
 const MIN_WEIGHT = 0.4;
+const EMPTY_FILTERS: FilterState = { search: "", owner: "all", priority: "all", focusP1: false };
+
+// Small decorative toolbar icons (the buttons carry their own text).
+const ICON = {
+  width: 14,
+  height: 14,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+function IconUsers() {
+  return (
+    <svg {...ICON}>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
+      <path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.5a6.5 6.5 0 0 1 3.5 5.5" />
+    </svg>
+  );
+}
+function IconEye({ off }: { off: boolean }) {
+  return (
+    <svg {...ICON}>
+      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+      {off && <path d="M3 3l18 18" />}
+    </svg>
+  );
+}
+function IconColumns() {
+  return (
+    <svg {...ICON}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M9 4v16M15 4v16" />
+    </svg>
+  );
+}
 
 export function BoardView({ board, members, send, filters, setFilters }: Props) {
   const { t, lang } = useT();
@@ -49,6 +90,16 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
   const [weights, setWeights] = useState<Record<string, number>>(() => readWeights());
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<Status | null>(null);
+  // Open cards per column: a column holding an open card grows so its editor
+  // is not squeezed into a narrow strip.
+  const [openCards, setOpenCards] = useState<Record<string, Status>>({});
+  const setCardOpen = (id: string, status: Status, open: boolean) =>
+    setOpenCards((prev) => {
+      const next = { ...prev };
+      if (open) next[id] = status;
+      else delete next[id];
+      return next;
+    });
 
   const weightsRef = useRef(weights);
   weightsRef.current = weights;
@@ -82,16 +133,17 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
   // sequential project) are left out of everything on this tab.
   const shown = useMemo(() => boardTasks(board), [board]);
 
-  // Filter + priority-sort.
+  // Filter + priority-sort. passes() is also asked about a just-added task.
   const q = filters.search.trim().toLowerCase();
+  const passes = (tk: Task) => {
+    const text = !q || tk.title.toLowerCase().includes(q) || tk.desc.toLowerCase().includes(q);
+    const owner = filters.owner === "all" || isOwnedBy(tk, filters.owner);
+    const prio = filters.priority === "all" || tk.priority === filters.priority;
+    const focus = !filters.focusP1 || tk.priority === "P1";
+    return text && owner && prio && focus;
+  };
   const tasks: Task[] = shown
-    .filter((tk) => {
-      const text = !q || tk.title.toLowerCase().includes(q) || tk.desc.toLowerCase().includes(q);
-      const owner = filters.owner === "all" || isOwnedBy(tk, filters.owner);
-      const prio = filters.priority === "all" || tk.priority === filters.priority;
-      const focus = !filters.focusP1 || tk.priority === "P1";
-      return text && owner && prio && focus;
-    })
+    .filter(passes)
     .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
 
   const visibleCols = STATUS_ORDER.filter((s) => !hidden.has(s));
@@ -171,6 +223,17 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
   };
 
   const filtersActive = q || filters.owner !== "all" || filters.priority !== "all" || filters.focusP1;
+  const resetFilters = () => setFilters(EMPTY_FILTERS);
+  // Nothing on the board (visible columns, not archived) passes the filters.
+  const noMatch =
+    !!filtersActive && tasks.filter((tk) => !hidden.has(tk.status) && !isArchived(tk)).length === 0;
+
+  // New-task bar: will the task just added be seen, and how to reveal it.
+  const quickVisibility = (tk: Task) => ({ filtered: !passes(tk), column: hidden.has(tk.status) });
+  const quickReveal = (tk: Task) => {
+    if (!passes(tk)) resetFilters();
+    if (hidden.has(tk.status)) toggleHidden(tk.status);
+  };
   const control = "h-9 rounded-full bg-white border border-[#E8E6E1] text-[13px] outline-none focus:border-[#C9A96E]";
 
   return (
@@ -182,10 +245,16 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {/* Board / List toggle */}
-          <div className="inline-flex items-center rounded-full border border-[#E8E6E1] bg-[#F5F3EF] p-0.5">
+          <div
+            role="group"
+            aria-label={t("ux.board.viewToggle")}
+            className="inline-flex items-center rounded-full border border-[#E8E6E1] bg-[#F5F3EF] p-0.5"
+          >
             {(["board", "list"] as ViewMode[]).map((v) => (
               <button
                 key={v}
+                type="button"
+                aria-pressed={view === v}
                 onClick={() => setViewPref(v)}
                 className={`h-8 px-3 rounded-full text-[11px] font-semibold ${
                   view === v ? "bg-[#0A1931] text-[#C9A96E]" : "text-[#6B6B6B]"
@@ -197,28 +266,31 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
           </div>
 
           <div className="relative flex-1 min-w-[160px]">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">⌕</span>
+            <span aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">⌕</span>
             <input
               value={filters.search}
               onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
               placeholder={t("filters.search")}
+              aria-label={t("filters.search")}
               className={`${control} w-full pl-8 pr-4`}
             />
           </div>
-          <select value={filters.owner} onChange={(e) => setFilters((f) => ({ ...f, owner: e.target.value }))} className={`${control} px-3`}>
+          <select value={filters.owner} onChange={(e) => setFilters((f) => ({ ...f, owner: e.target.value }))} aria-label={t("quick.owner")} className={`${control} px-3`}>
             <option value="all">{t("filters.allMembers")}</option>
             <option value="Unassigned">{t("members.unassigned")}</option>
             {members.map((m) => (
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
-          <select value={filters.priority} onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value }))} className={`${control} px-3`}>
+          <select value={filters.priority} onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value }))} aria-label={t("quick.priority")} className={`${control} px-3`}>
             <option value="all">{t("filters.allPriorities")}</option>
             {PRIOS.map((p) => (
               <option key={p} value={p}>{priorityLabel(t, p)}</option>
             ))}
           </select>
           <button
+            type="button"
+            aria-pressed={filters.focusP1}
             onClick={() => setFilters((f) => ({ ...f, focusP1: !f.focusP1 }))}
             className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors ${
               filters.focusP1 ? "bg-[#DC2626] text-white border-[#DC2626]" : "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA] hover:border-[#DC2626]"
@@ -228,25 +300,31 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
           </button>
           {filtersActive && (
             <button
-              onClick={() => setFilters({ search: "", owner: "all", priority: "all", focusP1: false })}
+              type="button"
+              onClick={resetFilters}
               className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#8A8A8A] border border-[#E8E6E1] hover:border-[#C9A96E]"
             >
-              {t("filters.reset")}
+              {t("ux.board.resetFilters")}
             </button>
           )}
 
           <div className="ml-auto flex items-center gap-2">
             <button
+              type="button"
+              aria-expanded={teamOpen}
+              aria-controls={teamOpen ? "board-team-panel" : undefined}
               onClick={() => setTeamOpen((o) => !o)}
               className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors inline-flex items-center gap-1.5 ${
                 teamOpen ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]" : "bg-white text-[#0A1931] border-[#E8E6E1] hover:border-[#C9A96E]"
               }`}
             >
-              👥 {t("team.button")}
+              <IconUsers /> {t("team.button")}
               <span className="text-[10px] bg-[#C9A96E] text-[#0A1931] rounded-full px-1.5 py-0.5">{board.members.length}</span>
             </button>
             {view === "board" && (
               <button
+                type="button"
+                aria-pressed={editLayout}
                 onClick={() => setEditLayout((e) => !e)}
                 className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors ${
                   editLayout ? "bg-[#C9A96E] text-[#0A1931] border-[#C9A96E]" : "bg-white text-[#0A1931] border-[#E8E6E1] hover:border-[#C9A96E]"
@@ -256,6 +334,8 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
               </button>
             )}
             <button
+              type="button"
+              aria-pressed={showNames}
               onClick={() => setShowNames((v) => !v)}
               title={t("view.namesHint")}
               className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors inline-flex items-center gap-1.5 ${
@@ -264,15 +344,18 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                   : "bg-[#C9A96E] text-[#0A1931] border-[#C9A96E]"
               }`}
             >
-              {showNames ? "🙂" : "🕶"} {t("view.names")}
+              <IconEye off={!showNames} /> {t("view.names")}
             </button>
             <button
+              type="button"
+              aria-expanded={editorOpen}
+              aria-controls={editorOpen ? "board-columns-panel" : undefined}
               onClick={() => setEditorOpen((o) => !o)}
               className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors inline-flex items-center gap-1.5 ${
                 editorOpen ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]" : "bg-white text-[#0A1931] border-[#E8E6E1] hover:border-[#C9A96E]"
               }`}
             >
-              ▦ {t("view.columns")}
+              <IconColumns /> {t("view.columns")}
               {hidden.size > 0 && (
                 <span className="text-[10px] bg-[#C9A96E] text-[#0A1931] rounded-full px-1.5 py-0.5">
                   {visibleCols.length}/{STATUS_ORDER.length}
@@ -283,20 +366,22 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
         </div>
 
         {editorOpen && (
-          <div className="mt-3 pt-3 border-t border-[#E8E6E1]">
+          <div id="board-columns-panel" className="mt-3 pt-3 border-t border-[#E8E6E1]">
             <div className="text-[10px] uppercase tracking-widest text-[#8A8A8A] mb-2">{t("view.columnsHint")}</div>
-            <div className="flex flex-wrap gap-2">
+            <div role="group" aria-label={t("ux.board.columnsPanel")} className="flex flex-wrap gap-2">
               {STATUS_ORDER.map((s) => {
                 const shown = !hidden.has(s);
                 return (
                   <button
                     key={s}
+                    type="button"
+                    aria-pressed={shown}
                     onClick={() => toggleHidden(s)}
                     className={`h-8 px-3 rounded-full text-[12px] font-semibold border inline-flex items-center gap-1.5 transition-colors ${
                       shown ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]" : "bg-white text-[#A8A29E] border-[#E8E6E1] line-through"
                     }`}
                   >
-                    <span>{shown ? "◉" : "◯"}</span>
+                    <span aria-hidden="true">{shown ? "◉" : "◯"}</span>
                     {statusLabel(lang, s)}
                   </button>
                 );
@@ -317,7 +402,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
 
       {/* Team panel (collapsed by default to declutter the top) */}
       {teamOpen && (
-        <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-3">
+        <div id="board-team-panel" className="bg-white rounded-[14px] border border-[#E8E6E1] p-3">
           <MembersBar board={board} send={send} />
         </div>
       )}
@@ -332,11 +417,29 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
           send={send}
           showNames={showNames}
           multiAssign={board.assigneesAvailable !== false}
+          visibility={quickVisibility}
+          onReveal={quickReveal}
         />
       </div>
 
       {/* Priority distribution — its own space */}
       <PriorityDistribution tasks={shown} />
+
+      {noMatch && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-2 rounded-[14px] border border-[#FDE68A] bg-[#FEF3C7] px-4 py-2.5 text-[13px] text-[#92400E]"
+        >
+          <span className="font-semibold">{t("ux.board.noMatch")}</span>
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="h-8 px-3 rounded-full text-[12px] font-semibold bg-white text-[#0A1931] border border-[#E8E6E1] hover:border-[#C9A96E]"
+          >
+            {t("ux.board.resetFilters")}
+          </button>
+        </div>
+      )}
 
       {view === "list" ? (
         <ListView
@@ -360,6 +463,8 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
             {visibleCols.map((status, i) => {
               const colTasks = tasks.filter((tk) => tk.status === status && !isArchived(tk));
               const isLast = i === visibleCols.length - 1;
+              // Only cards still in this column count (one may have moved or gone).
+              const hasOpen = colTasks.some((tk) => openCards[tk.id] === status);
               return (
                 <div
                   key={status}
@@ -379,7 +484,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                     e.preventDefault();
                     drop(status);
                   }}
-                  style={{ flexGrow: getW(status), flexShrink: 1, flexBasis: 0, minWidth: 136, minHeight: 140 }}
+                  style={{ flexGrow: getW(status), flexShrink: 1, flexBasis: 0, minWidth: hasOpen ? 340 : 148, minHeight: 140 }}
                   className={`relative rounded-[14px] p-2 transition-colors ${
                     overCol === status ? "drop-target" : "bg-[#EFECE6]"
                   } ${editLayout ? "ring-1 ring-[#C9A96E]/40" : ""}`}
@@ -406,6 +511,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                         send={send}
                         showNames={showNames}
                         draggable={!editLayout}
+                        onOpenChange={(o) => setCardOpen(tk.id, status, o)}
                         onDragStart={(e) => {
                           setDragId(tk.id);
                           e.dataTransfer.setData("text/plain", tk.id);
@@ -445,10 +551,13 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
               as a full-width searchable bar (a duplicate view, not a move). */}
           <div className="bg-[#EFECE6] rounded-[14px] border border-[#E3DFD7] p-3">
             <button
+              type="button"
+              aria-expanded={doneOpen}
+              aria-controls={doneOpen ? "board-done-panel" : undefined}
               onClick={() => setDoneOpen((o) => !o)}
               className="w-full flex items-center gap-2 text-left"
             >
-              <span className={`text-[#8A8A8A] text-[11px] transition-transform ${doneOpen ? "rotate-90" : ""}`}>▶</span>
+              <span aria-hidden="true" className={`text-[#8A8A8A] text-[11px] transition-transform ${doneOpen ? "rotate-90" : ""}`}>▶</span>
               <span className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">
                 {t("doneBar.title")}
               </span>
@@ -458,13 +567,14 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
               <span className="text-[10px] text-[#A8A29E] ml-1 hidden sm:inline">{t("doneBar.hint")}</span>
             </button>
             {doneOpen && (
-              <div className="mt-3 space-y-3">
+              <div id="board-done-panel" className="mt-3 space-y-3">
                 <div className="relative max-w-[320px]">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">⌕</span>
                   <input
                     value={doneQuery}
                     onChange={(e) => setDoneQuery(e.target.value)}
                     placeholder={t("doneBar.search")}
+                    aria-label={t("doneBar.search")}
                     className="w-full h-9 rounded-full bg-white border border-[#E8E6E1] pl-8 pr-4 text-[13px] outline-none focus:border-[#C9A96E]"
                   />
                 </div>
@@ -481,6 +591,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                         send={send}
                         showNames={showNames}
                         draggable={!editLayout}
+                        showStatus
                         onDragStart={(e) => {
                           setDragId(tk.id);
                           e.dataTransfer.setData("text/plain", tk.id);
@@ -503,10 +614,13 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
           {/* Archived — DONE tasks completed more than a week ago (always shown) */}
           <div className="bg-[#EFECE6] rounded-[14px] border border-[#E3DFD7] p-3">
             <button
+              type="button"
+              aria-expanded={archOpen}
+              aria-controls={archOpen ? "board-archive-panel" : undefined}
               onClick={() => setArchOpen((o) => !o)}
               className="w-full flex items-center gap-2 text-left"
             >
-              <span className={`text-[#8A8A8A] text-[11px] transition-transform ${archOpen ? "rotate-90" : ""}`}>▶</span>
+              <span aria-hidden="true" className={`text-[#8A8A8A] text-[11px] transition-transform ${archOpen ? "rotate-90" : ""}`}>▶</span>
               <span className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">
                 {t("archived.title")}
               </span>
@@ -516,13 +630,14 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
               <span className="text-[10px] text-[#A8A29E] ml-1 hidden sm:inline">{t("archived.hint")}</span>
             </button>
             {archOpen && (
-              <div className="mt-3 space-y-3">
+              <div id="board-archive-panel" className="mt-3 space-y-3">
                 <div className="relative max-w-[320px]">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">⌕</span>
                   <input
                     value={archQuery}
                     onChange={(e) => setArchQuery(e.target.value)}
                     placeholder={t("archived.search")}
+                    aria-label={t("archived.search")}
                     className="w-full h-9 rounded-full bg-white border border-[#E8E6E1] pl-8 pr-4 text-[13px] outline-none focus:border-[#C9A96E]"
                   />
                 </div>
@@ -539,6 +654,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                         send={send}
                         showNames={showNames}
                         draggable={!editLayout}
+                        showStatus
                         onDragStart={(e) => {
                           setDragId(tk.id);
                           e.dataTransfer.setData("text/plain", tk.id);
@@ -562,6 +678,9 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
           <MenuBar />
         </>
       )}
+
+      {/* Undo for deletes, "done" checks and member removal. */}
+      <UndoToastHost />
     </div>
   );
 }
