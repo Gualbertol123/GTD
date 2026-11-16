@@ -249,12 +249,18 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
 4. *(Optional)* **Spotify keys**, so "Importa da Spotify" reads whole
    playlists (up to 1000 songs) instead of the first 100. Free:
    1. [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard)
-      → *Create app* (any name and description; Redirect URI
-      `http://localhost` is fine; tick *Web API*).
+      → *Create app* (any name and description; tick only *Web API*).
+      Spotify requires a Redirect URI even though this import never uses it,
+      and it refuses `localhost`: enter the site's address plus `/callback`
+      (e.g. `https://<your-site>.netlify.app/callback`) or
+      `http://127.0.0.1:8888/callback`, then click *Add*.
    2. Open the app's *Settings*, copy the *Client ID* and the *Client secret*
       into Netlify → Site configuration → Environment variables as
-      `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`.
-   3. Redeploy.
+      `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` (keep the secret's
+      scope including *Functions*).
+   3. Redeploy (Deploys → Trigger deploy): functions read new variables
+      only after a deploy. The app staying in Spotify's "Development mode"
+      is fine: that only limits user logins, which this import never uses.
    The keys are read only by `netlify/lib/spotify.mts` on the server (Client
    Credentials flow: no user login, public playlists only), never sent to
    browsers or logged, and **must never be put in the code**. Playlists made by
