@@ -70,11 +70,25 @@ async function ask(authorization: string): Promise<TeamCheck> {
   }
 }
 
+const hashOf = (token: string) => createHash("sha256").update(token).digest("hex");
+
+/**
+ * True only when this token already got a "yes" that still holds (no network).
+ * Lets a function start its free work before the check answers, for members
+ * only: a stranger's token never triggers any outbound work.
+ */
+export function knownMember(authorization: string): boolean {
+  const m = /^Bearer\s+(\S+)$/.exec(authorization);
+  if (!m || !supabaseConfigured()) return false;
+  const until = members.get(hashOf(m[1]));
+  return until !== undefined && until > Date.now();
+}
+
 export async function checkTeam(authorization: string): Promise<TeamCheck> {
   const m = /^Bearer\s+(\S+)$/.exec(authorization);
   if (!m) return "no";
   if (!supabaseConfigured()) return "unavailable";
-  const key = createHash("sha256").update(m[1]).digest("hex");
+  const key = hashOf(m[1]);
   const now = Date.now();
   const until = members.get(key);
   if (until !== undefined) {

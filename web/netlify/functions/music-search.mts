@@ -51,16 +51,17 @@ export default async (req: Request): Promise<Response> => {
   if (channelId && !/^UC[\w-]{22}$/.test(channelId)) return fail("server");
   if (!q && !channelId) return fail("server");
 
-  // Free first: YouTube.js starts while the login is checked (it spends no
-  // quota), and leaves time for the Data API if it fails.
+  // Free first: YouTube.js (no quota) runs after the login check (alongside
+  // it for a member already known, see gate()), and leaves time for the Data
+  // API if it fails or is slow.
   const g = await gate(req, () => (channelId ? artistTop(channelId, msLeft(start) - FALLBACK_MS) : searchSongs(q, msLeft(start) - FALLBACK_MS)));
   if ("denied" in g) return g.denied;
   if (g.result.ok && g.result.value.length) return json(200, { tracks: g.result.value, via: "ytjs" }, cacheFor(600));
   if (!g.result.ok) {
     const e = g.result.error;
     console.warn("ytjs search failed, using the Data API:", e instanceof Error ? e.message : e);
-    // A timed-out YouTube.js call keeps running: no fallback on top of it.
-    if (isTimeout(e)) return fail("timeout");
+    // A slow YouTube.js: the Data API still gets the time kept for it.
+    if (isTimeout(e) && (!KEY || msLeft(start) < FALLBACK_MS)) return fail("timeout");
   }
 
   if (!KEY) return g.result.ok ? json(200, { tracks: [], via: "ytjs" }, cacheFor(600)) : fail("no-key");

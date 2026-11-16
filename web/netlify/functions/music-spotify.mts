@@ -33,7 +33,8 @@ export default async (req: Request): Promise<Response> => {
   if (req.method === "GET") {
     const target = parseSpotify(new URL(req.url).searchParams.get("url") ?? "");
     if (!target) return fail("server");
-    // Spotify's page is read while the login is checked.
+    // Spotify's page is read once the login is a "yes" (overlapped with the
+    // check for a member this instance already knows; see gate()).
     const g = await gate(req, () => readSpotify(target.kind, target.id));
     if ("denied" in g) return g.denied;
     if (g.result.ok) return json(200, g.result.value, cacheFor(600));
@@ -55,8 +56,8 @@ export default async (req: Request): Promise<Response> => {
   }));
   if (!songs.length) return fail("server");
 
-  // Every song is searched at once, while the login is checked. A failure or
-  // timeout is reported in `failed`, not hidden as "no match".
+  // Every song is searched at once, after the login check (see gate()). A
+  // failure or timeout is reported in `failed`, not hidden as "no match".
   const g = await gate(req, () => {
     const ms = msLeft(start, BUDGET_MS - 500);
     return Promise.all(

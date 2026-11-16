@@ -9,7 +9,7 @@
 //   503 no-key (the Data API fallback is needed but has no key)
 // -----------------------------------------------------------------------------
 
-import { checkTeam } from "./teamAuth.mts";
+import { checkTeam, knownMember } from "./teamAuth.mts";
 
 export type ErrorCode = "login" | "server" | "not-found" | "quota" | "unavailable" | "timeout" | "no-key";
 
@@ -152,18 +152,21 @@ export const settle = <T,>(p: Promise<T>): Promise<Settled<T>> =>
   );
 
 /**
- * Checks the team login while `early` already runs, so the two waits overlap.
- * `early` must be free work only (YouTube.js, Spotify's page): never anything
- * that spends the Data API quota, which waits for the "yes". Its result is
- * handed back only after the "yes", so nothing reaches a stranger.
+ * Checks the team login, then runs `early`. For a token already remembered as
+ * a team member (a warm instance, no network) the two overlap: `early` starts
+ * at once. Any other token waits for the "yes" first, so a stranger can never
+ * make this server call YouTube or Spotify, or fill its caches. `early` must
+ * be free work only (YouTube.js, Spotify's page): never anything that spends
+ * the Data API quota.
  */
 export async function gate<T>(req: Request, early: () => Promise<T>): Promise<{ denied: Response } | { result: Settled<T> }> {
   const authorization = req.headers.get("authorization") ?? "";
   // No token at all: nothing to start.
   if (!/^Bearer\s+\S+$/.test(authorization)) return { denied: fail("login", 401) };
-  const work = settle(Promise.resolve().then(early));
+  const run = () => settle(Promise.resolve().then(early));
+  const work = knownMember(authorization) ? run() : null;
   const who = await checkTeam(authorization);
   if (who === "unavailable") return { denied: fail("unavailable") };
   if (who === "no") return { denied: fail("login") };
-  return { result: await work };
+  return { result: await (work ?? run()) };
 }

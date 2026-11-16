@@ -131,10 +131,13 @@ export default async (req: Request): Promise<Response> => {
   if (list && !/^[\w-]{10,64}$/.test(list)) return fail("server");
   if (!list && !q) return fail("server");
 
-  // YouTube.js first (no quota, so it may start while the login is checked);
-  // the Data API only if it fails, after the "yes", with time left for it.
-  const ms = msLeft(start) - FALLBACK_MS;
-  const g = await gate(req, async () => (list ? { ...(await ytjs.playlist(list, MAX_SONGS, ms)), via: "ytjs" } : { lists: await ytjs.findPlaylists(q, ms), via: "ytjs" }));
+  // YouTube.js first (no quota; see gate() for when it starts); the Data API
+  // only if it fails or is slow, after the "yes", with time left for it.
+  // The budget is read when the work starts (after the login check, for a token not seen yet).
+  const g = await gate(req, async () => {
+    const ms = msLeft(start) - FALLBACK_MS;
+    return list ? { ...(await ytjs.playlist(list, MAX_SONGS, ms)), via: "ytjs" } : { lists: await ytjs.findPlaylists(q, ms), via: "ytjs" };
+  });
   if ("denied" in g) return g.denied;
   const r = g.result;
   if (r.ok) {
@@ -142,8 +145,8 @@ export default async (req: Request): Promise<Response> => {
     if (r.value.lists.length) return json(200, r.value, cacheFor(3600));
   } else {
     console.warn("ytjs playlist failed, using the Data API:", r.error instanceof Error ? r.error.message : r.error);
-    // A timed-out YouTube.js call keeps running: no fallback on top of it.
-    if (isTimeout(r.error)) return fail("timeout");
+    // A slow YouTube.js: the Data API still gets the time kept for it.
+    if (isTimeout(r.error) && (!KEY || msLeft(start) < FALLBACK_MS)) return fail("timeout");
   }
 
   if (!KEY) return r.ok ? json(200, r.value, cacheFor(3600)) : fail(codeOf(r.error) === "not-found" ? "not-found" : "no-key");

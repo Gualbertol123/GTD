@@ -41,6 +41,11 @@ import type { Track } from "./music";
 // Realtime: each event is applied row by row. While our own writes on a
 // playlist are in flight, events for it are held (the newest wins) and applied
 // once the last write settles, so an echo never reverts an optimistic change.
+// Echoes that arrive after that are recognised by the exact updated_at our
+// writes got back (never by comparing clocks), so they don't flicker either;
+// any other event is applied, since realtime delivers in commit order.
+// Migration 020 makes the database stamp updated_at, so "newest wins" while a
+// write is in flight compares one clock only.
 // -----------------------------------------------------------------------------
 
 export interface Playlist {
@@ -156,8 +161,26 @@ interface Flight {
   baseAt: number;
   failed: boolean;
   shadow?: { row: Playlist | null };
+  mine: Set<number>; // updated_at of the rows our writes got back
+  echoed: Set<number>; // ...and of those whose realtime echo already came
 }
 const flights = new Map<string, Flight>();
+
+// After a flight settles, its echoes can still be on their way. For a short
+// while we remember the stamps our writes got back: an event carrying one of
+// them is our own echo (already shown, or superseded) and is skipped. If the
+// store now shows our last write and its echo hasn't come yet, any other event
+// committed before it (realtime is in commit order) and is skipped too, since
+// our row already includes it.
+interface Settled {
+  mine: Set<number>;
+  last: number | null; // the stamp shown now whose echo is still due
+  lastUntil: number; // a lost echo must not hold teammates' changes for long
+  until: number;
+}
+const settled = new Map<string, Settled>();
+const SETTLED_MS = 15_000;
+const ECHO_MS = 4_000;
 
 function offer(f: Flight, row: Playlist | null) {
   const cur = f.shadow?.row;
@@ -182,7 +205,7 @@ async function write(
   let f = flights.get(id);
   if (!f) {
     const i = store.playlists.findIndex((p) => p.id === id);
-    f = { n: 0, base: store.playlists[i], baseAt: Math.max(0, i), failed: false };
+    f = { n: 0, base: store.playlists[i], baseAt: Math.max(0, i), failed: false, mine: new Set(), echoed: new Set() };
     flights.set(id, f);
   }
   f.n++;
@@ -202,7 +225,9 @@ async function write(
     } else {
       const rows = (Array.isArray(data) ? data : data ? [data] : []) as Row[];
       if (rows[0]?.id) {
-        offer(f, fromRow(rows[0]));
+        const got = fromRow(rows[0]);
+        f.mine.add(got.updatedAt);
+        offer(f, got);
         res = OK;
       } else {
         offer(f, null); // the playlist is gone (a teammate deleted it)
@@ -218,6 +243,12 @@ async function write(
     flights.delete(id);
     if (f.shadow) putLocal(id, f.shadow.row, f.baseAt);
     else if (f.failed) putLocal(id, f.base ?? null, f.baseAt);
+    if (f.mine.size) {
+      const shown = f.shadow?.row?.updatedAt;
+      const due = shown !== undefined && f.mine.has(shown) && !f.echoed.has(shown) ? shown : null;
+      const now = Date.now();
+      settled.set(id, { mine: f.mine, last: due, lastUntil: now + ECHO_MS, until: now + SETTLED_MS });
+    }
   }
   return res;
 }
@@ -282,7 +313,9 @@ export async function reloadPlaylists(): Promise<void> {
     const f = flights.get(r.id);
     if (f) {
       offer(f, r);
-      next.push(getPlaylist(r.id) ?? r);
+      // In flight but not in the store: only our own pending delete does that.
+      const cur = getPlaylist(r.id);
+      if (cur) next.push(cur);
     } else next.push(r);
   }
   set({ playlists: next, loaded: true, available: true, error: null });
@@ -329,13 +362,29 @@ export function applyChange(c: Change) {
   const cur = getPlaylist(raw.id);
   if (raw.tracks === undefined) {
     // A big song list left unchanged can be left out of the event.
-    if (f) return; // our write's answer will bring the row
+    if (f) {
+      const at = Number(raw.updated_at);
+      if (at) f.echoed.add(at);
+      return; // our write's answer will bring the row
+    }
     if (!cur) return void fetchOne(raw.id);
     raw.tracks = cur.tracks;
   }
   const row = fromRow(raw as Row);
-  if (f) return offer(f, row);
-  if (cur && row.updatedAt <= cur.updatedAt) return; // our own echo, or older
+  const s = settled.get(row.id);
+  if (f) {
+    if (s?.mine.has(row.updatedAt)) return; // a late echo of an earlier flight
+    f.echoed.add(row.updatedAt);
+    return offer(f, row);
+  }
+  if (s && Date.now() > s.until) settled.delete(row.id);
+  else if (s) {
+    if (Date.now() > s.lastUntil) s.last = null;
+    if (s.last !== null && row.updatedAt === s.last) {
+      s.last = null; // the echo of what we show: nothing to change
+      if (cur?.updatedAt === row.updatedAt) return;
+    } else if (s.mine.has(row.updatedAt) || s.last !== null) return;
+  }
   putLocal(row.id, row);
 }
 

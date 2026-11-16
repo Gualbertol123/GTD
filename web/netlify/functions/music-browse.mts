@@ -33,8 +33,8 @@ export default async (req: Request): Promise<Response> => {
   if (artist && !/^UC[\w-]{22}$/.test(artist)) return fail("server");
   if (!q && !video && !country && !artist && !wantExplore) return fail("server");
 
-  // YouTube.js (free) starts while the login is checked; its answer is only
-  // sent after the "yes".
+  // YouTube.js (free) runs after the "yes" (alongside the check for a member
+  // this instance already knows; see gate()).
   const g = await gate(req, async (): Promise<[unknown, number]> => {
     if (q) return [{ suggestions: await suggest(q) }, 3600];
     if (video) return [{ tracks: await radio(video) }, 3600];

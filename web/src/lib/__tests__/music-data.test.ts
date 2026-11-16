@@ -198,6 +198,70 @@ describe("realtime rows", () => {
   });
 });
 
+// F1: updated_at can come from different clocks (a browser's, the database's),
+// so a realtime row is never dropped just because its stamp looks older.
+describe("clock skew", () => {
+  it("applies a teammate's change even when its stamp is below ours", () => {
+    // Created by a teammate whose clock runs fast.
+    m.applyChange({ eventType: "INSERT", new: row("g", ["a"], 9_000_000, "Gita"), old: {} });
+    // Another teammate adds a song; the database stamps it with its own, lower clock.
+    m.applyChange({ eventType: "UPDATE", new: row("g", ["a", "b"], 1_000, "Gita"), old: { id: "g" } });
+    expect(ids("g")).toEqual(["a", "b"]);
+  });
+
+  it("late echoes of our settled writes still don't flicker, and later changes apply", async () => {
+    db.rpc.push(
+      { data: [row("p", ["a", "b", "c", "d"], 200)], error: null },
+      { data: [row("p", ["a", "b", "c", "d", "e"], 210)], error: null }
+    );
+    const a = m.addToPlaylist("p", tr("d"));
+    const b = m.addToPlaylist("p", tr("e"));
+    await Promise.all([a, b]);
+    const shown = m.getPlaylist("p");
+    expect(ids()).toEqual(["a", "b", "c", "d", "e"]);
+
+    // Commit order: a teammate's change made before our writes, then our two echoes.
+    m.applyChange({ eventType: "UPDATE", new: row("p", ["a", "b", "c", "z"], 190), old: { id: "p" } });
+    expect(m.getPlaylist("p")).toBe(shown);
+    m.applyChange({ eventType: "UPDATE", new: row("p", ["a", "b", "c", "d"], 200), old: { id: "p" } });
+    expect(m.getPlaylist("p")).toBe(shown);
+    m.applyChange({ eventType: "UPDATE", new: row("p", ["a", "b", "c", "d", "e"], 210), old: { id: "p" } });
+    expect(m.getPlaylist("p")).toBe(shown);
+
+    // After our last echo, a teammate's change applies even with a lower stamp.
+    m.applyChange({ eventType: "UPDATE", new: row("p", ["a", "b", "c", "d", "e", "f"], 150), old: { id: "p" } });
+    expect(ids()).toEqual(["a", "b", "c", "d", "e", "f"]);
+  });
+
+  it("an echo that never comes does not hold teammates' changes for long", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      db.rpc.push({ data: [row("p", ["a", "b", "c", "d"], 200)], error: null });
+      await m.addToPlaylist("p", tr("d"));
+      vi.setSystemTime(Date.now() + 5_000);
+      m.applyChange({ eventType: "UPDATE", new: row("p", ["a", "b", "c", "d", "z"], 220), old: { id: "p" } });
+      expect(ids()).toEqual(["a", "b", "c", "d", "z"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+// F6: a reload answering while our delete is in flight must not bring it back.
+describe("reload during a delete", () => {
+  it("keeps the deleted playlist out of the store", async () => {
+    const d = deferred<Res>();
+    db.write.push(d.promise);
+    const done = m.deletePlaylist("q");
+    expect(m.getPlaylist("q")).toBeUndefined();
+    await m.reloadPlaylists(); // the snapshot still has "q"
+    expect(m.getPlaylist("q")).toBeUndefined();
+    d.resolve({ data: null, error: null });
+    expect(await done).toEqual({ ok: true });
+    expect(m.getPlaylist("q")).toBeUndefined();
+  });
+});
+
 describe("before migration 019", () => {
   it("falls back to writing the whole song list, and stops asking for the function", async () => {
     db.rpc.push({ data: null, error: { code: "PGRST202", message: "Could not find the function" } });

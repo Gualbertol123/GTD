@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NotFoundError, TimeoutError, TtlCache, codeOf, deadline, fail, isTimeout, normKey } from "../../../netlify/lib/http.mts";
 import { forgetMembers, tokenExpiry } from "../../../netlify/lib/teamAuth.mts";
 
+const jwt = (exp: number) => `x.${Buffer.from(JSON.stringify({ exp })).toString("base64url")}.y`;
+
 describe("error contract", () => {
   it("answers { error: code } with the agreed status", async () => {
     const cases: [Parameters<typeof fail>[0], number][] = [
@@ -85,7 +87,6 @@ describe("TtlCache", () => {
 });
 
 describe("team check", () => {
-  const jwt = (exp: number) => `x.${Buffer.from(JSON.stringify({ exp })).toString("base64url")}.y`;
   const req = (token?: string) => new Request("http://x/", { headers: token ? { authorization: `Bearer ${token}` } : {} });
   let rpc: ReturnType<typeof vi.fn>;
 
@@ -151,5 +152,79 @@ describe("team check", () => {
     const again = await g(req("ddd"), async () => 1);
     expect(again).toEqual({ result: { ok: true, value: 1 } });
     expect(rpc).toHaveBeenCalledTimes(2);
+  });
+
+  // F2: a stranger's token must not make the server call YouTube or Spotify.
+  it("starts the work only after the yes, unless the token is already known", async () => {
+    vi.resetModules();
+    const { gate: g } = await import("../../../netlify/lib/http.mts");
+    const { knownMember } = await import("../../../netlify/lib/teamAuth.mts");
+    const t = jwt(Math.floor(Date.now() / 1000) + 3600);
+    let answer!: (r: Response) => void;
+    rpc.mockImplementationOnce(() => new Promise<Response>((r) => (answer = r)));
+    const work = vi.fn(async () => 1);
+    const first = g(req(t), work);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(work).not.toHaveBeenCalled(); // the check has not answered yet
+    expect(knownMember(`Bearer ${t}`)).toBe(false);
+    answer(new Response("true", { status: 200 }));
+    expect(await first).toEqual({ result: { ok: true, value: 1 } });
+    expect(work).toHaveBeenCalledTimes(1);
+    expect(knownMember(`Bearer ${t}`)).toBe(true);
+
+    // A refused token never runs the work at all.
+    rpc.mockResolvedValueOnce(new Response("false", { status: 200 }));
+    const never = vi.fn(async () => 1);
+    await g(req("stranger"), never);
+    expect(never).not.toHaveBeenCalled();
+    expect(knownMember("Bearer stranger")).toBe(false);
+  });
+});
+
+// F7: a slow YouTube.js must still leave the Data API its reserved time.
+describe("music-search fallback", () => {
+  afterEach(() => {
+    vi.doUnmock("../../../netlify/lib/ytjs.mts");
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  async function load(key: string) {
+    vi.resetModules();
+    vi.stubEnv("VITE_SUPABASE_URL", "http://supabase.test");
+    vi.stubEnv("VITE_SUPABASE_ANON_KEY", "anon");
+    vi.stubEnv("YOUTUBE_API_KEY", key);
+    vi.doMock("../../../netlify/lib/ytjs.mts", async () => {
+      const { TimeoutError: T } = await import("../../../netlify/lib/http.mts");
+      return {
+        searchSongs: async () => {
+          throw new T();
+        },
+        artistTop: async () => [],
+      };
+    });
+    const fetch = vi.fn(async (u: string | URL) =>
+      String(u).includes("supabase.test")
+        ? new Response("true", { status: 200 })
+        : new Response(JSON.stringify({ items: [{ id: { videoId: "abcdefghijk" }, snippet: { title: "A &amp; B", channelTitle: "C" } }] }), { status: 200 })
+    );
+    vi.stubGlobal("fetch", fetch);
+    const fn = (await import("../../../netlify/functions/music-search.mts")).default;
+    const res = await fn(new Request("http://x/?q=hello", { headers: { authorization: `Bearer ${jwt(Math.floor(Date.now() / 1000) + 3600)}` } }));
+    return { res, fetch };
+  }
+
+  it("uses the Data API when YouTube.js times out and a key is set", async () => {
+    const { res, fetch } = await load("k");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ via: "api", tracks: [{ id: "abcdefghijk", title: "A & B" }] });
+    expect(fetch.mock.calls.some(([u]) => String(u).includes("googleapis"))).toBe(true);
+  });
+
+  it("still says timeout when there is no key", async () => {
+    const { res } = await load("");
+    expect(res.status).toBe(504);
+    expect(await res.json()).toEqual({ error: "timeout" });
   });
 });

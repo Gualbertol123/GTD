@@ -650,6 +650,32 @@ grant execute on function public.music_playlist_remove(text, text, int)  to auth
 grant execute on function public.music_playlist_move(text, text, int)    to authenticated;
 grant execute on function public.music_playlist_rename(text, text)       to authenticated;
 
+-- ---- Music playlists, stamped by the database clock (migration 020) -------
+-- Every insert and update gets the database's time in updated_at (never below
+-- the row's previous stamp), so the app's "newest version wins" never depends
+-- on a browser's clock.
+create or replace function public.music_playlists_stamp()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  now_ms bigint := (extract(epoch from clock_timestamp()) * 1000)::bigint;
+begin
+  if tg_op = 'UPDATE' then
+    new.updated_at := greatest(now_ms, coalesce(old.updated_at, 0) + 1);
+  else
+    new.updated_at := now_ms;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.music_playlists_stamp() from public, anon;
+drop trigger if exists music_playlists_stamp on public.music_playlists;
+create trigger music_playlists_stamp
+  before insert or update on public.music_playlists
+  for each row execute function public.music_playlists_stamp();
+
 -- ---- Realtime --------------------------------------------------------------
 -- Change events for the board tables (they respect the policies above).
 -- reflection_access is deliberately NOT published.
