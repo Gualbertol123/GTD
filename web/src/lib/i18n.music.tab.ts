@@ -1,0 +1,48 @@
+// Music strings for the "tab" area (components/MusicTab.tsx). Same keys in
+// both languages (i18n test).
+
+export const TAB_IT: Record<string, string> = {
+  "mt.notSaved": "Non salvato",
+  "mt.libErr": "Playlist non caricate",
+  "mt.added": "Aggiunto a «{p}»",
+  "mt.created": "Creata «{p}»",
+  "mt.removed": "Tolto «{s}»",
+  "mt.deleted": "Eliminata «{p}»",
+  "mt.undo": "Annulla",
+  "mt.cancel": "Annulla",
+  "mt.renameBtn": "Rinomina",
+  "mt.newPh": "Nome nuova playlist",
+  "mt.createBtn": "Crea",
+  "mt.skip": "Vai al player",
+  "mt.queue": "Coda",
+  "mt.sideLabel": "Libreria musicale",
+  "mt.mainLabel": "Musica",
+  "mt.barLabel": "Player",
+  "mt.retryMissing": "Cerca di nuovo i mancanti",
+  "mt.importing": "Importazione: {n} di {m}",
+  "mt.fewPopular": "YouTube ha dato pochi brani popolari: premi Riproduci per ascoltare tutti i suoi video.",
+  "mt.results": "Risultati per «{q}»",
+};
+
+export const TAB_EN: Record<string, string> = {
+  "mt.notSaved": "Not saved",
+  "mt.libErr": "Playlists not loaded",
+  "mt.added": "Added to «{p}»",
+  "mt.created": "Created «{p}»",
+  "mt.removed": "Removed «{s}»",
+  "mt.deleted": "Deleted «{p}»",
+  "mt.undo": "Undo",
+  "mt.cancel": "Cancel",
+  "mt.renameBtn": "Rename",
+  "mt.newPh": "New playlist name",
+  "mt.createBtn": "Create",
+  "mt.skip": "Skip to the player",
+  "mt.queue": "Queue",
+  "mt.sideLabel": "Music library",
+  "mt.mainLabel": "Music",
+  "mt.barLabel": "Player",
+  "mt.retryMissing": "Search the missing ones again",
+  "mt.importing": "Importing: {n} of {m}",
+  "mt.fewPopular": "YouTube gave only a few popular songs: press Play to hear all their videos.",
+  "mt.results": "Results for «{q}»",
+};

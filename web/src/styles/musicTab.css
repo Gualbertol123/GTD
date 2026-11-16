@@ -20,8 +20,10 @@
   grid-template-rows: minmax(0, 1fr) 84px;
   grid-template-areas: "side main now" "bar bar bar";
   gap: 8px;
-  height: calc(100vh - 170px);
-  min-height: 560px;
+  /* --mt-top: where the tab starts (MusicTab measures it; the header may wrap). */
+  position: relative;
+  height: calc(100dvh - var(--mt-top, 170px) - 16px);
+  min-height: 420px;
   padding: 8px;
   border-radius: 20px;
   background: var(--mt-bg);
@@ -29,10 +31,26 @@
   font-family: "Inter Variable", "Inter", system-ui, sans-serif;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
 }
+@media (min-height: 760px) { .mt { min-height: 560px; } }
 @media (max-width: 1180px) {
   .mt { grid-template-columns: 240px minmax(0, 1fr); grid-template-areas: "side main" "bar bar"; }
+  /* "Coda" in the bar opens what is playing as a drawer over the main view.
+     A solid panel: no blur of its own. */
   .mt-now { display: none; }
+  .mt.is-queue .mt-now {
+    display: block;
+    position: absolute;
+    z-index: 6;
+    top: 8px;
+    right: 8px;
+    bottom: 100px;
+    width: min(320px, calc(100% - 16px));
+    border-radius: 12px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55), inset 0 0 0 1px var(--mt-line);
+  }
+  .mt.is-queue .mt-now__close { display: inline-grid; }
 }
+@media (min-width: 1181px) { .mt-queuebtn { display: none !important; } }
 .mt button { color: inherit; }
 .mt button:disabled { opacity: 0.4; cursor: default; }
 
@@ -263,16 +281,20 @@
   border-radius: 0;
 }
 .mt-tr__n { position: relative; text-align: center; color: var(--mt-text-2); font-variant-numeric: tabular-nums; }
-.mt-tr__play { position: absolute; inset: -8px 0; display: none; place-items: center; font-size: 13px; }
-.mt-tr:hover .mt-tr__play { display: grid; }
-.mt-tr:hover .mt-tr__num { visibility: hidden; }
+/* The row's play icon: hidden, not removed (one click on the row plays too). */
+.mt-tr__play { position: absolute; inset: -8px 0; display: grid; place-items: center; font-size: 13px; opacity: 0; pointer-events: none; }
+.mt-tr:hover .mt-tr__play, .mt-tr:focus-visible .mt-tr__play { opacity: 1; pointer-events: auto; }
+.mt-tr:hover .mt-tr__num, .mt-tr:focus-visible .mt-tr__num { visibility: hidden; }
+.mt-tr:not(.mt-tr--head) { cursor: pointer; content-visibility: auto; contain-intrinsic-size: auto 56px; }
 .mt-tr.is-on .mt-tr__num, .mt-tr.is-on .mt-tr__title b { color: var(--mt-gold); }
 .mt-tr__title { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .mt-tr__title img { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
 .mt-tr__title > span { min-width: 0; }
 .mt-tr__title b { display: block; font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mt-tr__title small { display: block; color: var(--mt-text-2); font-size: 13px; margin-top: 2px; }
-.mt-tr__act { display: flex; align-items: center; gap: 2px; opacity: 0.35; }
+.mt-tr__act { display: flex; align-items: center; gap: 2px; opacity: 0.6; }
+/* Remove sits apart from "+", so a slip doesn't take a song away from the team. */
+.mt-iconbtn--remove { margin-left: 10px; }
 .mt-tr:hover .mt-tr__act, .mt-tr__act:focus-within { opacity: 1; }
 
 .mt-iconbtn {
@@ -310,7 +332,8 @@
 /* ---- Now playing ---------------------------------------------------------- */
 .mt-now { grid-area: now; min-height: 0; }
 .mt-now__box { height: 100%; overflow-y: auto; padding: 16px; }
-.mt-now__head { font-weight: 700; font-size: 15px; margin-bottom: 14px; }
+.mt-now__head { display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 15px; margin-bottom: 14px; }
+.mt-now__close { display: none !important; }
 .mt-now__cover, .mt-now__video { width: 100%; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--mt-box-2); display: grid; place-items: center; }
 .mt-now__video { aspect-ratio: auto; min-height: 200px; height: 200px; background: #000; }
 .mt-now__cover img { width: 100%; height: 100%; object-fit: cover; }
@@ -318,7 +341,10 @@
 .mt-now__title { margin-top: 14px; font-size: 20px; font-weight: 800; line-height: 1.25; }
 .mt-now__author { margin-top: 4px; color: var(--mt-text-2); font-size: 14px; }
 .mt-queue { display: flex; flex-direction: column; gap: 2px; }
-.mt-qitem { display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 6px; text-align: left; }
+.mt-qitem { display: flex; align-items: center; gap: 4px; padding: 0 4px 0 0; border-radius: 6px; }
+.mt-qitem__main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 6px; text-align: left; }
+.mt-qitem .mt-more { opacity: 0; }
+.mt-qitem:hover .mt-more, .mt-qitem:focus-within .mt-more { opacity: 1; }
 .mt-qitem:hover { background: var(--mt-hover); }
 .mt-qitem img { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
 .mt-qitem > span { min-width: 0; }
@@ -519,3 +545,148 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
 .mt-missing summary { cursor: pointer; font-weight: 700; color: var(--mt-text); }
 .mt-missing ul { margin: 8px 0 0 18px; list-style: disc; }
 .mt-missing li { margin: 3px 0; }
+
+/* ---- Wave 2: responsiveness, keyboard and feedback ---------------------------- */
+
+/* "Vai al player": shown only when focused from the keyboard. */
+.mt-skip {
+  position: absolute;
+  left: 16px;
+  top: -60px;
+  z-index: 10;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--mt-gold) !important;
+  color: #0a1931 !important;
+}
+.mt-skip:focus { top: 10px; }
+.mt-bar:focus { outline: none; }
+.mt-bar:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: -2px; border-radius: 12px; }
+
+/* The Spotify import still running ("12/34") on the sidebar's Import. */
+.mt-navchip {
+  margin-left: auto;
+  width: auto !important;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11.5px !important;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #0a1931;
+  background: linear-gradient(90deg, #1ed760, #d4b47a);
+}
+
+/* Keyboard focus: one visible ring on cards, rows and list items. */
+.mt-card:focus-visible, .mt-trow__main:focus-visible, .mt-qitem__main:focus-visible, .mt-libitem:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
+}
+.mt-card { position: relative; }
+
+/* "⋯": in rows and cards, shown on hover / focus; always there for the keyboard. */
+.mt-more { flex: none; }
+.mt-trow .mt-more { opacity: 0; }
+.mt-trow:hover .mt-more, .mt-trow:focus-within .mt-more { opacity: 1; }
+.mt-card__more { position: absolute; top: 6px; right: 6px; opacity: 0; transition: opacity 0.15s ease; }
+.mt-card:hover .mt-card__more, .mt-card:focus-within .mt-card__more { opacity: 1; }
+.mt-card__more .mt-iconbtn { color: #fff !important; background: rgba(10, 14, 28, 0.55); box-shadow: var(--gl-rim); }
+
+/* Play buttons with a loading ring (status from the player). */
+.mt-play--big, .mt-bar__controls .mt-play { position: relative; }
+.mt-play .mp-busy-ring { color: var(--mt-gold); }
+.mt-bar__controls .mt-play .mp-busy-ring { color: #fff; }
+.mt-play.is-busy { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 0 0 4px rgba(212, 180, 122, 0.25); }
+.mt-loading { display: inline-flex; align-items: center; gap: 6px; }
+
+/* The "+" menu, opened into <body> (outside .mt: its own colours). A solid
+   panel, no blur. */
+.mt-menu--float {
+  position: fixed;
+  right: auto;
+  z-index: 1002;
+  color: #f2f4f8;
+  font-family: "Inter Variable", "Inter", system-ui, sans-serif;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.mt-menu--float .mt-menu__head { color: #a7b0c4; }
+.mt-menu--float button { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: inherit; }
+.mt-menu--float button:hover:not(:disabled), .mt-menu--float button:focus-visible { background: rgba(255, 255, 255, 0.08); outline: none; }
+.mt-menu--float button:disabled { opacity: 0.5; cursor: default; }
+.mt-menu--float .mt-menu__new { justify-content: flex-start; border-top: 1px solid rgba(255, 255, 255, 0.08) !important; color: #d4b47a !important; }
+.mt-menu__name { display: flex; gap: 6px; padding: 6px 4px 2px; border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 4px; }
+.mt-menu__name input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 0 !important;
+  outline: none;
+  color: #f2f4f8 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  font-size: 14px;
+}
+.mt-menu__name input:focus { box-shadow: inset 0 0 0 2px #fff; }
+.mt-menu--float .mt-menu__name button { display: inline-flex; width: auto; justify-content: center; padding: 0 12px; color: #0a1931 !important; }
+.mt-pill--sm { height: 30px; padding: 0 12px; font-size: 12.5px; }
+.mt-menu--float .mt-pill--solid { background: #d4b47a !important; }
+
+/* Errors: the message, Riprova, and YouTube's own search. */
+.mt-err { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 12px 0; font-size: 14px; color: var(--mt-text-2, #a7b0c4); }
+.mt-lib .mt-err { margin: 4px 8px 8px; font-size: 13px; }
+
+/* Search: the suggestion picked with the arrow keys, the spinner. */
+.mt-sugs button.is-active { background: var(--mt-hover); box-shadow: inset 0 0 0 1px var(--mt-line); }
+.mt-search__spin { color: var(--mt-text-2); flex: none; }
+.mt-h2--small { font-size: 16px; color: var(--mt-text-2); margin: 10px 0 4px; }
+
+/* The playlist's name: click it or the pencil to rename, in a text field. */
+.mt-hero__text { min-width: 0; }
+.mt-title { display: flex; align-items: center; gap: 10px; }
+.mt-title__text { cursor: text; border-radius: 6px; }
+.mt-title__text:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; text-decoration-color: rgba(255, 255, 255, 0.45); }
+.mt-title__edit { flex: none; color: rgba(255, 255, 255, 0.85) !important; background: var(--gl-fill) !important; box-shadow: var(--gl-rim); }
+.mt .mt-rename {
+  display: block;
+  width: min(100%, 640px);
+  margin: 6px 0 8px;
+  height: 64px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 0 !important;
+  outline: none;
+  font-size: clamp(26px, 3.5vw, 48px);
+  font-weight: 800;
+  color: #fff !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+.mt-confirm { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* Spotify: ask again for the missing songs. */
+.mt-missing__retry { margin: 10px 0 4px; }
+
+/* Undo after a remove / delete: above the player's own toasts. */
+.mp-toasts.mt-undo { bottom: calc(160px + env(safe-area-inset-bottom)); }
+
+/* Volume (D13): a 24 px hit area around a 4 px track, the knob shown on
+   hover, focus and drag, and a focus ring. */
+.mt input[type="range"].mt-volume {
+  height: 24px;
+  background: transparent !important;
+}
+.mt input[type="range"].mt-volume::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #fff var(--p, 0%), rgba(255, 255, 255, 0.25) var(--p, 0%));
+}
+.mt input[type="range"].mt-volume::-moz-range-track { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.25); }
+.mt input[type="range"].mt-volume::-moz-range-progress { height: 4px; border-radius: 2px; background: #fff; }
+.mt input[type="range"].mt-volume::-webkit-slider-thumb { margin-top: -4px; }
+.mt input[type="range"].mt-volume:focus-visible::-webkit-slider-thumb,
+.mt input[type="range"].mt-volume:active::-webkit-slider-thumb { opacity: 1; }
+.mt input[type="range"].mt-volume:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.55); outline-offset: 2px; border-radius: 12px; }

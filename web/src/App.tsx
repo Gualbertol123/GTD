@@ -21,6 +21,7 @@ import { GlassToggle } from "./components/GlassToggle";
 import { ProjectsProvider } from "./lib/projectsContext";
 import { useLayout } from "./mobile/useLayout";
 import { MusicButton, MusicPlayer } from "./components/MusicPlayer";
+import { music } from "./lib/music";
 import { MusicTab } from "./components/MusicTab";
 import { navigate, useRoute } from "./lib/history";
 
@@ -38,8 +39,8 @@ export default function App() {
   const tab = desktopTab(route.tab, route.sub);
   const setTab = (t: TabId) => navigate({ tab: t });
   useEffect(() => {
-    if (!layout.mobile && (route.tab !== tab || (route.sub && tab !== "projects")))
-      navigate({ tab, sub: tab === "projects" ? route.sub : undefined }, { replace: true });
+    if (!layout.mobile && (route.tab !== tab || (route.sub && tab !== "projects" && tab !== "music")))
+      navigate({ tab, sub: tab === "projects" || tab === "music" ? route.sub : undefined }, { replace: true });
   }, [layout.mobile, route.tab, route.sub, tab]);
   const [mailOpen, setMailOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
@@ -144,6 +145,7 @@ export default function App() {
               <button
                 key={tb.id}
                 onClick={() => setTab(tb.id)}
+                onPointerDown={tb.id === "music" ? music.warm : undefined}
                 className={`px-4 h-9 rounded-full text-[12px] font-semibold tracking-wide transition-colors border ${
                   active
                     ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]"
