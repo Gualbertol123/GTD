@@ -2,8 +2,8 @@ import { useSyncExternalStore } from "react";
 import { supabase } from "./supabaseClient";
 import { genId } from "./constants";
 import { spotifyOwner, spotifyUserToken } from "./spotifyAuth";
-import { likedTracks, readLinkAsUser, songOf, spotifyMe } from "./spotifyLibrary";
-import { fetchRadio, fetchSpotify, fetchYtPlaylist, matchSpotify, mlog, type MusicErrorCode, type SpotifyList, type SpotifySong, type Track } from "./music";
+import { likedTracks, myPlaylists, readLinkAsUser, songOf, spotifyMe } from "./spotifyLibrary";
+import { fetchRadio, fetchSpotify, fetchYtPlaylist, findYtPlaylists, matchSpotify, mlog, playlistIdFrom, type MusicErrorCode, type SpotifyList, type SpotifySong, type Track } from "./music";
 
 // -----------------------------------------------------------------------------
 // The team's music playlists (table music_playlists, migrations 018 and 019).
@@ -1303,6 +1303,116 @@ export function rebase(planned: Track[], before: Track[], now: Track[]): Track[]
       out.push(t);
     }
   }
+  return out;
+}
+
+/**
+ * A source from a pasted link, to link a playlist that has none yet (made by
+ * hand, or imported before migration 022): a Spotify playlist / album link,
+ * or a YouTube / YouTube Music playlist link. Null: not one of those.
+ */
+export function sourceFromLink(link: string, name: string): NewSource | null {
+  const s = link.trim();
+  const sp =
+    s.match(/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(?:embed\/)?(playlist|album)\/([A-Za-z0-9]{22})/) ?? s.match(/^spotify:(playlist|album):([A-Za-z0-9]{22})$/);
+  if (sp) return { kind: sp[1] === "album" ? "spotify-album" : "spotify-playlist", id: sp[2], name };
+  const list = playlistIdFrom(s);
+  if (list && !/^RD/.test(list)) return { kind: "youtube-playlist", id: list, name };
+  return null;
+}
+
+/**
+ * Link a playlist to a source (anyone on the team can): it then syncs from it
+ * (Sincronizza, and once a day). Needs migration 022.
+ */
+export async function setPlaylistSource(id: string, source: NewSource): Promise<WriteResult | { ok: false; error: "migration" }> {
+  const cur = getPlaylist(id);
+  if (!cur) return fail("not-found");
+  if (hasSourceCols === false) return { ok: false, error: "migration" };
+  // Migration 022 there? (one tiny read; a missing column means not yet)
+  const probe = await supabase.from(TABLE).select("source_kind").limit(1);
+  if (probe.error && missingColumn(probe.error)) {
+    hasSourceCols = false;
+    return { ok: false, error: "migration" };
+  }
+  mlog("source-pl link", { id, kind: source.kind, source: source.id });
+  const next: Playlist = { ...cur, source: { ...source, syncedAt: null, auto: true }, updatedAt: Date.now() };
+  return write(id, next, () =>
+    supabase
+      .from(TABLE)
+      .update({ source_kind: source.kind, source_id: source.id, source_name: source.name, source_auto: true, source_synced_at: null })
+      .eq("id", id)
+      .select()
+  );
+}
+
+/** Lower-case, accents and punctuation out: to compare playlist names. */
+export function normListName(s: string): string {
+  return s
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+export interface SourceGuess {
+  playlist: Playlist;
+  source: NewSource;
+  /** Why it is believed: "name" (your Spotify playlist with the same name) or "songs" (a YouTube list sharing most songs). */
+  why: "name" | "songs";
+  /** YouTube: the share of the playlist's songs found in that list (0–1). */
+  overlap?: number;
+}
+
+/**
+ * Working backwards: for team playlists with no source (imported before sync
+ * existed, or made by hand), find where they came from, without re-adding
+ * anything.
+ *   - Signed in to Spotify: one of your own / collaborative Spotify playlists
+ *     with the same name.
+ *   - YouTube: a playlist found by the same title whose songs are mostly the
+ *     same (at least 60% of this playlist's songs are in it) — never a guess
+ *     by name alone.
+ * Nothing is linked here: the caller shows the guesses and links on confirm.
+ */
+export async function findSources(
+  list: Playlist[],
+  opts: { spotify: boolean; signal?: AbortSignal; progress?: (done: number, total: number) => void }
+): Promise<SourceGuess[]> {
+  const todo = list.filter((p) => !p.source && !p.radio && p.tracks.length > 0);
+  const out: SourceGuess[] = [];
+  let mine: { id: string; name: string }[] = [];
+  if (opts.spotify) {
+    try {
+      mine = (await myPlaylists(opts.signal)).filter((x) => x.mine || x.collaborative).map((x) => ({ id: x.id, name: x.name }));
+    } catch (e) {
+      mlog("find sources: spotify playlists failed", { error: String(e) }, "warn");
+    }
+  }
+  let done = 0;
+  for (const p of todo) {
+    if (opts.signal?.aborted) break;
+    const want = normListName(p.name);
+    const sp = want ? mine.find((x) => normListName(x.name) === want) : undefined;
+    if (sp) out.push({ playlist: p, source: { kind: "spotify-playlist", id: sp.id, name: sp.name }, why: "name" });
+    else if (want) {
+      const have = new Set(p.tracks.map((t) => t.id));
+      const found = await findYtPlaylists(p.name, false, { signal: opts.signal });
+      const cands = "lists" in found ? found.lists.filter((l) => normListName(l.title) === want || normListName(l.title).includes(want)).slice(0, 3) : [];
+      let best: { list: string; title: string; overlap: number } | null = null;
+      for (const c of cands) {
+        const full = await fetchYtPlaylist(c.list, { signal: opts.signal });
+        if (!("tracks" in full) || !full.tracks?.length) continue;
+        const hit = p.tracks.filter((t) => full.tracks!.some((x) => x.id === t.id)).length;
+        const overlap = hit / have.size;
+        if (overlap >= 0.6 && (!best || overlap > best.overlap)) best = { list: c.list, title: full.title || c.title, overlap };
+      }
+      if (best) out.push({ playlist: p, source: { kind: "youtube-playlist", id: best.list, name: best.title }, why: "songs", overlap: best.overlap });
+    }
+    opts.progress?.(++done, todo.length);
+  }
+  mlog("find sources", { checked: todo.length, found: out.length, spotify: out.filter((g) => g.why === "name").length });
   return out;
 }
 

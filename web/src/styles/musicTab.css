@@ -826,3 +826,15 @@ p.mt-splogin { gap: 6px; font-size: 13px; }
 /* The player bar's icon buttons (volume) keep their round 34 px shape when
    the bar runs short of room, instead of being squeezed into an oval. */
 .mt-bar .mt-iconbtn { flex-shrink: 0; }
+
+/* Linking a source to a playlist that has none (Sincronizza on old playlists). */
+.mt-linksrc { flex-wrap: wrap; align-items: center; gap: 8px; }
+.mt-linksrc__title { width: 100%; font-size: 13px; }
+.mt-linksrc__sugg { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+.mt-linksrc__row { display: flex; gap: 8px; width: 100%; align-items: center; }
+.mt-linksrc__row .mt-input { flex: 1; min-width: 0; }
+
+/* "Trova le sorgenti" under the library list. */
+.mt-findsrc { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.mt-findsrc__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow: auto; font-size: 12px; }
+.mt-findsrc__row { display: flex; gap: 8px; align-items: center; }

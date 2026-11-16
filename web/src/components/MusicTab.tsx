@@ -53,6 +53,11 @@ import {
   removeFromPlaylist,
   renamePlaylist,
   restorePlaylist,
+  findSources,
+  normListName,
+  setPlaylistSource,
+  sourceFromLink,
+  type SourceGuess,
   spotifySourceOf,
   syncPlaylist,
   usePlaylist,
@@ -99,7 +104,7 @@ import {
   IconVolume,
 } from "./MusicIcons";
 import { beginSpotifyLogin, signOutSpotify, spotifyLoginAvailable, spotifyUserToken, takeReturnLink, useSpotifyAuth } from "../lib/spotifyAuth";
-import { readLinkAsUser, spotifyLinkTarget, spotifyMe, takeLibraryReturn, withSpotifyIds } from "../lib/spotifyLibrary";
+import { myPlaylists, readLinkAsUser, spotifyLinkTarget, spotifyMe, takeLibraryReturn, withSpotifyIds, type SpItem } from "../lib/spotifyLibrary";
 import { SpotifyLibrary } from "./SpotifyLibrary";
 import "../styles/musicTab.css";
 
@@ -261,6 +266,7 @@ export function MusicTab() {
             )}
             {!available && <p className="mt-hint">{t("mt.needMigration")}</p>}
           </div>
+          {available && playlists.some((p) => !p.source && !p.radio && p.tracks.length > 0) && <FindSources playlists={playlists} />}
         </div>
       </aside>
 
@@ -2067,7 +2073,7 @@ function PlaylistPage({ id, go }: { id: string; go: Go }) {
               <small className="mt-radiobadge__note">{t("mt.radioEditNote")}</small>
             </div>
           )}
-          {(p.source || p.radio) && <SyncControls p={p} />}
+          {p.source || p.radio ? <SyncControls p={p} /> : <LinkSource p={p} />}
         </div>
       </div>
       <div className="mt-actions">
@@ -2209,6 +2215,244 @@ function SyncControls({ p }: { p: Playlist }) {
         </span>
       )}
       {src && <small className="mt-radiobadge__note">{t(src.auto ? "sync.editNote" : "sync.detachedNote")}</small>}
+    </div>
+  );
+}
+
+/**
+ * "Trova le sorgenti": working backwards for playlists imported before sync
+ * existed. Finds where each came from (your Spotify playlist of the same
+ * name; a YouTube list sharing most of its songs), shows the matches, and on
+ * one confirmation links them all and syncs them — nothing is re-added.
+ */
+function FindSources({ playlists }: { playlists: Playlist[] }) {
+  const { t } = useT();
+  const auth = useSpotifyAuth();
+  const [phase, setPhase] = useState<"idle" | "finding" | "found" | "linking">("idle");
+  const [prog, setProg] = useState<{ n: number; m: number } | null>(null);
+  const [guesses, setGuesses] = useState<SourceGuess[]>([]);
+  const [skip, setSkip] = useState<Set<string>>(new Set());
+  const ctrl = useRef<AbortController | null>(null);
+  useEffect(() => () => ctrl.current?.abort(), []);
+
+  const find = () => {
+    ctrl.current?.abort();
+    ctrl.current = new AbortController();
+    setPhase("finding");
+    setProg(null);
+    void findSources(playlists, { spotify: auth.status === "in", signal: ctrl.current.signal, progress: (n, m) => setProg({ n, m }) }).then((g) => {
+      setGuesses(g);
+      setSkip(new Set());
+      setPhase("found");
+      if (!g.length) music.toast(t("find.none"));
+    });
+  };
+  const link = async () => {
+    const chosen = guesses.filter((g) => !skip.has(g.playlist.id));
+    setPhase("linking");
+    let ok = 0;
+    for (const g of chosen) {
+      const r = await setPlaylistSource(g.playlist.id, g.source);
+      if (!r.ok) {
+        music.toast(r.error === "migration" ? t("sync.needMigration") : playlistErrorText(t("mt.notSaved"), r.error, t), "error");
+        if (r.error === "migration") break;
+        continue;
+      }
+      ok++;
+      const res = await syncPlaylist(g.playlist.id, { force: true });
+      setLastSync(g.playlist.id, res);
+    }
+    music.toast(t("find.linked", { n: ok }));
+    setGuesses([]);
+    setPhase("idle");
+  };
+
+  if (phase === "idle")
+    return (
+      <div className="mt-findsrc">
+        <button className="mt-pill mt-pill--sm" onClick={find}>
+          <IconSync size={14} /> {t("find.button")}
+        </button>
+        <small className="mt-hint">{t(auth.status === "in" ? "find.hint" : "find.hintNoSpotify")}</small>
+      </div>
+    );
+  if (phase === "finding" || phase === "linking")
+    return (
+      <div className="mt-findsrc" aria-live="polite">
+        <IconSpinner size={14} /> {phase === "finding" ? (prog ? t("find.progress", { n: prog.n, m: prog.m }) : t("find.busy")) : t("find.linking")}
+      </div>
+    );
+  return (
+    <div className="mt-findsrc" role="group" aria-label={t("find.button")}>
+      {guesses.length ? (
+        <>
+          <small className="mt-hint">{t("find.found", { n: guesses.length })}</small>
+          <ul className="mt-findsrc__list">
+            {guesses.map((g) => (
+              <li key={g.playlist.id}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={!skip.has(g.playlist.id)}
+                    onChange={(e) =>
+                      setSkip((s) => {
+                        const n = new Set(s);
+                        if (e.target.checked) n.delete(g.playlist.id);
+                        else n.add(g.playlist.id);
+                        return n;
+                      })
+                    }
+                  />{" "}
+                  <b>{g.playlist.name}</b> → {g.why === "name" ? t("find.fromSpotify") : t("find.fromYoutube", { p: Math.round((g.overlap ?? 0) * 100) })}
+                </label>
+              </li>
+            ))}
+          </ul>
+          <small className="mt-hint">{t("link.note")}</small>
+          <div className="mt-findsrc__row">
+            <button className="mt-pill mt-pill--sm" onClick={() => void link()} disabled={guesses.every((g) => skip.has(g.playlist.id))}>
+              {t("find.go", { n: guesses.filter((g) => !skip.has(g.playlist.id)).length })}
+            </button>
+            <button className="mt-ghost" onClick={() => setPhase("idle")}>
+              {t("link.cancel")}
+            </button>
+          </div>
+        </>
+      ) : (
+        <small className="mt-hint">
+          {t("find.none")}{" "}
+          <button className="mt-link" onClick={() => setPhase("idle")}>
+            OK
+          </button>
+        </small>
+      )}
+    </div>
+  );
+}
+
+const normName = normListName;
+
+/**
+ * A playlist with no source yet (made by hand, or imported before sync
+ * existed): "Sincronizza" links it to a Spotify or YouTube playlist (anyone on
+ * the team can), then syncs it at once and every day. Signed in to Spotify,
+ * your Spotify playlists with the same name are offered first.
+ */
+function LinkSource({ p }: { p: Playlist }) {
+  const { t } = useT();
+  const auth = useSpotifyAuth();
+  const [open, setOpen] = useState(false);
+  const [link, setLink] = useState("");
+  const [bad, setBad] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [sugg, setSugg] = useState<SpItem[] | null>(null);
+  // The source chosen, waiting for the in-app confirmation (the first sync replaces hand-added songs).
+  const [ask, setAsk] = useState<NewSource | null>(null);
+
+  useEffect(() => {
+    if (!open || auth.status !== "in") return;
+    const ctrl = new AbortController();
+    const want = normName(p.name);
+    myPlaylists(ctrl.signal)
+      .then((all) => setSugg(all.filter((x) => (x.mine || x.collaborative) && want && (normName(x.name) === want || normName(x.name).includes(want) || want.includes(normName(x.name)))).slice(0, 4)))
+      .catch(() => setSugg([]));
+    return () => ctrl.abort();
+  }, [open, auth.status, p.name]);
+
+  const linkTo = (src: NewSource | null) => {
+    if (!src) return setBad(true);
+    // The first sync makes it match the source: songs added by hand go. Asked in the page.
+    setAsk(src);
+  };
+  const confirmLink = () => {
+    const src = ask;
+    if (!src) return;
+    setAsk(null);
+    setBusy(true);
+    mlog("link source", { id: p.id, kind: src.kind });
+    void setPlaylistSource(p.id, src).then((r) => {
+      if (!r.ok) {
+        setBusy(false);
+        music.toast(r.error === "migration" ? t("sync.needMigration") : playlistErrorText(t("mt.notSaved"), r.error, t), "error");
+        return;
+      }
+      music.toast(t("link.linked"));
+      void syncPlaylist(p.id, { force: true }).then((res) => {
+        setBusy(false);
+        setOpen(false);
+        setLastSync(p.id, res);
+        const m = syncResultText(res, t);
+        music.toast(m.text, m.error ? "error" : "info");
+      });
+    });
+  };
+
+  if (!open)
+    return (
+      <div className="mt-radiobadge mt-syncbar">
+        <button className="mt-pill mt-pill--sm mt-syncbar__btn" onClick={() => setOpen(true)}>
+          <IconSync size={14} /> {t("sync.button")}
+        </button>
+        <small className="mt-radiobadge__note">{t("link.hint")}</small>
+      </div>
+    );
+  return (
+    <div className="mt-radiobadge mt-syncbar mt-linksrc" role="group" aria-label={t("link.title")}>
+      <b className="mt-linksrc__title">{t("link.title")}</b>
+      {auth.status === "in" && (
+        <div className="mt-linksrc__sugg">
+          {sugg === null ? (
+            <IconSpinner size={14} />
+          ) : sugg.length ? (
+            sugg.map((x) => (
+              <button key={x.id} className="mt-pill mt-pill--sm" disabled={busy} onClick={() => linkTo({ kind: "spotify-playlist", id: x.id, name: x.name })}>
+                {t("link.use", { s: x.name })}
+              </button>
+            ))
+          ) : (
+            <small className="mt-radiobadge__note">{t("link.noMatch")}</small>
+          )}
+        </div>
+      )}
+      <form
+        className="mt-linksrc__row"
+        onSubmit={(e) => {
+          e.preventDefault();
+          linkTo(sourceFromLink(link, p.name));
+        }}
+      >
+        <input
+          className="mt-input"
+          value={link}
+          onChange={(e) => {
+            setLink(e.target.value);
+            setBad(false);
+          }}
+          placeholder={t("link.ph")}
+          aria-label={t("link.ph")}
+          aria-invalid={bad}
+          autoFocus
+        />
+        <button className="mt-pill mt-pill--sm" type="submit" disabled={busy || !link.trim()} aria-busy={busy}>
+          {busy ? <IconSpinner size={14} /> : <IconSync size={14} />} {t("link.go")}
+        </button>
+        <button className="mt-ghost" type="button" onClick={() => setOpen(false)}>
+          {t("link.cancel")}
+        </button>
+      </form>
+      {bad && <small className="mt-radiobadge__note" role="alert">{t("link.bad")}</small>}
+      {ask && (
+        <div className="mt-linksrc__row" role="alertdialog" aria-label={t("link.title")}>
+          <small className="mt-radiobadge__note">{t("link.confirm", { s: ask.name || p.name })}</small>
+          <button className="mt-pill mt-pill--sm" onClick={confirmLink} autoFocus>
+            {t("link.yes")}
+          </button>
+          <button className="mt-ghost" onClick={() => setAsk(null)}>
+            {t("link.cancel")}
+          </button>
+        </div>
+      )}
+      <small className="mt-radiobadge__note">{t("link.note")}</small>
     </div>
   );
 }
