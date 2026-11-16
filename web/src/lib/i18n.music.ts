@@ -3,7 +3,18 @@
 
 type Dict = Record<string, string>;
 
+// New strings from the music fixes live in one small file per area (both
+// languages in each), merged here.
+import { CORE_IT, CORE_EN } from "./i18n.music.core";
+import { TAB_IT, TAB_EN } from "./i18n.music.tab";
+import { MENU_IT, MENU_EN } from "./i18n.music.menu";
+import { PHONE_IT, PHONE_EN } from "./i18n.music.phone";
+
 export const MUSIC_IT: Dict = {
+  ...CORE_IT,
+  ...TAB_IT,
+  ...MENU_IT,
+  ...PHONE_IT,
   "music.title": "Musica",
   "music.mix": "Mix preferiti",
   "music.nothing": "Scegli cosa ascoltare",
@@ -130,6 +141,10 @@ export const MUSIC_IT: Dict = {
 };
 
 export const MUSIC_EN: Dict = {
+  ...CORE_EN,
+  ...TAB_EN,
+  ...MENU_EN,
+  ...PHONE_EN,
   "music.title": "Music",
   "music.mix": "Favourites mix",
   "music.nothing": "Choose something to play",

@@ -246,3 +246,10 @@ export const IconBars = (p: P) => (
     <path d="M18 18v-5" />
   </Svg>
 );
+/** A turning ring (styles/music.css .mi-spin): something is loading. Never a "…" text. */
+export const IconSpinner = (p: P) => (
+  <Svg {...p} className={`mi-spin${p.className ? " " + p.className : ""}`}>
+    <circle cx="12" cy="12" r="9.5" opacity="0.25" />
+    <path d="M12 2.5a9.5 9.5 0 0 1 9.5 9.5" />
+  </Svg>
+);
