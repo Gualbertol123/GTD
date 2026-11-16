@@ -90,7 +90,14 @@ export function AgendaScreen({ board, send }: { board: Board; send: Send }) {
           const iso = toISODate(d);
           const n = (byDay.get(iso) ?? []).filter((tk) => tk.status !== "DONE").length;
           return (
-            <button key={iso} className="m-day" aria-pressed={iso === day} data-today={iso === todayIso} onClick={() => setDay(iso)}>
+            <button
+              key={iso}
+              className="m-day"
+              aria-pressed={iso === day}
+              aria-label={`${d.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" })}${n ? ` · ${t("ux.m.dayDue").replace("{n}", String(n))}` : ""}`}
+              data-today={iso === todayIso}
+              onClick={() => setDay(iso)}
+            >
               {d.toLocaleDateString(loc, { weekday: "narrow" })}
               <b>{d.getDate()}</b>
               <span className="m-day__dots">

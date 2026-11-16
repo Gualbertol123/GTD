@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { IconNote } from "../components/MusicIcons";
 import type { Board, Weekly } from "../lib/types";
 import { WEEKLY_COLUMNS, genId, isArchived } from "../lib/constants";
@@ -10,7 +10,7 @@ import { DailyReflection } from "../components/DailyReflection";
 import { SettingsView } from "../components/SettingsView";
 import { ReportView } from "../components/ReportView";
 import { ProductTreeView } from "../components/ProductTreeView";
-import { Avatar, Sheet } from "./ui";
+import { Avatar, Sheet, useToast } from "./ui";
 import { useInstall } from "../lib/pwa";
 import { music } from "../lib/music";
 import { IconBack, IconChevron, IconClose, IconAuto, IconDesktop, IconDownload, IconMoon, IconSun, IconGear, IconLeaf, IconMail, IconReport, IconTree, IconUser, IconWeekly } from "./icons";
@@ -213,6 +213,7 @@ function WeeklyBucket({
   send: Send;
 }) {
   const { t } = useT();
+  const toast = useToast();
   const [draft, setDraft] = useState("");
   const add = () => {
     const v = draft.trim();
@@ -236,7 +237,11 @@ function WeeklyBucket({
             <button
               className="m-hit"
               aria-label={t("m.delete")}
-              onClick={() => send({ type: "weeklyDelete", column: bucket, id: it.id })}
+              onClick={() => {
+                send({ type: "weeklyDelete", column: bucket, id: it.id });
+                // Undo puts the line back (at the end of the list).
+                toast(t("ux.m.weeklyDeleted"), () => send({ type: "weeklyAdd", column: bucket, item: it }));
+              }}
             >
               <IconClose size={16} />
             </button>
@@ -345,17 +350,51 @@ function InstallRow() {
  * one also turns the Liquid Glass skin on, which is what the phone layout is
  * designed for. Shared with the desktop's ☀ / ☾ / A control on this device.
  */
+// The look as stored and applied now. Every control reads it from here, so the
+// Altro page and the "Tu" sheet always agree, also after a change made
+// elsewhere (desktop toggle, device setting in Auto).
+const lookListeners = new Set<() => void>();
+function notifyLook(): void {
+  lookListeners.forEach((f) => f());
+}
+function readLook() {
+  return { skin: readSkin(), choice: readAppearanceChoice(), blur: readBlur() };
+}
+function useLook() {
+  const [look, setLook] = useState(readLook);
+  useEffect(() => {
+    const sync = () =>
+      setLook((prev) => {
+        const next = readLook();
+        return prev.skin === next.skin && prev.choice === next.choice && prev.blur === next.blur ? prev : next;
+      });
+    lookListeners.add(sync);
+    const mo = new MutationObserver(sync);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-skin", "data-appearance", "data-blur"] });
+    sync();
+    return () => {
+      lookListeners.delete(sync);
+      mo.disconnect();
+    };
+  }, []);
+  return look;
+}
+
 function AppearanceControl() {
   const { t } = useT();
-  const [choice, setChoice] = useState<AppearanceChoice>(() =>
-    readSkin() === "glass" ? readAppearanceChoice() : "light"
-  );
+  const { skin, choice } = useLook();
   const pick = (c: AppearanceChoice) => {
     writeSkin("glass");
     writeAppearance(c);
-    setChoice(c);
+    notifyLook();
   };
   return (
+    <>
+    {skin !== "glass" && (
+      <div className="m-row__hint" style={{ margin: "0 4px 6px" }}>
+        {t("ux.m.pickSwitchesGlass")}
+      </div>
+    )}
     <div className="m-seg" role="group" aria-label={t("skin.appearance")}>
       <button aria-pressed={choice === "dark"} onClick={() => pick("dark")}>
         <IconMoon size={16} /> {t("skin.dark")}
@@ -367,17 +406,19 @@ function AppearanceControl() {
         <IconAuto size={16} /> {t("m.auto")}
       </button>
     </div>
+    </>
   );
 }
 
 /** Glass blur on/off (same as the desktop toggle). */
 function BlurControl() {
   const { t } = useT();
-  const [on, setOn] = useState<boolean>(() => readBlur());
+  const { skin, blur: on } = useLook();
   const pick = (v: boolean) => {
     writeBlur(v);
-    setOn(v);
+    notifyLook();
   };
+  if (skin !== "glass") return null; // blur exists only in the Glass look
   return (
     <div style={{ marginTop: 10 }}>
       <div className="m-row__hint" style={{ margin: "0 4px 6px" }}>{t("skin.blur")}</div>

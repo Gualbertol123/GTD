@@ -41,7 +41,7 @@ function PropRow({
       </span>
       <span className="m-row__end" style={{ flex: 1 }}>
         <span className="m-row__value" style={valueColor ? { color: valueColor } : undefined}>
-          {value}
+          {typeof value === "string" || typeof value === "number" ? <span className="m-row__text">{value}</span> : value}
         </span>
         {onClick && <IconChevron size={16} />}
       </span>
@@ -98,7 +98,12 @@ export function TaskSheet({
   let dueColor: string | undefined;
   if (task.dueDate && due !== null) {
     const rel = due < 0 ? t("m.due.late").replace("{n}", String(-due)) : due === 0 ? t("m.due.today") : due === 1 ? t("m.due.tomorrow") : null;
-    dueText = rel ? `${rel} · ${shortDay(task.dueDate, lang)}` : shortDay(task.dueDate, lang);
+    // With a relative label the weekday adds little; the short date fits the row.
+    const dayMonth = new Date(task.dueDate + "T00:00:00").toLocaleDateString(lang === "it" ? "it-IT" : "en-GB", {
+      day: "numeric",
+      month: "short",
+    });
+    dueText = rel ? `${rel} · ${dayMonth}` : shortDay(task.dueDate, lang);
     if (!done) dueColor = due < 0 ? "var(--m-red)" : due === 0 ? "var(--m-orange)" : undefined;
   }
 
@@ -179,7 +184,7 @@ export function TaskSheet({
                     <Avatar key={o} name={o} />
                   ))}
                 </span>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{owners.join(", ")}</span>
+                <span className="m-row__text">{owners.join(", ")}</span>
               </>
             ) : (
               t("members.unassigned")
@@ -196,7 +201,7 @@ export function TaskSheet({
               project ? (
                 <>
                   <span className="m-chip__dot" style={{ background: tint }} />
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{project.name}</span>
+                  <span className="m-row__text">{project.name}</span>
                   {step && <span className="m-chip m-chip--blue">{t("m.step").replace("{n}", String(step.n)).replace("{total}", String(step.total))}</span>}
                 </>
               ) : (

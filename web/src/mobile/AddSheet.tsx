@@ -14,6 +14,11 @@ import type { Send } from "./actions";
 
 type Picker = "status" | "priority" | "due" | "people" | "project" | null;
 
+// The half-typed title and description outlive the sheet: closing it by
+// mistake (a tap on the dimmed page, a swipe, Back, Escape) keeps the draft
+// for the next time it opens. Creating the task clears it.
+const addDraft = { title: "", desc: "" };
+
 /**
  * New task. Type a title; everything else starts from a sensible default
  * (you, P2, the column, day or project you came from) shown as a row of
@@ -41,8 +46,16 @@ export function AddSheet({
   const { me } = useMe();
   const toast = useToast();
   const { projects, available: projectsOn } = useProjects();
-  const [title, setTitle] = useState("");
-  const [desc, setDesc] = useState("");
+  const [title, setTitleState] = useState(addDraft.title);
+  const [desc, setDescState] = useState(addDraft.desc);
+  const setTitle = (v: string) => {
+    addDraft.title = v;
+    setTitleState(v);
+  };
+  const setDesc = (v: string) => {
+    addDraft.desc = v;
+    setDescState(v);
+  };
   const [priority, setPriority] = useState<Priority>("P2");
   const [status, setStatus] = useState<Status>(initialStatus);
   const [due, setDue] = useState<string | undefined>(initialDue);
@@ -131,16 +144,34 @@ export function AddSheet({
       </div>
 
       <div className="m-tokens">
-        <button className="m-token" data-set={priority !== "P2"} onClick={() => setPicker("priority")}>
+        <button
+          className="m-token"
+          data-set={priority !== "P2"}
+          aria-haspopup="dialog"
+          aria-label={`${t("m.f.priority")}: ${priority}`}
+          onClick={() => setPicker("priority")}
+        >
           <IconFlag size={15} />
           <span className="m-chip__dot" style={{ background: PRIO_VAR[priority] }} />
           <span>{priority}</span>
         </button>
-        <button className="m-token" data-set={!!due} onClick={() => setPicker("due")}>
+        <button
+          className="m-token"
+          data-set={!!due}
+          aria-haspopup="dialog"
+          aria-label={`${t("m.f.due")}: ${due ? dueLabel : t("m.when.none")}`}
+          onClick={() => setPicker("due")}
+        >
           <IconCalendar size={15} />
           <span>{dueLabel}</span>
         </button>
-        <button className="m-token" data-set={named.length > 0} onClick={() => setPicker("people")}>
+        <button
+          className="m-token"
+          data-set={named.length > 0}
+          aria-haspopup="dialog"
+          aria-label={`${t("m.f.people")}: ${named.length ? named.join(", ") : t("members.unassigned")}`}
+          onClick={() => setPicker("people")}
+        >
           {named.length ? (
             <span className="m-avatars">
               {named.slice(0, 3).map((o) => (
@@ -152,13 +183,25 @@ export function AddSheet({
           )}
           <span>{named.length ? named.join(", ") : t("members.unassigned")}</span>
         </button>
-        <button className="m-token" data-set={status !== "NEXT"} onClick={() => setPicker("status")}>
+        <button
+          className="m-token"
+          data-set={status !== "NEXT"}
+          aria-haspopup="dialog"
+          aria-label={`${t("m.f.status")}: ${t(`m.status.${status}`)}`}
+          onClick={() => setPicker("status")}
+        >
           <IconStatus size={15} />
           <span className="m-chip__dot" style={{ background: STATUS_VAR[status] }} />
           <span>{t(`m.status.${status}`)}</span>
         </button>
         {projectsOn && projects.length > 0 && (
-          <button className="m-token" data-set={!!project} onClick={() => setPicker("project")}>
+          <button
+            className="m-token"
+            data-set={!!project}
+            aria-haspopup="dialog"
+            aria-label={`${t("m.f.project")}: ${project ? project.name : t("m.noProject")}`}
+            onClick={() => setPicker("project")}
+          >
             <IconFolder size={15} />
             {project && <span className="m-chip__dot" style={{ background: projectColor(project) }} />}
             <span>{project ? project.name : t("m.f.project")}</span>

@@ -7,7 +7,9 @@ import { readPref, writePref } from "../lib/prefs";
 // layout on a tablet, or try the mobile one in a narrow desktop window.
 export type LayoutChoice = "auto" | "mobile" | "desktop";
 
-const PHONE_QUERY = "(max-width: 767px)";
+// A phone turned sideways is wider than 767 px but short and touch-driven:
+// it stays on the phone layout. Tablets are taller, desktops have a mouse.
+const PHONE_QUERY = "(max-width: 767px), (max-height: 500px) and (pointer: coarse)";
 
 function readChoice(): LayoutChoice {
   const v = readPref("layout");

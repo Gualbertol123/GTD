@@ -107,7 +107,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
       <div className="m-card__meta">
         <span className={HEALTH_CHIP[s.health]}>{t(`projects.health.${s.health}`)}</span>
         {p.targetDate && <span className="m-chip">→ {shortDay(p.targetDate, lang)}</span>}
-        <span className="m-chip">{t("m.openTasks").replace("{n}", String(open))}</span>
+        <span className="m-chip">{open === 1 ? t("ux.m.openTask1") : t("m.openTasks").replace("{n}", String(open))}</span>
         {s.overdueTasks > 0 && (
           <span className="m-chip m-chip--red">{t("m.lateTasks").replace("{n}", String(s.overdueTasks))}</span>
         )}

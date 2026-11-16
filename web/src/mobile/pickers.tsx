@@ -72,7 +72,7 @@ export function PriorityPicker({ value, onPick, onClose }: { value: Priority; on
             key={p}
             left={<span className="m-check" style={{ ["--ring" as string]: PRIO_VAR[p], margin: "0 4px" }} />}
             title={`${p} · ${t(`prio.${p}short`)}`}
-            hint={t(`prio.${p}desc`)}
+            hint={t(`ux.m.prio.${p}`)}
             selected={value === p}
             onClick={() => {
               onPick(p);
@@ -111,7 +111,7 @@ export function DuePicker({
     { k: "m.when.tomorrow", v: inDays(1) },
     { k: "m.when.monday", v: nextMonday() },
     { k: "m.when.week", v: inDays(7) },
-  ];
+  ].filter((o, i, a) => a.findIndex((x) => x.v === o.v) === i); // on a Monday, "Monday" and "in a week" are the same day
   const custom = value && !options.some((o) => o.v === value);
   const pick = (v?: string) => {
     onPick(v);
@@ -220,7 +220,7 @@ export function ProjectPicker({
   const row = ({ p, s }: (typeof rows.ongoing)[number]) => {
     const color = projectColor(p);
     const bits = [
-      t("m.openTasks").replace("{n}", String(s.total - s.done)),
+      (s.total - s.done === 1 ? t("ux.m.openTask1") : t("m.openTasks").replace("{n}", String(s.total - s.done))),
       p.targetDate ? `→ ${shortDay(p.targetDate, lang)}` : null,
       s.health !== "noDate" && s.health !== "done" ? t(`projects.health.${s.health}`) : null,
     ].filter(Boolean);

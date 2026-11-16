@@ -137,6 +137,12 @@ html[data-layout="mobile"] body {
 html[data-layout="mobile"] body {
   background: transparent !important;
 }
+/* Keyboard focus scrolled into view must clear the sticky header and the
+   floating tab bar. */
+html[data-layout="mobile"] {
+  scroll-padding-top: calc(env(safe-area-inset-top) + 70px);
+  scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
 .m-wall {
   position: fixed;
   inset: 0;
@@ -270,8 +276,8 @@ html[data-layout="mobile"] body {
   flex-shrink: 0;
 }
 .m-iconbtn {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -742,7 +748,7 @@ html[data-typing] .m-dock {
 .m-pills::-webkit-scrollbar { display: none; }
 .m-pill {
   flex-shrink: 0;
-  height: 36px;
+  height: 40px;
   padding: 0 14px;
   border-radius: 18px;
   font-size: 14px;
@@ -785,7 +791,7 @@ html[data-typing] .m-dock {
 }
 .m-seg button {
   flex: 1;
-  min-height: 34px;
+  min-height: 40px;
   border-radius: 11px;
   font-size: 13.5px;
   font-weight: 600;
@@ -880,6 +886,13 @@ html[data-typing] .m-dock {
   font-size: 15px;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+}
+.m-sheet:focus { outline: none; }
+.m-row__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 .m-sheet--full { height: calc(var(--m-vvh, 100dvh) - env(safe-area-inset-top) - 30px); }
 .m-sheet__tint {
@@ -1132,7 +1145,7 @@ html[data-typing] .m-dock {
   position: fixed;
   left: 14px;
   right: 14px;
-  bottom: calc(84px + env(safe-area-inset-bottom));
+  bottom: calc(84px + env(safe-area-inset-bottom) + var(--m-kb, 0px));
   z-index: 70;
   display: flex;
   align-items: center;
@@ -1148,6 +1161,8 @@ html[data-typing] .m-dock {
   box-shadow: var(--m-lift-lg), inset 0 1px 0 0 var(--m-chrome-rim), inset 0 0 0 1px var(--m-rim);
   animation: m-rise-sm 0.24s ease;
 }
+/* Over an open sheet there is no tab bar: sit low, above the keyboard if up. */
+html[data-sheet] .m-toast { bottom: calc(12px + env(safe-area-inset-bottom) + var(--m-kb, 0px)); }
 .m-toast span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .m-toast button {
   color: var(--m-accent);

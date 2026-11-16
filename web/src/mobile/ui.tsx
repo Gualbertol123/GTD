@@ -154,20 +154,71 @@ export function Sheet({
   const drag = useRef<{ y0: number; dy: number } | null>(null);
   const close = useRef(onClose);
   close.current = onClose;
-  useBackClose(onClose); // the browser's / phone's Back closes the top sheet
+  // Fields inside a sheet save on blur, and React fires no blur when the sheet
+  // unmounts: blur the focused field first, so its change is sent before it goes.
+  const closeSafely = useRef(() => {
+    const a = document.activeElement;
+    if (a instanceof HTMLElement && ref.current?.contains(a)) a.blur();
+    close.current();
+  }).current;
+  useBackClose(closeSafely); // the browser's / phone's Back closes the top sheet
 
   useEffect(() => {
     const id = ++sheetSeq;
-    if (sheetStack.length === 0) lockScroll();
+    const opener = document.activeElement;
+    if (sheetStack.length === 0) {
+      lockScroll();
+      // The page behind is out of reach for keyboard and screen reader while
+      // a sheet is open (sheets and the toast live outside .m-app).
+      document.querySelector(".m-app")?.setAttribute("inert", "");
+      document.documentElement.setAttribute("data-sheet", "");
+    }
     sheetStack.push(id);
+    // Move focus into the sheet, unless something inside already took it.
+    if (ref.current && !ref.current.contains(document.activeElement)) ref.current.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && sheetStack[sheetStack.length - 1] === id) close.current();
+      if (sheetStack[sheetStack.length - 1] !== id) return;
+      if (e.key === "Escape") closeSafely();
+      else if (e.key === "Tab" && ref.current) {
+        // Keep Tab inside the top sheet.
+        const items = Array.from(
+          ref.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+        if (items.length === 0) {
+          e.preventDefault();
+          ref.current.focus();
+          return;
+        }
+        const first = items[0];
+        const last = items[items.length - 1];
+        const a = document.activeElement;
+        const inside = a instanceof Node && ref.current.contains(a);
+        if (e.shiftKey && (a === first || a === ref.current || !inside)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (a === last || !inside)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
       sheetStack.splice(sheetStack.indexOf(id), 1);
-      if (sheetStack.length === 0) unlockScroll();
+      if (sheetStack.length === 0) {
+        unlockScroll();
+        document.querySelector(".m-app")?.removeAttribute("inert");
+        document.documentElement.removeAttribute("data-sheet");
+      }
+      // Give focus back to what opened the sheet, if it is still there.
+      if (opener instanceof HTMLElement && opener.isConnected && opener !== document.body) {
+        const restore = () => opener.focus({ preventScroll: true });
+        if (sheetStack.length === 0) restore();
+        else setTimeout(restore, 0);
+      }
     };
   }, []);
 
@@ -189,7 +240,7 @@ export function Sheet({
     ref.current.style.transition = "transform 0.22s ease";
     if (dy > 110) {
       ref.current.style.transform = "translateY(105%)";
-      setTimeout(() => close.current(), 180);
+      setTimeout(closeSafely, 180);
     } else {
       ref.current.style.transform = "";
     }
@@ -198,8 +249,15 @@ export function Sheet({
 
   return createPortal(
     <>
-      <div className="m-backdrop" onClick={onClose} />
-      <div ref={ref} className={`m-sheet${full ? " m-sheet--full" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
+      <div className="m-backdrop" onClick={closeSafely} />
+      <div
+        ref={ref}
+        className={`m-sheet${full ? " m-sheet--full" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
+      >
         {tint && <div className="m-sheet__tint" style={{ ["--tint" as string]: tint }} />}
         <div className="m-sheet__grab" {...handlers} />
         <div className="m-sheet__head" {...handlers}>
@@ -207,7 +265,7 @@ export function Sheet({
           {title && <h3 className={headEnd ? "m-sheet__title--start" : undefined}>{title}</h3>}
           <span className="m-spacer" />
           {headEnd}
-          <button className="m-iconbtn" onClick={onClose} aria-label={t("m.close")}>
+          <button className="m-iconbtn" onClick={closeSafely} aria-label={t("m.close")}>
             <IconClose size={18} />
           </button>
         </div>
@@ -271,10 +329,19 @@ export function useToast() {
 // ---- Progress ring -----------------------------------------------------------
 
 export function Ring({ share, color, size = 44 }: { share: number; color: string; size?: number }) {
+  const { t } = useT();
   const r = (size - 6) / 2;
   const c = 2 * Math.PI * r;
+  const pct = Math.round(share * 100);
   return (
-    <svg className="m-ring" width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+    <svg
+      className="m-ring"
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      role="img"
+      aria-label={t("ux.m.pctDone").replace("{n}", String(pct))}
+    >
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--m-fill-2)" strokeWidth={5} />
       <circle
         cx={size / 2}
@@ -292,11 +359,14 @@ export function Ring({ share, color, size = 44 }: { share: number; color: string
         y="50%"
         dominantBaseline="central"
         textAnchor="middle"
-        fontSize={size * 0.26}
+        fontSize={size * (pct >= 100 ? 0.23 : 0.26)}
         fontWeight={700}
         fill="var(--m-text)"
       >
-        {Math.round(share * 100)}
+        {pct}
+        <tspan fontSize={size * 0.15} fontWeight={600}>
+          %
+        </tspan>
       </text>
     </svg>
   );

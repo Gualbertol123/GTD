@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import type { Task } from "../lib/types";
 import { useT } from "../lib/i18n";
 import { useProjects } from "../lib/projectsContext";
@@ -99,6 +99,7 @@ export function TaskCard({
     setX(0, true);
   };
 
+  const metaId = useId();
   const waiting = task.status === "WAITING" && task.waitingSince ? daysSince(task.waitingSince) : null;
 
   return (
@@ -118,6 +119,8 @@ export function TaskCard({
         className={`m-card${done ? " m-card--done" : ""}${swipe ? "" : " m-card--noswipe"}`}
         role="button"
         tabIndex={0}
+        aria-label={task.title || t("m.untitled")}
+        aria-describedby={task.desc ? `${metaId}-d ${metaId}` : metaId}
         onClick={() => !swallowClick.current && onOpen()}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen())}
         onPointerDown={onPointerDown}
@@ -129,7 +132,7 @@ export function TaskCard({
           className="m-hit m-hit--check"
           role="checkbox"
           aria-checked={done}
-          aria-label={`${done ? t("m.reopen") : t("m.markDone")} · ${task.priority}`}
+          aria-label={`${done ? t("m.reopen") : t("m.markDoneLong")}: ${task.title || t("m.untitled")}`}
           onClick={(e) => {
             e.stopPropagation();
             onToggleDone();
@@ -142,8 +145,8 @@ export function TaskCard({
         </button>
         <div className="m-card__body">
           <div className="m-card__title">{task.title || t("m.untitled")}</div>
-          {task.desc && <div className="m-card__desc">{task.desc}</div>}
-          <div className="m-card__meta">
+          {task.desc && <div className="m-card__desc" id={`${metaId}-d`}>{task.desc}</div>}
+          <div className="m-card__meta" id={metaId}>
             {showStatus && (
               <span className="m-chip" style={{ ["--c" as string]: STATUS_VAR[task.status] }}>
                 {t(`m.status.${task.status}`)}
