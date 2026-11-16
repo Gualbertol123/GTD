@@ -1,0 +1,283 @@
+#!/usr/bin/env node
+// -----------------------------------------------------------------------------
+// End-to-end check of "La mia libreria Spotify" (Playwright, Chromium, a
+// production build). Nothing real is called: Supabase, the Netlify music
+// functions and YouTube come from the perf harness mocks
+// (scripts/perf/lib/mocks.mjs); accounts.spotify.com, api.spotify.com and
+// sdk.scdn.co are answered here, and a fake Spotify token is put in
+// sessionStorage as if the person had signed in.
+//
+//   node scripts/e2e/spotify-library.mjs              build, serve, check
+//   node scripts/e2e/spotify-library.mjs --no-build   reuse the last build
+//   node scripts/e2e/spotify-library.mjs --out DIR    build into DIR
+//
+// It checks: the library opens on "Le mie playlist" with every page of
+// /me/playlists; a playlist that is not yours shows the details-only note;
+// your own playlist lists its songs, "Importa nella libreria del team" runs
+// the two-step job (its page shows no Spotify cover art and an empty link
+// field), and the team playlist saved to Supabase (the mocked upsert body) has
+// every song's Spotify id in `spotify`; "Indietro" on an item opened from a
+// link goes to its section, never out of the app. Exits 1 on any failure.
+// -----------------------------------------------------------------------------
+
+import { createRequire } from "node:module";
+import { spawn, execSync } from "node:child_process";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createServer } from "node:net";
+import { tmpdir } from "node:os";
+import { installMocks, cat } from "../perf/lib/mocks.mjs";
+
+const require = createRequire(import.meta.url);
+const { chromium } = require("playwright");
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const WEB = join(HERE, "..", "..");
+const args = process.argv.slice(2);
+const noBuild = args.includes("--no-build");
+const OUT = args.includes("--out") ? args[args.indexOf("--out") + 1] : join(process.env.TMPDIR || tmpdir(), "splib-e2e-dist");
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// ---- The fake Spotify library -----------------------------------------------------------
+
+const id22 = (s) => (cat.vid("sp22:" + s) + cat.vid("sp22b:" + s)).replace(/[^A-Za-z0-9]/g, "a").slice(0, 22);
+const ME = "me-user";
+const MY_LIST = id22("mylist");
+const OTHER_LIST = id22("editorial");
+const SONGS = Array.from({ length: 12 }, (_, i) => ({
+  id: id22("song" + i),
+  name: `Canzone di prova ${i + 1}`,
+  duration_ms: 180000 + i * 1000,
+  artists: [{ name: `Artista ${i % 3}` }],
+  album: { name: "Album finto", images: [{ url: "https://i.scdn.co/image/cover" + i, width: 300 }] },
+  type: "track",
+  external_urls: { spotify: `https://open.spotify.com/track/${id22("song" + i)}` },
+}));
+const PLAYLISTS = Array.from({ length: 63 }, (_, i) => {
+  const id = i === 0 ? MY_LIST : i === 1 ? OTHER_LIST : id22("pl" + i);
+  const mine = i !== 1;
+  return {
+    id,
+    name: i === 0 ? "Viaggio Spotify" : i === 1 ? "Hit editoriali" : `Playlist ${i}`,
+    owner: mine ? { id: ME, display_name: "Io" } : { id: "spotify", display_name: "Spotify" },
+    collaborative: false,
+    images: [{ url: `https://i.scdn.co/image/pl${i}`, width: 300 }],
+    external_urls: { spotify: `https://open.spotify.com/playlist/${id}` },
+    items: { total: i === 0 ? SONGS.length : 20 },
+  };
+});
+const apiCalls = [];
+
+function page(url, all) {
+  const limit = Math.min(50, Number(url.searchParams.get("limit") ?? 20));
+  const offset = Number(url.searchParams.get("offset") ?? 0);
+  const items = all.slice(offset, offset + limit);
+  const next =
+    offset + items.length < all.length
+      ? `${url.origin}${url.pathname}?${new URLSearchParams({ ...Object.fromEntries(url.searchParams), offset: String(offset + items.length), limit: String(limit) })}`
+      : null;
+  return { items, next, total: all.length, limit, offset };
+}
+
+function answerSpotify(url) {
+  const u = new URL(url);
+  const p = u.pathname.replace(/^\/v1/, "");
+  apiCalls.push(p + u.search);
+  if (p === "/me") return { id: ME, display_name: "Io" };
+  if (p === "/me/playlists") return page(u, PLAYLISTS);
+  if (p === `/playlists/${MY_LIST}`) {
+    const { items, ...meta } = PLAYLISTS[0];
+    return { ...meta, items: { total: items.total } };
+  }
+  if (p === `/playlists/${OTHER_LIST}`) {
+    // Details only: Spotify gives a playlist you neither own nor collaborate on no items.
+    const { items: _i, ...meta } = PLAYLISTS[1];
+    return meta;
+  }
+  if (p === `/playlists/${MY_LIST}/items`) return page(u, SONGS.map((s) => ({ is_local: false, item: s })));
+  if (p === "/me/tracks") return page(u, SONGS.map((s) => ({ track: s })));
+  return null;
+}
+
+// ---- Build + preview ---------------------------------------------------------------------
+
+function portFree(port) {
+  return new Promise((res) => {
+    const srv = createServer();
+    srv.once("error", () => res(false));
+    srv.listen({ port, host: "localhost" }, () => srv.close(() => res(true)));
+  });
+}
+
+async function main() {
+  if (!noBuild) {
+    console.error("[splib-e2e] building →", OUT);
+    execSync(`npx vite build --minify false --outDir "${OUT}" --emptyOutDir`, {
+      cwd: WEB,
+      stdio: ["ignore", "ignore", "inherit"],
+      env: { ...process.env, VITE_SUPABASE_URL: "http://supabase.mock", VITE_SUPABASE_ANON_KEY: "anon", VITE_TEAM_EMAIL: "team@example.com", VITE_SPOTIFY_CLIENT_ID: "e2e-client-id" },
+    });
+  }
+  let PORT = 4201;
+  for (; PORT < 4230; PORT++) if (await portFree(PORT)) break;
+  const BASE = `http://localhost:${PORT}`;
+  const preview = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort", "--outDir", OUT], { cwd: WEB, detached: true, stdio: ["ignore", "pipe", "pipe"] });
+  const stop = () => {
+    try {
+      process.kill(-preview.pid, "SIGTERM");
+    } catch {}
+  };
+  const fails = [];
+  const check = (ok, what) => {
+    console.error(`${ok ? "PASS" : "FAIL"} ${what}`);
+    if (!ok) fails.push(what);
+  };
+  let browser;
+  try {
+    for (let i = 0; i < 100; i++) {
+      try {
+        if ((await fetch(BASE + "/")).ok) break;
+      } catch {}
+      await sleep(200);
+    }
+    browser = await chromium.launch();
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: "block", locale: "it-IT" });
+    await installMocks(context, { origin: BASE });
+    // Signed in with Spotify (this tab's token), as after "Accedi con Spotify".
+    await context.addInitScript(
+      `try { sessionStorage.setItem("gtd-spotify-token", ${JSON.stringify(JSON.stringify({ access: "fake-access", refresh: "fake-refresh", exp: Date.now() + 3600_000 }))}); } catch (e) {}`
+    );
+    // Registered after installMocks: these win over its catch-all.
+    await context.route("https://api.spotify.com/**", async (route) => {
+      const req = route.request();
+      if (req.headers()["authorization"] !== "Bearer fake-access") return route.fulfill({ status: 401, body: "{}" });
+      const body = answerSpotify(req.url());
+      await sleep(40);
+      await route.fulfill(body ? { status: 200, contentType: "application/json", body: JSON.stringify(body) } : { status: 404, contentType: "application/json", body: '{"error":{"status":404}}' });
+    });
+    await context.route("https://accounts.spotify.com/**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ access_token: "fake-access", expires_in: 3600 }) }));
+    await context.route("https://sdk.scdn.co/**", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/javascript",
+        body: "window.Spotify={Player:class{constructor(){}connect(){return Promise.resolve(true)}addListener(){return true}removeListener(){}disconnect(){}activateElement(){return Promise.resolve()}}};window.onSpotifyWebPlaybackSDKReady&&window.onSpotifyWebPlaybackSDKReady();",
+      })
+    );
+    await context.route("https://i.scdn.co/**", (route) =>
+      route.fulfill({ status: 200, contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQAY3Y2wAAAAAElFTkSuQmCC", "base64") })
+    );
+    // The team playlist written to Supabase: capture the upsert body.
+    const upserts = [];
+    await context.route(/^http:\/\/supabase\.mock\/rest\/v1\/music_playlists/, async (route) => {
+      const req = route.request();
+      if (req.method() === "POST") {
+        try {
+          upserts.push(JSON.parse(req.postData() || "null"));
+        } catch {}
+      }
+      await route.fallback();
+    });
+
+    const page_ = await context.newPage();
+    const errors = [];
+    page_.on("pageerror", (e) => errors.push(String(e.message || e)));
+    await page_.goto(BASE + "/#/board");
+    await page_.getByRole("button", { name: /^(MUSICA|MUSIC)$/ }).first().waitFor({ timeout: 20000 });
+    await page_.getByRole("button", { name: /^(MUSICA|MUSIC)$/ }).first().click();
+    await page_.locator(".mt").waitFor({ timeout: 10000 });
+
+    // 1. The sidebar entry opens the library on "Le mie playlist": every page of /me/playlists.
+    await page_.locator(".mt-side").getByRole("button", { name: /Libreria Spotify/ }).click();
+    await page_.locator(".spl-card").first().waitFor({ timeout: 10000 });
+    await page_.waitForFunction((n) => document.querySelectorAll(".spl-card").length === n, PLAYLISTS.length, { timeout: 5000 }).catch(() => {});
+    check((await page_.locator(".spl-card").count()) === PLAYLISTS.length, `all ${PLAYLISTS.length} playlists listed (2 pages of 50)`);
+    check(apiCalls.filter((c) => c.startsWith("/me/playlists")).length === 2, "/me/playlists paged with next");
+    check((await page_.locator(".spl-card").first().locator(".spl-from").count()) === 1, "every card says “da Spotify”");
+    check((await page_.locator('.spl-card a[href^="https://open.spotify.com/playlist/"]').count()) === PLAYLISTS.length, "every card links back to Spotify");
+    check(/#\/music\/splib/.test(page_.url()), "the address is #/music/splib");
+
+    // 2. Someone else's playlist: details only, with the paste method offered.
+    await page_.getByRole("button", { name: "Apri Hit editoriali" }).click();
+    await page_.locator(".spl-meta").waitFor({ timeout: 8000 });
+    check(await page_.locator(".spl-meta").isVisible(), "a playlist that is not yours shows the details-only note");
+    check((await page_.getByRole("button", { name: /Incolla i brani/ }).count()) === 1, "…and offers the paste method");
+    await page_.goBack();
+    await page_.locator(".spl-card").first().waitFor({ timeout: 8000 });
+
+    // 3. Your own playlist: its songs, then the import.
+    await page_.getByRole("button", { name: "Apri Viaggio Spotify" }).click();
+    await page_.locator(".spl-row").first().waitFor({ timeout: 8000 });
+    check((await page_.locator(".spl-row").count()) === SONGS.length, `the playlist lists its ${SONGS.length} songs`);
+    check((await page_.locator('.spl-row a[href^="https://open.spotify.com/track/"]').count()) === SONGS.length, "every song links back to Spotify");
+    const t0 = Date.now();
+    await page_.getByRole("button", { name: /Importa nella libreria del team/ }).click();
+    await page_.locator(".mt-progress, .mt-actions").first().waitFor({ timeout: 2000 });
+    check(Date.now() - t0 < 1500, "the import shows its page at once");
+    check(/#\/music\/spotify/.test(page_.url()), "the import runs on the Importa da Spotify page (its job store)");
+    await page_.getByRole("button", { name: /Salva nella libreria del team/ }).waitFor({ timeout: 20000 });
+    const title = (await page_.locator(".mt-hero .mt-title__text").textContent())?.trim();
+    check(title === "Viaggio Spotify", `the name is the list's (“${title}”)`);
+    check((await page_.locator('.mt-hero--spotify img[src*="i.scdn.co"]').count()) === 0, "the import page shows no Spotify cover art");
+    check((await page_.locator(".mt-search--static input").inputValue()) === "", "the link field is empty (a submit cannot replace the job)");
+    await page_.getByRole("button", { name: /Salva nella libreria del team/ }).click();
+    for (let i = 0; i < 80 && !upserts.length; i++) await sleep(100);
+    check(/playlist/.test(decodeURIComponent(page_.url())), "saving opens the new team playlist");
+    const row = upserts.flat().find((r) => r && r.name === "Viaggio Spotify");
+    check(!!row, "the team playlist was upserted to Supabase");
+    if (row) {
+      // The mock matches every song but each 7th (index 6): 11 of 12.
+      const want = SONGS.filter((_, i) => i % 7 !== 6).map((s) => s.id);
+      check(row.tracks.length === want.length, `${want.length} songs saved (${row.tracks.length})`);
+      check(
+        row.tracks.every((t, i) => t.spotify === want[i]),
+        "every saved song carries its Spotify track id in `spotify`"
+      );
+      check(row.tracks.every((t) => typeof t.id === "string" && t.id.length === 11), "…and its YouTube id in `id`");
+    }
+
+    // 4. One song: "+" finds it on YouTube, then the tab's "+" menu makes a team playlist with it.
+    await page_.locator(".mt-side").getByRole("button", { name: /Libreria Spotify/ }).click();
+    await page_.getByRole("tab", { name: "Brani che ti piacciono" }).click();
+    await page_.locator(".spl-row").first().waitFor({ timeout: 8000 });
+    const before = upserts.length;
+    const plus = page_.locator(".spl-row").nth(1).getByRole("button", { name: "Aggiungi a playlist" });
+    const t1 = Date.now();
+    await plus.click();
+    const fb = await page_
+      .waitForFunction(() => !!document.querySelector('.spl-row:nth-child(2) [aria-busy="true"], .mt-menu--float'), null, { timeout: 1000 })
+      .then(() => Date.now() - t1)
+      .catch(() => 9999);
+    check(fb < 300, `"+" answers at once (spinner or menu in ${fb} ms)`);
+    await page_.locator(".mt-menu--float").waitFor({ timeout: 8000 });
+    await page_.locator(".mt-menu--float").getByRole("menuitem", { name: /Crea playlist/ }).click();
+    await page_.locator(".mt-menu--float input").fill("Singolo da Spotify");
+    await page_.locator(".mt-menu--float").getByRole("button", { name: "Crea" }).click();
+    for (let i = 0; i < 80 && upserts.length === before; i++) await sleep(100);
+    const one = upserts.slice(before).flat().find((r) => r && r.name === "Singolo da Spotify");
+    check(!!one && one.tracks.length === 1 && one.tracks[0].spotify === SONGS[1].id, "a single song added with “+” keeps its Spotify id");
+
+    // 5. An item reached from a link: "Indietro" goes to its section, inside the app.
+    await page_.goto(BASE + "/#/board");
+    await page_.goto(BASE + `/#/music/splib/playlists/playlist/${MY_LIST}`);
+    await page_.locator(".spl-row").first().waitFor({ timeout: 10000 });
+    check((await page_.locator(".spl-row img").count()) === 0, "song rows (with their “+”) show no Spotify cover art");
+    await page_.getByRole("button", { name: "Indietro" }).click();
+    await page_.locator(".spl-card").first().waitFor({ timeout: 8000 });
+    check(/#\/music\/splib\/playlists$/.test(decodeURIComponent(page_.url())), `"Indietro" from a link opens the section (${page_.url()})`);
+
+    check(errors.length === 0, `no page errors${errors.length ? ": " + errors.join(" | ") : ""}`);
+  } catch (e) {
+    fails.push(String(e?.stack || e));
+    console.error(e);
+  } finally {
+    await browser?.close().catch(() => {});
+    stop();
+  }
+  if (fails.length) {
+    console.error(`\n${fails.length} check(s) failed`);
+    process.exit(1);
+  }
+  console.error("\nall checks passed");
+}
+
+main();

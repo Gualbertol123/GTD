@@ -21,9 +21,7 @@ import {
   matchSpotify,
   music,
   parseSpotifyTracks,
-  readSpotifyAsUser,
   readSpotifyTracks,
-  spotifyPlaylistId,
   musicErrorText,
   playlistIdFrom,
   searchMusic,
@@ -59,7 +57,7 @@ import {
   type WriteResult,
 } from "../lib/musicDb";
 import { countryName, isFail, parseView, rowKeys, viewSub, type View } from "../lib/musicTabRoute";
-import { Cover, ModeSwitch, PlayButton, PremiumToggle, Progress, TapHint } from "./MusicPlayer";
+import { Cover, EngineSwitch, ModeSwitch, NowCover, PlayButton, PremiumToggle, Progress, SpotifyCredit, TapHint } from "./MusicPlayer";
 import { HiddenNote, KindBadge, SortBar, sortable, useSortedResults } from "./MusicSearchSort";
 import { openSongMenu, playlistErrorText, songMenuProps, type SongMenuCtx } from "./SongMenu";
 import {
@@ -92,6 +90,8 @@ import {
   IconVolume,
 } from "./MusicIcons";
 import { beginSpotifyLogin, signOutSpotify, spotifyLoginAvailable, spotifyUserToken, takeReturnLink, useSpotifyAuth } from "../lib/spotifyAuth";
+import { readLinkAsUser, spotifyLinkTarget, takeLibraryReturn, withSpotifyIds } from "../lib/spotifyLibrary";
+import { SpotifyLibrary } from "./SpotifyLibrary";
 import "../styles/musicTab.css";
 
 // -----------------------------------------------------------------------------
@@ -118,6 +118,8 @@ type Go = (v: View, opts?: { replace?: boolean }) => void;
 
 // The page you were on, kept while you visit other tabs (until a reload).
 let lastView: View = { kind: "home" };
+/** The section last open in La mia libreria Spotify. */
+let lastSplib: { sec?: Extract<View, { kind: "splib" }>["sec"] } = {};
 
 export function MusicTab() {
   const { t } = useT();
@@ -180,6 +182,16 @@ export function MusicTab() {
   const jobStep = job ? spStep(job) : null;
   const onImport = view.kind === "import" || view.kind === "yt" || view.kind === "spotify";
 
+  // La mia libreria Spotify: the section last open there (the sidebar reopens it),
+  // and back from "Accedi con Spotify" started there (Spotify returns to #/music/spotify).
+  useEffect(() => {
+    if (view.kind === "splib") lastSplib = view.sec ? { sec: view.sec } : {};
+    if (view.kind === "spotify" && takeLibraryReturn()) {
+      mlog("splib: back from sign-in, reopening the library");
+      go({ kind: "splib", ...lastSplib }, { replace: true });
+    }
+  }, [view, go]);
+
   return (
     <div className={`mt${queueOpen ? " is-queue" : ""}`} ref={root}>
       <button className="mt-skip" onClick={() => bar.current?.focus()}>
@@ -201,6 +213,15 @@ export function MusicTab() {
               </span>
             )}
           </button>
+          {spotifyLoginAvailable() && (
+            <button
+              className={`mt-nav${view.kind === "splib" ? " is-on" : ""}`}
+              aria-current={view.kind === "splib" ? "page" : undefined}
+              onClick={() => go({ kind: "splib", ...(view.kind === "splib" ? {} : lastSplib) })}
+            >
+              <IconNote size={22} /> {t("spl.nav")}
+            </button>
+          )}
         </nav>
         <div className="mt-box mt-lib">
           <div className="mt-lib__head">
@@ -239,6 +260,17 @@ export function MusicTab() {
         {view.kind === "search" && <Search initial={view.q} go={go} />}
         {view.kind === "import" && <ImportPage go={go} />}
         {view.kind === "spotify" && <SpotifyPage playlists={playlists} available={available} go={go} />}
+        {view.kind === "splib" && (
+          <SpotifyLibrary
+            view={view}
+            go={go}
+            onAdd={(track, anchor) => openAddMenu({ track, anchor })}
+            onImport={(list, name, url) => {
+              startSpotifyLibraryImport(list, name, url);
+              go({ kind: "spotify" });
+            }}
+          />
+        )}
         {view.kind === "yt" && <YtPlaylistPage key={view.list} list={view.list} playlists={playlists} available={available} go={go} />}
         {view.kind === "martist" && <MusicArtistPage key={view.id} id={view.id} name={view.name} />}
         {view.kind === "artist" && <ArtistPage key={view.name} name={view.name} />}
@@ -506,7 +538,8 @@ function AddMenu({ req }: { req: NonNullable<AddReq> }) {
     const n = name.trim();
     if (!n) return;
     close();
-    const { saved } = createPlaylist(n, me, [{ id: tr.id, title: tr.title, channel: tr.channel, thumb: tr.thumb }]);
+    // createPlaylist keeps id, title, channel, thumb and the Spotify id (musicDb clean).
+    const { saved } = createPlaylist(n, me, [tr]);
     music.toast(t("mt.created", { p: n }));
     reportWrite(saved, t);
   };
@@ -1401,6 +1434,12 @@ interface SpJob {
   unread?: number;
   /** The name typed before saving (else the list's own). */
   name?: string;
+  /**
+   * La mia libreria Spotify: where the list came from (its open.spotify.com
+   * address, or "" for recently played). Kept apart from `url`, which stays ""
+   * so the link field is empty and a submit there cannot replace this job.
+   */
+  source?: string;
 }
 let spJob: SpJob | null = null;
 let spCtrl: AbortController | null = null;
@@ -1436,13 +1475,15 @@ async function startSpotify(input: string): Promise<void> {
   if (ids.length >= 2) return startPasted(input, ids, ctrl);
   if (!isSpotifyLink(input)) return setSp({ url: input, phase: "error", error: "bad-link", list: null, done: 0, matches: [] });
   setSp({ url: input, phase: "reading", error: null, list: null, done: 0, matches: [] });
-  // Signed in with Spotify: the playlist straight from Spotify with the
-  // person's own token (all of it when it is theirs or collaborative).
-  const pid = spotifyPlaylistId(input);
+  // Signed in with Spotify: the playlist / album straight from Spotify with the
+  // person's own token (a playlist all of it when it is theirs or
+  // collaborative), each song keeping its Spotify id (lib/spotifyLibrary).
+  const target = spotifyLinkTarget(input);
   let ownerOnly = false;
-  if (pid && spotifyUserToken()) {
-    const u = await readSpotifyAsUser(pid, { signal: ctrl.signal });
+  if (target && spotifyUserToken()) {
+    const u = await readLinkAsUser(target.kind, target.id, ctrl.signal);
     if (!mine() || !spJob) return;
+    mlog("spotify import: read as the user", { kind: target.kind, result: typeof u === "string" ? u : `${u.songs.length} songs` });
     if (u !== "meta-only" && u !== "fail") return matchList(u, ctrl);
     ownerOnly = u === "meta-only";
   }
@@ -1464,7 +1505,8 @@ async function startPasted(url: string, ids: string[], ctrl: AbortController): P
   setSp({ url, phase: "reading", error: null, list: null, done: 0, matches: [], ids, read: 0 });
   const read = await readSpotifyTracks(ids, (n) => mine() && spJob && setSp({ ...spJob, read: n }), () => !mine(), { signal: ctrl.signal });
   if (!mine() || !spJob) return;
-  const songs = read.filter((s): s is SpotifySong => !!s);
+  // Each song keeps the track id it was read from (Track.spotify after matching).
+  const songs = read.map((s, i) => (s ? { ...s, id: ids[i] } : null)).filter((s): s is SpotifySong & { id: string } => !!s);
   if (!songs.length) return setSp({ ...spJob, phase: "error", error: "unavailable" });
   const list: SpotifyList = { kind: "tracks", id: `t${ids.length}-${ids[0]}`, name: "", owner: "Spotify", cover: "", songs, via: "embed" };
   setSp({ ...spJob, unread: ids.length - songs.length });
@@ -1478,7 +1520,8 @@ async function matchList(list: SpotifyList, ctrl: AbortController): Promise<void
   setSp({ ...spJob, list, phase: "matching", done: 0 });
   const found = await matchSpotify(list.songs, (n) => mine() && spJob && setSp({ ...spJob, done: n }), () => !mine(), { signal: ctrl.signal });
   if (!mine() || !spJob) return;
-  setSp({ ...spJob, matches: found, done: list.songs.length, phase: "done" });
+  // Each match keeps its song's Spotify id (when known), so Spotify mode plays it without searching.
+  setSp({ ...spJob, matches: withSpotifyIds(found, list.songs), done: list.songs.length, phase: "done" });
 }
 
 /** Ask YouTube once more for the songs not found. */
@@ -1501,8 +1544,22 @@ async function retrySpotifyMissing(): Promise<void> {
   );
   if (!mine() || !spJob) return;
   const matches = j.matches.slice();
-  idx.forEach((i, k) => (matches[i] = found[k] ?? null));
+  idx.forEach((i, k) => (matches[i] = withSpotifyIds([found[k] ?? null], [j.list!.songs[i]])[0]));
   setSp({ ...spJob, matches, done: j.list.songs.length, phase: "done" });
+}
+
+/**
+ * "Importa nella libreria del team" from La mia libreria Spotify: the songs are
+ * already read (with their Spotify ids), so the job goes straight to step 2
+ * (finding each on YouTube). `name` is the editable name, with its source.
+ */
+function startSpotifyLibraryImport(list: SpotifyList, name: string, url: string): void {
+  spCtrl?.abort();
+  const ctrl = new AbortController();
+  spCtrl = ctrl;
+  mlog("spotify import: from the library", { name, songs: list.songs.length });
+  setSp({ url: "", source: url, phase: "reading", error: null, list: null, done: 0, matches: [], name });
+  void matchList(list, ctrl);
 }
 
 /** README §1e: how the site admin adds Spotify's free keys. */
@@ -1660,7 +1717,7 @@ function SpotifyPage({ playlists, available, go }: { playlists: Playlist[]; avai
           {t("sp.notFound")}
         </div>
       )}
-      {error && error !== "bad-link" && error !== "not-found" && <ErrorNote code={error} onRetry={() => job && void startSpotify(job.url)} />}
+      {error && error !== "bad-link" && error !== "not-found" && <ErrorNote code={error} onRetry={() => job?.url && void startSpotify(job.url)} />}
       {!job && <p className="mt-hint">{t("sp.how")}</p>}
 
       {phase === "reading" && !pasted && <div className="mt-spin mt-spin--block" />}
@@ -2193,8 +2250,9 @@ const TrackRow = memo(function TrackRow({
 function NowPlaying({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useT();
   // Music only, but YouTube wants a tap: the slot (and so YouTube's frame) shows too.
-  const tap = useMusicSel((s) => s.mode === "audio" && s.needsTap);
-  const video = useMusicSel((s) => s.mode === "video") || tap;
+  // Spotify mode: no video slot at all (YouTube's frame is hidden entirely).
+  const tap = useMusicSel((s) => s.engine === "youtube" && s.mode === "audio" && s.needsTap);
+  const video = useMusicSel((s) => s.engine === "youtube" && s.mode === "video") || tap;
   const now = useMusicSel((s) => s.now);
   const label = useMusicSel((s) => sourceLabel(s.source, t));
   const loading = useMusicSel((s) => s.playing && (s.status === "loading" || s.status === "buffering"));
@@ -2258,7 +2316,7 @@ function NowPlaying({ open, onClose }: { open: boolean; onClose: () => void }) {
           </>
         ) : (
           <div className="mt-now__cover" {...(current ? songMenuProps(current) : {})}>
-            {now ? <Cover id={now.id} big /> : <IconNote size={48} />}
+            {now ? <NowCover big /> : <IconNote size={48} />}
           </div>
         )}
         <div className="mt-now__title">{title || t("music.nothing")}</div>
@@ -2284,6 +2342,7 @@ function NowPlaying({ open, onClose }: { open: boolean; onClose: () => void }) {
           </>
         )}
         <div className="mt-now__fine">
+          <SpotifyCredit />
           <PremiumToggle />
         </div>
       </div>
@@ -2321,7 +2380,7 @@ function PlayerBar({ barRef, queueOpen, onQueue }: { barRef: RefObject<HTMLEleme
   const shuffle = useMusicSel((s) => s.shuffle);
   const repeat = useMusicSel((s) => s.repeat);
   const current = useMemo<Track | null>(() => (now ? { id: now.id, title: now.title, channel: now.author } : null), [now]);
-  const tap = useMusicSel((s) => s.mode === "audio" && s.needsTap);
+  const tap = useMusicSel((s) => s.engine === "youtube" && s.mode === "audio" && s.needsTap);
 
   // "Tocca il video": bring YouTube's frame (on the Now playing slot) into view;
   // in a narrow window that panel is a drawer, so it opens first.
@@ -2337,13 +2396,14 @@ function PlayerBar({ barRef, queueOpen, onQueue }: { barRef: RefObject<HTMLEleme
     <footer className="mt-bar" ref={barRef} tabIndex={-1} aria-label={t("mt.barLabel")}>
       <div className="mt-bar__song" {...(current ? songMenuProps(current, CURRENT_CTX) : {})}>
         {now ? (
-          <Cover id={now.id} className="mt-bar__img" />
+          <NowCover className="mt-bar__img" />
         ) : (
           <span className="mt-bar__ph">{loading ? <IconSpinner size={22} title={t("music.loading")} /> : <IconNote size={22} />}</span>
         )}
         <span>
           <b>{now?.title || label || t("music.nothing")}</b>
           <small>{loading && !now?.author ? t("music.loading") : now?.author}</small>
+          <SpotifyCredit compact />
         </span>
         {current && <AddBtn track={current} />}
         {current && <MoreBtn track={current} ctx={CURRENT_CTX} />}
@@ -2377,6 +2437,7 @@ function PlayerBar({ barRef, queueOpen, onQueue }: { barRef: RefObject<HTMLEleme
           <IconQueue size={18} />
         </button>
         <ModeSwitch />
+        <EngineSwitch />
         <Volume />
       </div>
     </footer>

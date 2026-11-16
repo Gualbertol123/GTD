@@ -15,7 +15,13 @@ export type View =
   | { kind: "yt"; list: string }
   | { kind: "artist"; name: string }
   | { kind: "martist"; id: string; name: string }
-  | { kind: "playlist"; id: string };
+  | { kind: "playlist"; id: string }
+  /** "La mia libreria Spotify" (components/SpotifyLibrary.tsx): a section, and maybe one item opened in it. */
+  | { kind: "splib"; sec?: SpLibSec; open?: { type: "playlist" | "album" | "artist"; id: string } };
+
+export const SPLIB_SECS = ["playlists", "liked", "albums", "artists", "recent", "search"] as const;
+export type SpLibSec = (typeof SPLIB_SECS)[number];
+const SPLIB_OPEN = ["playlist", "album", "artist"] as const;
 
 const enc = encodeURIComponent;
 function dec(s: string): string {
@@ -48,13 +54,15 @@ export function viewSub(v: View): string {
       return `martist/${enc(v.id)}/${enc(v.name)}`;
     case "playlist":
       return `playlist/${enc(v.id)}`;
+    case "splib":
+      return ["splib", v.sec ?? (v.open ? "playlists" : ""), ...(v.open ? [v.open.type, enc(v.open.id)] : [])].filter(Boolean).join("/");
   }
 }
 
 /** The page for a hash sub-route; anything unknown is Home. */
 export function parseView(sub: string | undefined | null): View {
   if (!sub) return { kind: "home" };
-  const [kind, a, b] = sub.split("/");
+  const [kind, a, b, c] = sub.split("/");
   switch (kind) {
     case "search":
       return a ? { kind: "search", q: dec(a) } : { kind: "search" };
@@ -70,6 +78,11 @@ export function parseView(sub: string | undefined | null): View {
       return a ? { kind: "martist", id: dec(a), name: b ? dec(b) : "" } : { kind: "home" };
     case "playlist":
       return a ? { kind: "playlist", id: dec(a) } : { kind: "home" };
+    case "splib": {
+      const sec = (SPLIB_SECS as readonly string[]).includes(a) ? (a as SpLibSec) : undefined;
+      const type = (SPLIB_OPEN as readonly string[]).includes(b) ? (b as (typeof SPLIB_OPEN)[number]) : undefined;
+      return { kind: "splib", ...(sec ? { sec } : {}), ...(sec && type && c ? { open: { type, id: dec(c) } } : {}) };
+    }
     default:
       return { kind: "home" };
   }

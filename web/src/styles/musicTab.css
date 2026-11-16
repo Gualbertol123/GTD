@@ -747,3 +747,65 @@ p.mt-splogin { gap: 6px; font-size: 13px; }
 /* Search results header: the title and the sort control (components/MusicSearchSort.tsx) on one row when they fit. */
 .mt-reshead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 10px 0 8px; }
 .mt-reshead .mt-h2 { margin: 0; }
+
+/* ---- La mia libreria Spotify (components/SpotifyLibrary.tsx) -------------------
+   Same glass as the rest of the tab, no blur of its own (it sits inside the
+   blurred main panel). Spotify's mark is in Spotify green; every item carries
+   a small "da Spotify" label and an "Apri su Spotify" link (Spotify's rules). */
+.spl { --spl-green: #1ed760; --spl-on-mark: #0a1931; }
+.spl-hero { background: linear-gradient(180deg, rgba(30, 215, 96, 0.32), transparent); }
+.spl-hero__mark { display: grid; place-items: center; color: var(--spl-green); background: var(--gl-fill); box-shadow: var(--gl-rim); border-radius: 12px; }
+.spl-hero .mt-hero__img.spl-round { border-radius: 50%; }
+.spl-hero__attr { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; }
+.spl-signin { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-top: 18px; }
+.spl-signin p { margin: 0; color: var(--mt-text-2); }
+.spl-signin .mi, .spl-hero__attr .mi, .spl-from .mi, .spl-attrib .mi { color: var(--spl-green); }
+.spl-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 16px; margin: 12px 0 0; font-size: 13px; }
+.spl-bar .mt-hint { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.spl-bar .mt-link { display: inline; }
+.spl-tabs { margin: 10px 0 16px; }
+.spl-body { min-height: 120px; }
+.spl-loading { display: grid; place-items: center; padding: 40px 0; color: var(--mt-text-2); }
+.spl-from {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mt-text-2);
+  background: var(--gl-fill);
+  box-shadow: var(--gl-rim);
+  white-space: nowrap;
+}
+.spl-open { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.spl-openicon { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; color: var(--mt-text-2) !important; flex: none; }
+.spl-openicon:hover { color: var(--mt-text) !important; }
+.spl-card { display: flex; flex-direction: column; cursor: default; }
+.spl-card__main { display: block; width: 100%; text-align: left; color: inherit; background: none; padding: 0; cursor: pointer; border-radius: 8px; }
+.spl-card__main:focus-visible { outline: 2px solid var(--mt-gold); outline-offset: 4px; }
+.spl-card__img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
+.spl-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 6px; }
+.spl-songs { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
+.spl-row { gap: 8px; }
+.spl-row .mt-trow__main { cursor: default; }
+.spl-row .mt-img40 { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; flex: none; }
+.spl-row__time { width: 44px; text-align: right; font-size: 13px; color: var(--mt-text-2); font-variant-numeric: tabular-nums; flex: none; }
+.spl-more { margin: 4px 0 8px; display: inline-flex; align-items: center; gap: 6px; }
+.spl-import { display: inline-flex; align-items: center; gap: 6px; }
+.spl-meta { padding: 12px 14px; border-radius: 12px; background: var(--gl-fill); box-shadow: var(--gl-rim); }
+@media (max-width: 720px) {
+  .spl-row .spl-from, .spl-row__time { display: none; }
+}
+
+/* La mia libreria Spotify, review fixes: Spotify is credited in words only (no
+   imitation of its mark, so nothing is tinted to look like it), and a list's
+   import sits in its own panel, apart from Spotify's cover art. */
+.spl-hero__mark { color: var(--mt-text-2); }
+.spl-signin .mi, .spl-hero__attr .mi, .spl-from .mi, .spl-attrib .mi { color: inherit; }
+.spl-credit { font-weight: 700; letter-spacing: 0.01em; }
+.spl-importbox { margin: 18px 0 14px; padding: 12px 14px; border-radius: 12px; background: var(--gl-fill); box-shadow: var(--gl-rim); }
+.spl-importbox .mt-actions { margin: 0; }
+.spl-importbox__note { margin: 8px 0 0; font-size: 12.5px; }
