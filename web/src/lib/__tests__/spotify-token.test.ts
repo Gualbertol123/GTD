@@ -85,8 +85,7 @@ vi.mock("../spotifyAuth", async (orig) => {
     ...real,
     refreshSpotifyToken: vi.fn(async () => {
       env.refresh.calls++;
-      sessionStorage.setItem("gtd-spotify-token", JSON.stringify({ access: "new-token", refresh: "r", exp: Date.now() + 3600_000 }));
-      real.forgetSpotifyAuth();
+      await real.__setSpotifyTokenForTests({ access: "new-token", refresh: "r", exp: Date.now() + 3600_000 });
       return "new-token";
     }),
   };
@@ -94,13 +93,14 @@ vi.mock("../spotifyAuth", async (orig) => {
 
 import { __resetMusicForTests, attachPlayer, getMusic, music, type YtLike } from "../music";
 import { __resetSpotifyForTests, freshSpotifyToken, spApi } from "../spotifyPlayer";
-import { forgetSpotifyAuth } from "../spotifyAuth";
+import { __setSpotifyTokenForTests, forgetSpotifyAuth } from "../spotifyAuth";
 
 const auths: string[] = [];
 
+/** Signed in (the person picked on this device; memory only in node: no IndexedDB). */
 function signInHoursAgo(expiresInMs: number) {
-  sessionStorage.setItem("gtd-spotify-token", JSON.stringify({ access: "old-token", refresh: "r", exp: Date.now() + expiresInMs }));
   forgetSpotifyAuth();
+  void __setSpotifyTokenForTests({ access: "old-token", refresh: "r", exp: Date.now() + expiresInMs });
 }
 
 function fakeYt(): YtLike {
@@ -134,6 +134,7 @@ beforeEach(() => {
   __resetSpotifyForTests();
   sessionStorage.clear();
   localStorage.clear();
+  localStorage.setItem("gtd-me", "Tester");
   forgetSpotifyAuth();
   env.tokens.length = 0;
   env.refresh.calls = 0;

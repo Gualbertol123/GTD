@@ -38,6 +38,9 @@ vi.mock("../supabaseClient", () => ({
 import { __resetMusicForTests, attachPlayer, getMusic, music, musicLog, onYtState, spotifyFailed, YT_STATE, type Track, type YtLike } from "../music";
 import {
   __resetSpotifyForTests,
+  checkWhere,
+  spApi,
+  SDK_URL,
   channelArtist,
   cleanTitle,
   guessSong,
@@ -55,7 +58,7 @@ import {
   type SdkState,
   type SdkTrack,
 } from "../spotifyPlayer";
-import { forgetSpotifyAuth } from "../spotifyAuth";
+import { __setSpotifyKeyStoreForTests, __setSpotifyTokenForTests, forgetSpotifyAuth, KEYSTORE_MS, spotifyAuthState, spotifyOwnerChanged } from "../spotifyAuth";
 
 const { order } = env;
 
@@ -76,12 +79,16 @@ class FakeSpotifyPlayer {
   emit(ev: string, a: unknown) {
     this.listeners[ev]?.(a);
   }
+  /** Tests: the SDK's websocket never opens (no "ready"). */
+  static noReady = false;
   connect() {
     order.push("sp:connect");
-    setTimeout(() => this.emit("ready", { device_id: "dev1" }), 0);
+    if (!FakeSpotifyPlayer.noReady) setTimeout(() => this.emit("ready", { device_id: "dev1" }), 0);
     return Promise.resolve(true);
   }
-  disconnect() {}
+  disconnect() {
+    order.push("sp:disconnect");
+  }
   getCurrentState() {
     return Promise.resolve(null);
   }
@@ -209,9 +216,10 @@ const sdkState = (cur: SdkTrack | null, paused: boolean, position = 1000, extra:
   ...extra,
 });
 
+/** Signed in as the person picked on this device (memory only in node: no IndexedDB). */
 function signIn() {
-  sessionStorage.setItem("gtd-spotify-token", JSON.stringify({ access: "user-token", refresh: "r", exp: Date.now() + 3600_000 }));
   forgetSpotifyAuth();
+  void __setSpotifyTokenForTests({ access: "user-token", refresh: "r", exp: Date.now() + 3600_000 });
 }
 
 beforeEach(() => {
@@ -219,7 +227,10 @@ beforeEach(() => {
   __resetSpotifyForTests();
   localStorage.clear();
   sessionStorage.clear();
+  localStorage.setItem("gtd-me", "Tester");
   forgetSpotifyAuth();
+  spotifyOwnerChanged();
+  FakeSpotifyPlayer.noReady = false;
   order.length = 0;
   calls.length = 0;
   musicLog.length = 0;
@@ -649,5 +660,255 @@ describe("review fixes: feedback, overlap, attribution", () => {
     expect(getMusic()).toMatchObject({ engine: "youtube", playing: false, spNow: null });
     expect(order).toContain("sp:pause");
     expect(order.some((o) => o.startsWith("yt:load") || o === "yt:play")).toBe(false);
+  });
+});
+
+// ---- Security: this device only, a blocked network, the person picked ------------------
+
+/** Spotify mode playing song 0 on this browser's device (dev1). */
+async function playingHere(tracks = [tr(0), tr(1)]) {
+  signIn();
+  attachPlayer(fakeYt());
+  music.setEngine("spotify");
+  music.play({ kind: "videos", label: "Team", tracks, start: 0 });
+  await vi.waitFor(() => expect(order.some((o) => o.startsWith("sp:PUT play"))).toBe(true));
+  onState(sdkState(sdkTrack(ID(0)), false));
+  expect(getMusic()).toMatchObject({ engine: "spotify", status: "playing" });
+}
+const playerWrites = () => calls.filter((c) => c.method !== "GET" && c.path.startsWith("/v1/me/player"));
+
+describe("playback only on this browser's device", () => {
+  it("every player command names this browser's device (device_id = the SDK's)", async () => {
+    await playingHere();
+    music.next();
+    music.toggle();
+    music.toggle();
+    await vi.waitFor(() => expect(playerWrites().length).toBeGreaterThanOrEqual(3));
+    for (const c of playerWrites()) {
+      const dev = c.path === "/v1/me/player" ? (c.body as { device_ids: string[] }).device_ids.join() : new URL("https://x" + c.path).searchParams.get("device_id");
+      expect(dev, c.path).toBe("dev1");
+    }
+  });
+
+  it("a command for no device, or another device, is refused here and never sent (no 'active device' fallback)", async () => {
+    // No device yet: even a command naming one is refused.
+    signIn();
+    expect((await spApi("PUT", "/me/player/play?device_id=dev1", { uris: [] })).status).toBe(-1);
+    await playingHere();
+    calls.length = 0;
+    for (const [path, body] of [
+      ["/me/player/play", { uris: ["spotify:track:x"] }],
+      ["/me/player/pause", undefined],
+      ["/me/player/next", undefined],
+      ["/me/player/seek?position_ms=1000", undefined],
+      ["/me/player/volume?volume_percent=10", undefined],
+      ["/me/player/queue?uri=spotify:track:x", undefined],
+      ["/me/player/play?device_id=phone", { uris: ["spotify:track:x"] }],
+      ["/me/player", { device_ids: ["phone"] }],
+      ["/me/player", { device_ids: ["dev1", "phone"] }],
+    ] as const) {
+      expect((await spApi("PUT", path, body)).status, path).toBe(-1);
+    }
+    expect(calls).toEqual([]);
+    expect((await spApi("PUT", "/me/player/pause?device_id=dev1")).status).toBe(204);
+    expect(musicLog.some((e) => e.ev.includes("REFUSED: a Spotify player command not for this browser's device"))).toBe(true);
+  });
+
+  it("the local device goes away before the play: NO play command at all, a toast", async () => {
+    signIn();
+    attachPlayer(fakeYt());
+    const inner = globalThis.fetch;
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+      // The device drops while the song is looked up.
+      if (String(url).includes("/v1/search")) FakeSpotifyPlayer.last?.emit("not_ready", { device_id: "dev1" });
+      return inner(url, init);
+    });
+    music.setEngine("spotify");
+    music.play({ kind: "videos", label: "Team", tracks: [tr(0), tr(1)], start: 0 });
+    await vi.waitFor(() => expect(getMusic().toast?.text).toBe("music.sp.noDevice"));
+    expect(getMusic()).toMatchObject({ engine: "spotify", playing: false, status: "paused" });
+    expect(playerWrites()).toEqual([]);
+  });
+
+  it("playback moved to another device (no SDK state): paused here with a toast, NOT transferred back", async () => {
+    await playingHere();
+    calls.length = 0;
+    order.length = 0;
+    onState(null);
+    expect(getMusic()).toMatchObject({ engine: "spotify", playing: false, status: "paused" });
+    expect(getMusic().toast?.text).toBe("music.sp.otherDevice");
+    // Nothing goes on here by itself (no next song, no transfer), and repeated empty states say nothing new.
+    const toastId = getMusic().toast?.id;
+    onState(null);
+    expect(getMusic().toast?.id).toBe(toastId);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(playerWrites()).toEqual([]);
+    expect(order.some((o) => o.startsWith("sp:PUT play") || o === "sp:resume")).toBe(false);
+    // Play pressed HERE: played here (this device only), by the person's choice.
+    music.toggle();
+    await vi.waitFor(() => expect(order.some((o) => o.startsWith("sp:PUT play"))).toBe(true));
+    expect(playerWrites().every((c) => c.path.includes("device_id=dev1") || (c.body as { device_ids?: string[] })?.device_ids?.join() === "dev1")).toBe(true);
+  });
+
+  it("GET /me/player names another device: paused here with the toast, nothing sent", async () => {
+    await playingHere();
+    const inner = globalThis.fetch;
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit = {}) => {
+      if (new URL(url).pathname === "/v1/me/player" && (init.method ?? "GET") === "GET") {
+        calls.push({ method: "GET", path: "/v1/me/player", body: undefined });
+        return new Response(JSON.stringify({ device: { id: "phone", name: "Anna's phone", type: "Smartphone" }, is_playing: true }), { status: 200 });
+      }
+      return inner(url, init);
+    });
+    calls.length = 0;
+    expect(await checkWhere()).toBe(true);
+    expect(getMusic()).toMatchObject({ playing: false, status: "paused" });
+    expect(getMusic().toast?.text).toBe("music.sp.otherDevice");
+    expect(playerWrites()).toEqual([]);
+    expect(musicLog.some((e) => e.ev.includes("moved to another device") && JSON.stringify(e.data).includes("Anna's phone"))).toBe(true);
+  });
+});
+
+describe("Spotify unreachable from this network", () => {
+  it("the SDK script does not load (sdk.scdn.co blocked): a toast, back to YouTube with the queue, no other host tried", async () => {
+    const g = globalThis as unknown as { Spotify?: unknown; document?: unknown };
+    const saved = g.Spotify;
+    delete g.Spotify;
+    const scripts: { src: string; onerror?: () => void; remove(): void }[] = [];
+    vi.stubGlobal("document", {
+      createElement: () => {
+        const s = { src: "", async: false, onerror: undefined as undefined | (() => void), remove() {} };
+        scripts.push(s);
+        return s;
+      },
+      head: { appendChild: (s: { onerror?: () => void }) => setTimeout(() => s.onerror?.(), 0) },
+    });
+    try {
+      signIn();
+      attachPlayer(fakeYt());
+      const tracks = [tr(0), tr(1)];
+      music.play({ kind: "videos", label: "Team", tracks, start: 0 });
+      music.setEngine("spotify");
+      await vi.waitFor(() => expect(getMusic().engine).toBe("youtube"));
+      expect(getMusic().toast).toMatchObject({ text: "music.sp.unreachable", kind: "error" });
+      expect(getMusic().queue).toEqual(tracks);
+      expect(scripts.map((s) => s.src)).toEqual([SDK_URL]);
+      expect(musicLog.some((e) => e.ev.includes("not reachable from this network") && JSON.stringify(e.data).includes("sdk.scdn.co"))).toBe(true);
+    } finally {
+      g.Spotify = saved;
+    }
+  });
+
+  it("api.spotify.com blocked (fetch TypeError): a toast, back to YouTube with the queue", async () => {
+    signIn();
+    attachPlayer(fakeYt());
+    vi.stubGlobal("fetch", async (url: string) => {
+      calls.push({ method: "?", path: new URL(url).pathname, body: undefined });
+      throw new TypeError("Failed to fetch");
+    });
+    const tracks = [tr(0), tr(1)];
+    music.play({ kind: "videos", label: "Team", tracks, start: 0 });
+    music.setEngine("spotify");
+    await vi.waitFor(() => expect(getMusic().engine).toBe("youtube"));
+    expect(getMusic().toast).toMatchObject({ text: "music.sp.unreachable", kind: "error" });
+    expect(getMusic()).toMatchObject({ playing: false, queue: tracks });
+    // Only Spotify's own hosts were ever asked.
+    expect(calls.every((c) => c.path.startsWith("/v1/"))).toBe(true);
+  });
+
+  it("the SDK never says ready (its websocket is blocked): after 15 s a toast and back to YouTube", async () => {
+    FakeSpotifyPlayer.noReady = true;
+    vi.useFakeTimers();
+    try {
+      signIn();
+      attachPlayer(fakeYt());
+      music.play({ kind: "videos", label: "Team", tracks: [tr(0)], start: 0 });
+      music.setEngine("spotify");
+      await vi.advanceTimersByTimeAsync(14000);
+      expect(getMusic().engine).toBe("spotify");
+      await vi.advanceTimersByTimeAsync(1500);
+      expect(getMusic().engine).toBe("youtube");
+      expect(getMusic().toast?.text).toBe("music.sp.unreachable");
+      expect(playerWrites()).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("the name picked on this device switches the Spotify session", () => {
+  it("the new person is not signed in here: back to YouTube with a toast, the old device dropped", async () => {
+    await playingHere();
+    order.length = 0;
+    localStorage.setItem("gtd-me", "Marco");
+    spotifyOwnerChanged();
+    expect(getMusic()).toMatchObject({ engine: "youtube", playing: false });
+    expect(getMusic().toast).toMatchObject({ text: "music.sp.ownerOut", kind: "error" });
+    expect(order).toContain("sp:disconnect");
+  });
+
+  it("the new person is signed in here: their own session, paused (the previous person's device is gone)", async () => {
+    await playingHere();
+    await __setSpotifyTokenForTests({ access: "marco-token", exp: Date.now() + 3600_000 }, "marco");
+    order.length = 0;
+    calls.length = 0;
+    localStorage.setItem("gtd-me", "Marco");
+    spotifyOwnerChanged();
+    expect(getMusic()).toMatchObject({ engine: "spotify", playing: false, status: "paused" });
+    expect(getMusic().toast?.text).toBe("music.sp.ownerSwitched");
+    expect(order).toContain("sp:disconnect");
+    // Play: a NEW device, made with Marco's token.
+    music.toggle();
+    await vi.waitFor(() => expect(order.some((o) => o.startsWith("sp:PUT play"))).toBe(true));
+    expect(order).toContain("sp:connect");
+  });
+
+  it("no name picked: Spotify mode ends with a toast", async () => {
+    await playingHere();
+    localStorage.setItem("gtd-me", "");
+    spotifyOwnerChanged();
+    expect(getMusic().engine).toBe("youtube");
+    expect(getMusic().toast?.text).toBe("music.sp.noIdentity");
+  });
+
+  it("the name changed in another tab (no event yet): a player command is not sent with the new person's token to the old person's device", async () => {
+    await playingHere();
+    await __setSpotifyTokenForTests({ access: "marco-token", exp: Date.now() + 3600_000 }, "marco");
+    calls.length = 0;
+    order.length = 0;
+    localStorage.setItem("gtd-me", "Marco"); // written by another tab; this tab heard nothing yet
+    expect((await spApi("PUT", "/me/player/pause?device_id=dev1")).status).toBe(-1);
+    expect(calls).toEqual([]);
+    expect(musicLog.some((e) => e.ev.includes("REFUSED: the person picked changed while a Spotify player command waited"))).toBe(true);
+    // The switch is then heard: the old device is dropped, Marco's own session, paused.
+    await vi.waitFor(() => expect(order).toContain("sp:disconnect"));
+    expect(getMusic()).toMatchObject({ engine: "spotify", playing: false });
+  });
+});
+
+describe("the device key store does not answer", () => {
+  it("a toast, back to YouTube, and the sealed sign-in is kept", async () => {
+    // A real key for this "device", then a store that never answers (a stuck IndexedDB open).
+    let key: CryptoKey | null = null;
+    __setSpotifyKeyStoreForTests({ get: async () => key, putIfAbsent: async (k) => (key ??= k) });
+    await __setSpotifyTokenForTests({ access: "user-token", refresh: "r", exp: Date.now() + 3600_000 });
+    const sealed = localStorage.getItem("gtd-spotify-token:tester");
+    expect(sealed).toBeTruthy();
+    attachPlayer(fakeYt());
+    music.setEngine("spotify");
+    forgetSpotifyAuth();
+    __setSpotifyKeyStoreForTests({ get: () => new Promise(() => {}), putIfAbsent: () => new Promise(() => {}) });
+    vi.useFakeTimers();
+    try {
+      expect(spotifyAuthState().status).toBe("busy");
+      await vi.advanceTimersByTimeAsync(KEYSTORE_MS + 10);
+      expect(spotifyAuthState().status).toBe("out");
+      expect(getMusic().toast).toMatchObject({ text: "music.sp.keystore", kind: "error" });
+      expect(getMusic().engine).toBe("youtube");
+      expect(localStorage.getItem("gtd-spotify-token:tester")).toBe(sealed);
+    } finally {
+      vi.useRealTimers();
+      __setSpotifyKeyStoreForTests(undefined);
+    }
   });
 });

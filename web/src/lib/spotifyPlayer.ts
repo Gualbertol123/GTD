@@ -24,12 +24,32 @@
 //   state    player_state_changed → status, playing, index, now (Spotify's own
 //            title and artists), spNow (its cover, link) and the time.
 //
+// Security (the team shares one login; a Spotify session is per person, per
+// device, see spotifyAuth):
+//   this device only  every player command carries device_id = this browser's
+//            SDK device (spApi refuses any other, and any without one): never
+//            Spotify's "active device" (someone's phone, another computer).
+//            No local device: no command, a toast. Playback moved to another
+//            device (an empty SDK state, or GET /me/player names another
+//            device): paused here with a toast, never taken back by itself.
+//   network  sdk.scdn.co, accounts or api.spotify.com blocked (script error
+//            or 10 s, a fetch TypeError, no "ready" in 15 s = the websocket):
+//            a toast and back to YouTube with the same queue. Nothing tries
+//            another host or a proxy.
+//   names    another name picked on this device: the old person's device is
+//            dropped; Spotify mode goes on only if the new person is signed in
+//            on this device, else back to YouTube with a toast.
+//
 // Every decision is a "[music] …" line (mlog).
 // -----------------------------------------------------------------------------
 
 import { getMusic, mlog, musicTr, nextIndex, nowOf, registerSpotifyEngine, setMusic, setMusicTime, spotifyFailed, toast, getMusicTime, type AltEngine, type SpotifyNow, type Track } from "./music";
 import { normText } from "./musicSort";
-import { refreshSpotifyToken, spotifyUserToken } from "./spotifyAuth";
+import { readPref } from "./prefs";
+import { onSpotifySession, refreshSpotifyToken, setSpotifyAuthLogger, spotifyAuthState, spotifyOwner, spotifyRefreshFailure, spotifyTokenExpiry, spotifyUserToken, whenSpotifyAuthReady } from "./spotifyAuth";
+
+// spotifyAuth's decisions (decrypting, migration, refresh) go to the same "[music]" log.
+setSpotifyAuthLogger(mlog);
 
 // ---- The SDK's shapes ---------------------------------------------------------
 
@@ -69,9 +89,13 @@ interface SdkNamespace {
 type SdkWindow = Window & { Spotify?: SdkNamespace; onSpotifyWebPlaybackSDKReady?: () => void };
 
 export const SDK_URL = "https://sdk.scdn.co/spotify-player.js";
+/** What a network must let through for Spotify mode (README §1e). */
+export const SPOTIFY_HOSTS = ["accounts.spotify.com", "api.spotify.com", "*.spotify.com (https + wss)", "sdk.scdn.co", "*.scdn.co", "*.spotifycdn.com"];
 export const DEVICE_NAME = "Team GTD";
 const API = "https://api.spotify.com/v1";
-const SDK_MS = 15000;
+/** The SDK script must load in this long (sdk.scdn.co blocked or dropped: unreachable). */
+const SDK_MS = 10000;
+/** "ready" (the SDK's websocket to Spotify) must come in this long. */
 const READY_MS = 15000;
 const CALL_MS = 10000;
 /** The songs given to Spotify at once (PUT /me/player/play). */
@@ -85,9 +109,14 @@ const now = () => (typeof performance !== "undefined" ? performance.now() : Date
 const fmt = (key: string, vars: Record<string, string | number>) => Object.entries(vars).reduce((s, [k, v]) => s.split(`{${k}}`).join(String(v)), musicTr(key));
 
 /** Why Spotify mode ended (each has a toast). */
-export type SpFailure = "premium" | "browser" | "auth" | "sdk" | "device" | "not-allowed" | "api";
+export type SpFailure = "premium" | "browser" | "auth" | "sdk" | "device" | "not-allowed" | "api" | "network";
 class SpError extends Error {
-  constructor(public reason: SpFailure, detail = "") {
+  constructor(
+    public reason: SpFailure,
+    detail = "",
+    /** The device was dropped on purpose (another name picked): not a failure to report. */
+    public dropped = false
+  ) {
     super(`spotify ${reason}${detail ? `: ${detail}` : ""}`);
   }
 }
@@ -99,6 +128,7 @@ const FAIL_KEY: Record<SpFailure, string> = {
   device: "music.sp.device",
   "not-allowed": "music.sp.notAllowed",
   api: "music.sp.api",
+  network: "music.sp.unreachable",
 };
 
 // ---- Matching a song to Spotify (pure, unit-tested) ----------------------------
@@ -249,12 +279,26 @@ function remember(t: Track, s: string | null): void {
 // ---- The Web API (the signed-in user's token) ----------------------------------
 
 export interface ApiAnswer {
+  /** 0 = no answer (see `net`); -1 = refused here: a player command not for this browser's device. */
   status: number;
   json: unknown;
+  /** Why there was no answer: "blocked" = the fetch failed (TypeError) while online; "offline"; "timeout". */
+  net?: "blocked" | "offline" | "timeout";
 }
 
-/** Where spotifyAuth keeps the token (this tab); only its `exp` is read here. */
-const TOKEN_KEY = "gtd-spotify-token";
+/** Player commands that change playback: each must name this browser's device. */
+const PLAYER_WRITE = /^\/me\/player(\/(play|pause|next|previous|seek|volume|queue|shuffle|repeat))?(\?|$)/;
+
+/** The device a player command is for: device_id in the address, or the one device of a transfer (PUT /me/player). */
+export function commandDevice(path: string, body?: unknown): string | null {
+  const [p, q = ""] = path.split("?");
+  if (p === "/me/player") {
+    const ids = (body as { device_ids?: unknown } | null | undefined)?.device_ids;
+    return Array.isArray(ids) && ids.length === 1 && typeof ids[0] === "string" ? ids[0] : null;
+  }
+  return new URLSearchParams(q).get("device_id");
+}
+
 /** A token with less than this left is refreshed before it is used. */
 export const TOKEN_MARGIN_MS = 60_000;
 
@@ -266,14 +310,11 @@ export const TOKEN_MARGIN_MS = 60_000;
  * was refused, which signs out).
  */
 export async function freshSpotifyToken(): Promise<string | null> {
+  // Right after a reload or a name change the sealed token is still being decrypted.
+  await whenSpotifyAuthReady();
   const tok = spotifyUserToken();
   if (!tok) return null;
-  let exp = NaN;
-  try {
-    exp = Number((JSON.parse(sessionStorage.getItem(TOKEN_KEY) ?? "null") as { exp?: unknown } | null)?.exp);
-  } catch {
-    /* unreadable: used as it is (a 401 still refreshes it) */
-  }
+  const exp = Number(spotifyTokenExpiry());
   if (!Number.isFinite(exp) || exp - Date.now() > TOKEN_MARGIN_MS) return tok;
   mlog("Spotify token expired or about to: refreshing it before use", { leftS: Math.round((exp - Date.now()) / 1000) });
   const t = await refreshSpotifyToken();
@@ -284,8 +325,25 @@ export async function freshSpotifyToken(): Promise<string | null> {
 
 /** One call to api.spotify.com: a timeout, one refresh on 401, one wait on 429. Status 0 = network. */
 export async function spApi(method: "GET" | "PUT" | "POST", path: string, body?: unknown): Promise<ApiAnswer> {
+  if (method !== "GET" && PLAYER_WRITE.test(path)) {
+    const dev = commandDevice(path, body);
+    if (!dev || !deviceId || dev !== deviceId) {
+      // Never Spotify's "active device" (someone's phone, another computer): only this browser's.
+      mlog("REFUSED: a Spotify player command not for this browser's device (not sent)", { path: path.split("?")[0], asked: dev, local: deviceId }, "warn");
+      return { status: -1, json: null };
+    }
+  }
   let tok = await freshSpotifyToken();
   if (!tok) return { status: 401, json: null };
+  if (method !== "GET" && PLAYER_WRITE.test(path)) {
+    // The token in hand must be the device's person's: the name may have changed in another tab
+    // while this call waited (the switch is heard a moment later). Never their token on our device.
+    const dev = commandDevice(path, body);
+    if (dev !== deviceId || deviceOwner !== spotifyOwner()) {
+      mlog("REFUSED: the person picked changed while a Spotify player command waited (not sent)", { path: path.split("?")[0], device: deviceOwner || null, now: spotifyOwner() || null }, "warn");
+      return { status: -1, json: null };
+    }
+  }
   for (let attempt = 0; attempt < 3; attempt++) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), CALL_MS);
@@ -297,8 +355,10 @@ export async function spApi(method: "GET" | "PUT" | "POST", path: string, body?:
         body: body !== undefined ? JSON.stringify(body) : undefined,
         signal: ctrl.signal,
       });
-    } catch {
-      return { status: 0, json: null };
+    } catch (e) {
+      const net = ctrl.signal.aborted ? "timeout" : typeof navigator !== "undefined" && navigator.onLine === false ? "offline" : "blocked";
+      mlog(`Spotify API: no answer (${net})`, { path: path.split("?")[0], error: e instanceof Error ? `${e.name}: ${e.message}` : String(e) }, "warn");
+      return { status: 0, json: null, net };
     } finally {
       clearTimeout(timer);
     }
@@ -358,6 +418,7 @@ async function findOnSpotify(t: Track): Promise<string | null> {
   }
   const q = `${want.artist} ${want.title}`.trim().slice(0, 200);
   const a = await spApi("GET", `/search?type=track&limit=5&q=${encodeURIComponent(q)}`);
+  if (a.status === 0 && a.net === "blocked") throw new SpError("network", "api.spotify.com: fetch failed");
   if (a.status === 401) throw new SpError("auth", "search 401");
   if (a.status === 403) throw new SpError("not-allowed", reasonOf(a));
   if (a.status < 200 || a.status >= 300) throw new SpError("api", `search ${a.status}`);
@@ -521,18 +582,24 @@ function loadSdk(): Promise<SdkNamespace> {
       sdkPromise = null;
       w.onSpotifyWebPlaybackSDKReady = prev;
       s.remove();
-      reject(new SpError("sdk", why));
+      // The script is Spotify's own and only from sdk.scdn.co: no other host is tried.
+      reject(new SpError("network", why));
     };
-    const timer = setTimeout(() => fail("timeout"), SDK_MS);
+    const timer = setTimeout(() => fail(`${SDK_URL} did not load in ${SDK_MS / 1000} s`), SDK_MS);
     w.onSpotifyWebPlaybackSDKReady = () => {
       clearTimeout(timer);
       prev?.();
       if (w.Spotify?.Player) resolve(w.Spotify);
-      else fail("no Spotify.Player");
+      else {
+        clearTimeout(timer);
+        sdkPromise = null;
+        w.onSpotifyWebPlaybackSDKReady = prev;
+        reject(new SpError("sdk", "no Spotify.Player"));
+      }
     };
     s.src = SDK_URL;
     s.async = true;
-    s.onerror = () => fail("script error");
+    s.onerror = () => fail(`${SDK_URL}: script error (blocked?)`);
     document.head.appendChild(s);
   });
   return sdkPromise;
@@ -540,6 +607,8 @@ function loadSdk(): Promise<SdkNamespace> {
 
 let player: SdkPlayer | null = null;
 let deviceId: string | null = null;
+/** Whose sign-in the device was made with (spotifyOwner then). */
+let deviceOwner = "";
 let devicePromise: Promise<string> | null = null;
 let readyWait: { resolve: (id: string) => void; reject: (e: SpError) => void } | null = null;
 let tokenAsks = 0;
@@ -559,30 +628,40 @@ function fatal(e: SpError): void {
 
 function makePlayer(S: SdkNamespace): SdkPlayer {
   tokenAsks = 0;
+  const owner = spotifyOwner();
+  deviceOwner = owner;
   const p = new S.Player({
     name: DEVICE_NAME,
     volume: (getMusic().muted ? 0 : getMusic().volume) / 100,
     getOAuthToken: (cb) => {
+      if (owner !== spotifyOwner()) {
+        // Another name was picked (maybe in another tab): this device never gets that person's token; it is dropped.
+        mlog("Spotify SDK asks for a token, but another name is picked now: not given (the device is dropped)", { device: owner || null, now: spotifyOwner() || null }, "warn");
+        return;
+      }
       // The first ask gets the token in hand (refreshed first if it has run out); a later one means it ran out.
+      const noToken = (what: string) => (spotifyRefreshFailure() === "network" ? new SpError("network", `accounts.spotify.com: ${what}`) : new SpError("auth", what));
       if (tokenAsks++ === 0) {
-        void freshSpotifyToken().then((t) => (t ? cb(t) : fatal(new SpError("auth", "no token"))));
+        void freshSpotifyToken().then((t) => (t ? cb(t) : fatal(noToken("no token"))));
         return;
       }
       mlog("Spotify SDK asks for a new token: refreshing the sign-in");
-      void refreshSpotifyToken().then((t) => (t ? cb(t) : fatal(new SpError("auth", "refresh failed"))));
+      void refreshSpotifyToken().then((t) => (t ? cb(t) : fatal(noToken("refresh failed"))));
     },
   });
   p.addListener("ready", ({ device_id }: { device_id: string }) => {
+    if (player !== p) return; // a dropped device (another name picked)
     deviceId = device_id;
     mlog("← Spotify ready: device made", { device: DEVICE_NAME, id: device_id });
     readyWait?.resolve(device_id);
     readyWait = null;
   });
   p.addListener("not_ready", ({ device_id }: { device_id: string }) => {
+    if (player !== p) return;
     mlog("← Spotify not_ready: the device went offline (it is made again on the next play)", { id: device_id }, "warn");
     if (deviceId === device_id) deviceId = null;
   });
-  p.addListener("player_state_changed", (s: SdkState | null) => onState(s));
+  p.addListener("player_state_changed", (s: SdkState | null) => player === p && onState(s));
   p.addListener("autoplay_failed", () => {
     mlog("← Spotify autoplay_failed: the browser wants a tap to start", undefined, "warn");
     clearCheck();
@@ -608,6 +687,7 @@ function makePlayer(S: SdkNamespace): SdkPlayer {
 function ensureDevice(): Promise<string> {
   if (player && deviceId) return Promise.resolve(deviceId);
   if (devicePromise) return devicePromise;
+  let made: SdkPlayer | null = null;
   devicePromise = (async () => {
     const S = await loadSdk();
     if (!player) {
@@ -620,27 +700,33 @@ function ensureDevice(): Promise<string> {
       setTimeout(() => {
         if (readyWait?.resolve === resolve) {
           readyWait = null;
-          reject(new SpError("device", "no ready in time"));
+          // The SDK loaded but its websocket to Spotify (wss://*.spotify.com) never opened.
+          reject(new SpError("network", `no "ready" from the SDK in ${READY_MS / 1000} s (websocket to Spotify blocked?)`));
         }
       }, READY_MS);
     });
+    made = p;
     const ok = await p.connect();
     mlog(`→ Spotify.connect: ${ok ? "connecting" : "refused"}`);
     if (!ok) {
       readyWait = null;
       throw new SpError("browser", "connect refused");
     }
-    return await ready;
+    const id = await ready;
+    if (player !== p) throw new SpError("device", "dropped", true);
+    return id;
   })()
     .catch((e: unknown) => {
-      // A broken player is dropped: the next try makes a new one.
-      try {
-        player?.disconnect();
-      } catch {
-        /* gone */
+      // A broken player is dropped: the next try makes a new one (never the one made since for another person).
+      if (made && player === made) {
+        try {
+          player.disconnect();
+        } catch {
+          /* gone */
+        }
+        player = null;
+        deviceId = null;
       }
-      player = null;
-      deviceId = null;
       throw e instanceof SpError ? e : new SpError("sdk", String(e));
     })
     .finally(() => {
@@ -706,8 +792,12 @@ function clearCheck(): void {
 
 /** Spotify mode ends with a toast saying why (music.spotifyFailed: back to YouTube, paused). */
 function failed(e: unknown): void {
+  if (e instanceof SpError && e.dropped) return void mlog("Spotify: a start for the dropped device ended (another name picked)");
   const reason: SpFailure = e instanceof SpError ? e.reason : "api";
   mlog(`Spotify mode failed (${reason}): back to YouTube`, { error: e instanceof Error ? e.message : String(e) }, "warn");
+  if (reason === "network") {
+    mlog("Spotify is not reachable from this network: nothing else is tried (no proxy, no other host). A network admin can allow these", { hosts: SPOTIFY_HOSTS, online: typeof navigator !== "undefined" ? navigator.onLine : null }, "warn");
+  }
   clearCheck();
   expect = null;
   if (getMusic().engine !== "spotify") return;
@@ -738,9 +828,11 @@ function armCheck(seq: number): void {
     if (seq !== startSeq || getMusic().engine !== "spotify" || !getMusic().playing) return;
     void player
       ?.getCurrentState()
-      .then((s) => {
+      .then(async (s) => {
         if (seq !== startSeq) return;
         if (s && !s.paused) return onState(s);
+        if (!s && (await checkWhere().catch(() => false))) return;
+        if (seq !== startSeq) return;
         mlog("start check: Spotify did not start in time: showing Play", { state: s ? "paused" : "none" }, "warn");
         expect = null;
         setMusic({ playing: false, status: "paused" });
@@ -789,6 +881,13 @@ async function start(i: number, auto: boolean, atSec = 0): Promise<void> {
     return;
   }
   if (seq !== startSeq || getMusic().engine !== "spotify") return;
+  if (auto && elsewhere) {
+    // Playing on another device now: nothing goes on here by itself.
+    mlog("  not continuing here: Spotify plays on another device (press Play to bring it here)");
+    expect = null;
+    setMusic({ playing: false, status: "paused" });
+    return;
+  }
   // The first song with a twin, from i on.
   let j = i;
   let misses = 0;
@@ -804,7 +903,7 @@ async function start(i: number, auto: boolean, atSec = 0): Promise<void> {
       sid = await resolveTrack(t);
     } catch (e) {
       if (seq !== startSeq) return;
-      if (e instanceof SpError && (e.reason === "auth" || e.reason === "not-allowed")) return failed(e);
+      if (e instanceof SpError && (e.reason === "auth" || e.reason === "not-allowed" || e.reason === "network")) return failed(e);
       mlog("Spotify search failed: stopping here", { error: (e as Error).message }, "warn");
       setMusic({ playing: false, status: "paused" });
       toast(musicTr("music.sp.api"), "error");
@@ -850,6 +949,7 @@ async function start(i: number, auto: boolean, atSec = 0): Promise<void> {
     expect = null;
     return;
   }
+  if (!player || dev !== deviceId) return noLocalDevice("the device went away before the play");
   expect = { i: j, at: now() };
   mlog(`→ Spotify PUT /me/player/play (${w.uris.length} songs, from queue song ${j + 1})`, { device: dev, first: w.uris[0], window: `${w.idx[0] + 1}-${w.idx[w.idx.length - 1] + 1}`, at: Math.round(atSec) });
   let a = await playOn(dev, w, atSec);
@@ -857,7 +957,8 @@ async function start(i: number, auto: boolean, atSec = 0): Promise<void> {
   if (a.status === 404) {
     // The device is not known yet (right after "ready"), or it went away: hand the playback to it, then again.
     mlog("Spotify answered 404 (device not active): transferring the playback to it, then playing again", { reason: reasonOf(a) }, "warn");
-    await spApi("PUT", "/me/player", { device_ids: [dev], play: false });
+    const tr = await spApi("PUT", "/me/player", { device_ids: [dev], play: false });
+    if (tr.status === -1) return noLocalDevice("transfer refused here");
     await new Promise((r) => setTimeout(r, 400));
     if (seq !== startSeq) return;
     if (!getMusic().playing) {
@@ -868,6 +969,8 @@ async function start(i: number, auto: boolean, atSec = 0): Promise<void> {
     a = await playOn(dev, w, atSec);
     if (seq !== startSeq) return abortedPlay(dev, a);
   }
+  if (a.status === -1) return noLocalDevice("play refused here");
+  if (a.status === 0 && a.net === "blocked") return failed(new SpError("network", "api.spotify.com: PUT /me/player/play failed"));
   if (a.status === 401) return failed(new SpError("auth", "play 401"));
   if (a.status === 403) return failed(new SpError(/premium/i.test(reasonOf(a)) ? "premium" : "not-allowed", reasonOf(a)));
   if (a.status < 200 || a.status >= 300) {
@@ -888,6 +991,47 @@ async function start(i: number, auto: boolean, atSec = 0): Promise<void> {
   armCheck(seq);
   // The songs after the window are looked up in the background, so the next window is long.
   void prefetch(seq, w.idx[w.idx.length - 1] + 1);
+}
+
+/** This browser's Spotify device is not ready: NO play command is sent anywhere (never another device), a toast. */
+function noLocalDevice(why: string): void {
+  mlog("Spotify: this browser's device is not ready: nothing sent (never to another device)", { why }, "warn");
+  expect = null;
+  clearCheck();
+  setMusic({ playing: false, status: "paused" });
+  toast(musicTr("music.sp.noDevice"), "error");
+}
+
+/** Playback is on another device (or no device is active) now. */
+let elsewhere = false;
+
+/**
+ * Spotify plays on another device now (the person's phone, another computer):
+ * paused here with a toast; it is NOT transferred back (only a Play here does).
+ */
+function movedAway(why: string, detail?: unknown): void {
+  mlog(`Spotify playback moved to another device (${why}): paused here, not taken back`, detail, "warn");
+  startSeq++;
+  clearCheck();
+  expect = null;
+  if (last) last = { ...last, paused: true };
+  const was = elsewhere;
+  elsewhere = true;
+  const m = getMusic();
+  if (m.engine !== "spotify") return;
+  if (m.playing || m.status !== "paused") setMusic({ playing: false, status: "paused" });
+  if (!was) toast(musicTr("music.sp.otherDevice"));
+}
+
+/** GET /me/player: is another device playing this account now? Then movedAway. */
+export async function checkWhere(): Promise<boolean> {
+  const a = await spApi("GET", "/me/player");
+  const j = a.json as { device?: { id?: string | null; name?: string; type?: string }; is_playing?: boolean } | null;
+  if (a.status !== 200 || !j?.device) return false;
+  if (j.device.id && j.device.id === deviceId) return false;
+  if (!j.is_playing) return false;
+  movedAway("GET /me/player names another device", { device: j.device.name ?? null, type: j.device.type ?? null });
+  return true;
 }
 
 /** The queue entry to play is not there (the queue is empty or shrank): Play again, with a reason, never a spinner forever. */
@@ -911,7 +1055,7 @@ function abortedPlay(dev: string, a: ApiAnswer): void {
   mlog("  the play landed after the app moved on: pausing Spotify at once", { engine: m.engine, playing: m.playing }, "warn");
   ownPauseAt = now();
   void player?.pause().catch(() => {});
-  void spApi("PUT", `/me/player/pause?device_id=${encodeURIComponent(dev)}`);
+  if (dev === deviceId) void spApi("PUT", `/me/player/pause?device_id=${encodeURIComponent(dev)}`);
 }
 
 function playOn(dev: string, w: SpWindow, atSec: number): Promise<ApiAnswer> {
@@ -945,6 +1089,10 @@ async function prefetch(seq: number, from: number): Promise<void> {
 /** The song at queue entry `from` is over (ended, refused): on to the next, or the end. */
 function advance(from: number): void {
   const m = getMusic();
+  if (elsewhere) {
+    mlog("Spotify: not going on here (it plays on another device)");
+    return;
+  }
   const n = nextIndex(from, m.queue.length, m.repeat);
   if (n === null) {
     mlog("Spotify: end of the queue");
@@ -970,12 +1118,14 @@ export function onState(s: SdkState | null): void {
     return;
   }
   if (!s) {
-    mlog("← Spotify: no state (playback moved to another device?)", undefined, "warn");
-    if (m.playing && !expect) {
-      setMusic({ playing: false, status: "paused" });
-      toast(musicTr("music.sp.elsewhere"));
-    }
+    // This device is no longer the active one: playback moved (Spotify app, another computer) or stopped.
+    if (m.playing && !expect) movedAway("the SDK reports no state: this device is not active");
+    else mlog("← Spotify: no state (this device is not active)", { playing: m.playing, expect: expect?.i ?? null });
     return;
+  }
+  if (!s.paused && elsewhere) {
+    mlog("← Spotify plays on THIS device again (chosen in Spotify's device list): following it");
+    elsewhere = false;
   }
   const cur = s.track_window.current_track;
   mlog(`← Spotify ${s.paused ? "paused" : "playing"}${s.loading ? " (loading)" : ""}`, { track: cur ? `${cur.artists.map((a) => a.name).join(", ")} · ${cur.name}` : null, position: Math.round(s.position / 1000), app: m.status, expect: expect?.i ?? null });
@@ -1037,6 +1187,7 @@ export function onState(s: SdkState | null): void {
 
 const engine: AltEngine = {
   activate(i) {
+    elsewhere = false;
     mlog("Spotify mode on", { start: i >= 0 ? i + 1 : null, device: deviceId ? "ready" : player ? "player made, to connect" : "to make" });
     activateInClick();
     startTick();
@@ -1053,10 +1204,11 @@ const engine: AltEngine = {
     }
     void ensureDevice().then(
       (id) => mlog("Spotify device ready for Play", { id }),
-      (e) => failed(e)
+      (e) => getMusic().engine === "spotify" && failed(e)
     );
   },
   start(i, auto) {
+    if (!auto) elsewhere = false; // the person asked to play HERE
     void start(i, auto);
   },
   pause() {
@@ -1070,6 +1222,13 @@ const engine: AltEngine = {
     const m = getMusic();
     activateInClick();
     ownPauseAt = -1e9;
+    if (elsewhere) {
+      // Play pressed here while Spotify plays elsewhere: brought here by a PUT /me/player/play for THIS device only.
+      elsewhere = false;
+      mlog("Play pressed here while Spotify played on another device: playing here");
+      void start(m.index >= 0 ? m.index : 0, false, getMusicTime().time);
+      return;
+    }
     const k = windowPos(win, last ? ({ uri: last.uri } as SdkTrack) : null);
     if (player && deviceId && k >= 0 && entryIndex(win, k, m.queue) === m.index) {
       mlog("→ Spotify.resume");
@@ -1129,10 +1288,95 @@ const engine: AltEngine = {
 
 registerSpotifyEngine(engine);
 
+// ---- The person picked on this device --------------------------------------------
+
+/** Drop the device made with the previous person's token: nothing of theirs plays or is controlled any more. */
+function dropDevice(why: string): void {
+  startSeq++;
+  clearCheck();
+  expect = null;
+  win = null;
+  winCut = false;
+  last = null;
+  elsewhere = false;
+  tunedFor = null;
+  const p = player;
+  player = null;
+  deviceId = null;
+  activated = false;
+  if (readyWait) {
+    readyWait.reject(new SpError("device", "dropped", true));
+    readyWait = null;
+  }
+  if (!p) return;
+  mlog(`Spotify device dropped (${why})`);
+  try {
+    void p.pause().catch(() => {});
+    p.disconnect();
+  } catch {
+    /* gone */
+  }
+}
+
+/** Spotify mode cannot go on for the person now picked: back to YouTube (paused, same queue), with a toast. */
+function notSignedInNow(name: string): void {
+  if (getMusic().engine !== "spotify") return;
+  mlog("the person picked on this device is not signed in to Spotify here: back to YouTube", { name: name || null }, "warn");
+  toast(name ? fmt("music.sp.ownerOut", { name }) : musicTr("music.sp.noIdentity"), "error");
+  spotifyFailed("after another name was picked");
+}
+
+/** The person picked last on this device (lowercased key, and as shown). */
+let pickedOwner = "";
+let pickedName = "";
+
+onSpotifySession((e) => {
+  if (e.kind === "no-identity") {
+    toast(musicTr("music.sp.noIdentity"), "error");
+    return;
+  }
+  if (e.kind === "loaded") {
+    if (e.error === "keystore" && e.owner === spotifyOwner()) {
+      // This browser's key store (IndexedDB) did not answer: signed out in this tab, the stored sign-in kept.
+      mlog("Spotify sign-in could not be read: this browser's key store does not answer", { owner: e.owner }, "warn");
+      toast(musicTr("music.sp.keystore"), "error");
+      if (getMusic().engine === "spotify") spotifyFailed("the key store does not answer");
+      return;
+    }
+    if (!e.signedIn && e.owner === pickedOwner) notSignedInNow(pickedName);
+    return;
+  }
+  pickedOwner = e.owner;
+  pickedName = e.name;
+  dropDevice("another name was picked on this device");
+  const m = getMusic();
+  if (m.engine !== "spotify") return;
+  const st = spotifyAuthState().status;
+  if (st === "in") {
+    mlog("Spotify mode goes on with the new person's own sign-in (paused: press Play)", { name: e.name });
+    setMusic({ playing: false, status: m.source || m.queue.length ? "paused" : "idle", spNow: null });
+    toast(fmt("music.sp.ownerSwitched", { name: e.name }));
+  } else if (st === "busy") {
+    // Their sealed sign-in is being read: paused meanwhile; "loaded" decides.
+    mlog("Spotify mode: reading the new person's sign-in (paused meanwhile)", { name: e.name });
+    setMusic({ playing: false, status: m.source || m.queue.length ? "paused" : "idle", spNow: null });
+  } else notSignedInNow(e.name);
+});
+
+// A reload while in Spotify mode: music.ts starts on YouTube because the sealed sign-in is read
+// asynchronously; once it is read, Spotify mode is back as chosen (nothing plays by itself).
+void whenSpotifyAuthReady().then(() => {
+  const m = getMusic();
+  if (m.engine !== "youtube" || m.playing || m.status !== "idle" || readPref("musicEngine") !== "spotify" || !spotifyUserToken()) return;
+  mlog("Spotify sign-in read at startup: Spotify mode again, as chosen on this device");
+  setMusic({ engine: "spotify" });
+});
+
 /** For tests: forget the device, the window and the cache in memory. */
 export function __resetSpotifyForTests(): void {
   player = null;
   deviceId = null;
+  deviceOwner = "";
   devicePromise = null;
   readyWait = null;
   sdkPromise = null;
@@ -1145,6 +1389,7 @@ export function __resetSpotifyForTests(): void {
   ownPauseAt = -1e9;
   last = null;
   lastSkipToastAt = -1e9;
+  elsewhere = false;
   clearCheck();
   clearInterval(tickTimer);
   tickTimer = undefined;

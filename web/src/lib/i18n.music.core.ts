@@ -52,6 +52,13 @@ export const CORE_IT: Record<string, string> = {
   "music.sp.elsewhere": "Spotify ora suona su un altro dispositivo.",
   "music.sp.nothing": "Niente da riprodurre con Spotify: scegli una playlist del team, una ricerca o le tendenze.",
   "music.sp.signedOut": "Sei uscito da Spotify: torno su YouTube, in pausa.",
+  "music.sp.otherDevice": "In riproduzione su un altro dispositivo",
+  "music.sp.unreachable": "Spotify non è raggiungibile da questa rete: torno a YouTube",
+  "music.sp.noDevice": "Il lettore Spotify di questo browser non è pronto: niente è stato avviato altrove. Riprova tra poco.",
+  "music.sp.noIdentity": "Scegli prima il tuo nome nel menu in alto: l'accesso a Spotify è personale, per persona e dispositivo.",
+  "music.sp.ownerOut": "{name} non ha fatto l'accesso a Spotify su questo dispositivo: torno a YouTube.",
+  "music.sp.ownerSwitched": "Ora Spotify è quello di {name}: premi Riproduci.",
+  "music.sp.keystore": "Non riesco a leggere l'accesso Spotify salvato su questo browser: ricarica la pagina o accedi di nuovo.",
 };
 
 export const CORE_EN: Record<string, string> = {
@@ -103,4 +110,11 @@ export const CORE_EN: Record<string, string> = {
   "music.sp.elsewhere": "Spotify is now playing on another device.",
   "music.sp.nothing": "Nothing to play with Spotify: pick a team playlist, a search or the trends.",
   "music.sp.signedOut": "Signed out of Spotify: back to YouTube, paused.",
+  "music.sp.otherDevice": "Playing on another device",
+  "music.sp.unreachable": "Spotify can't be reached from this network: back to YouTube",
+  "music.sp.noDevice": "This browser's Spotify player isn't ready: nothing was started anywhere else. Try again shortly.",
+  "music.sp.noIdentity": "Pick your name in the menu at the top first: Spotify sign-in is personal, per person and device.",
+  "music.sp.ownerOut": "{name} isn't signed in to Spotify on this device: back to YouTube.",
+  "music.sp.ownerSwitched": "Spotify is now {name}'s: press Play.",
+  "music.sp.keystore": "Can't read the Spotify sign-in saved in this browser: reload the page or sign in again.",
 };

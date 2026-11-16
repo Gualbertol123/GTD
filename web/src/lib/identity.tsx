@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { readMe, writeMe } from "./prefs";
+import { spotifyOwnerChanged } from "./spotifyAuth";
 
 // "Who am I" — a single identity remembered in THIS browser (localStorage) and
 // shared across the app: the Daily Reflection author, the default owner for new
@@ -16,6 +17,19 @@ export function IdentityProvider({ children }: { children: React.ReactNode }) {
   const setMe = useCallback((name: string) => {
     setMeState(name);
     writeMe(name);
+    // A Spotify sign-in belongs to the person, on this device: switch to theirs.
+    spotifyOwnerChanged();
+  }, []);
+  // The name changed in another tab of this browser: this tab shows it too, and its Spotify
+  // session follows (spotifyAuth hears the same event; calling it again does nothing new).
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== null && e.key !== "gtd-me") return;
+      setMeState(readMe());
+      spotifyOwnerChanged();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
   const value = useMemo(() => ({ me, setMe }), [me, setMe]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
