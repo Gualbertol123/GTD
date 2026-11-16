@@ -233,7 +233,7 @@ async function parent() {
     const row = {
       name: c.name,
       fn: c.fn,
-      query: query.length > 60 ? query.slice(0, 60) + "…" : query,
+      query: typeof query === "string" ? (query.length > 60 ? query.slice(0, 60) + "…" : query) : c.method ?? "POST",
       status: [...new Set(r.calls.map((x) => x.status))].join("/"),
       coldOk: okCall(first),
       warmOk: `${rest.length}/${all.length}`,

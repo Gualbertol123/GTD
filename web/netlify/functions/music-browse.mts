@@ -11,21 +11,16 @@
 //
 // Only a logged-in team account may use it. There is no Data API fallback
 // for these (the API has no equivalent): if YouTube.js fails, the app hides
-// the section or says so.
+// the section or says so. Errors follow lib/http.mts ({ error: code }).
+// Answers are kept in this instance's memory too (lib/ytjs.mts), so Home is
+// asked of YouTube once per instance, not once per user.
 // -----------------------------------------------------------------------------
 
-import { isTeamMember } from "../lib/teamAuth.mts";
+import { cacheFor, codeOf, fail, gate, json } from "../lib/http.mts";
 import { charts, explore, musicArtist, radio, suggest } from "../lib/ytjs.mts";
 
-function json(status: number, body: unknown, cache = "no-store"): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": cache },
-  });
-}
-
 export default async (req: Request): Promise<Response> => {
-  if (req.method !== "GET") return json(405, { error: "GET only" });
+  if (req.method !== "GET") return fail("server", 405);
   const p = new URL(req.url).searchParams;
   const q = (p.get("suggest") ?? "").trim().slice(0, 100);
   const video = p.get("radio") ?? "";
@@ -33,20 +28,23 @@ export default async (req: Request): Promise<Response> => {
   const artist = p.get("artist") ?? "";
   const wantExplore = p.get("explore") === "1";
 
-  if (video && !/^[\w-]{11}$/.test(video)) return json(400, { error: "Bad video" });
-  if (country && !/^[A-Z]{2}$/.test(country)) return json(400, { error: "Bad country" });
-  if (artist && !/^UC[\w-]{22}$/.test(artist)) return json(400, { error: "Bad artist" });
-  if (!q && !video && !country && !artist && !wantExplore) return json(400, { error: "Empty request" });
-  if (!(await isTeamMember(req.headers.get("authorization") ?? ""))) return json(403, { error: "Log in first." });
+  if (video && !/^[\w-]{11}$/.test(video)) return fail("server");
+  if (country && !/^[A-Z]{2}$/.test(country)) return fail("server");
+  if (artist && !/^UC[\w-]{22}$/.test(artist)) return fail("server");
+  if (!q && !video && !country && !artist && !wantExplore) return fail("server");
 
-  try {
-    if (q) return json(200, { suggestions: await suggest(q) }, "private, max-age=3600");
-    if (video) return json(200, { tracks: await radio(video) }, "private, max-age=3600");
-    if (country) return json(200, await charts(country), "private, max-age=3600");
-    if (artist) return json(200, await musicArtist(artist), "private, max-age=3600");
-    return json(200, { sections: await explore() }, "private, max-age=1800");
-  } catch (e) {
-    console.warn("music-browse failed:", e instanceof Error ? e.message : e);
-    return json(502, { error: "youtube" });
-  }
+  // YouTube.js (free) starts while the login is checked; its answer is only
+  // sent after the "yes".
+  const g = await gate(req, async (): Promise<[unknown, number]> => {
+    if (q) return [{ suggestions: await suggest(q) }, 3600];
+    if (video) return [{ tracks: await radio(video) }, 3600];
+    if (country) return [await charts(country), 3600];
+    if (artist) return [await musicArtist(artist), 3600];
+    return [{ sections: await explore() }, 1800];
+  });
+  if ("denied" in g) return g.denied;
+  if (g.result.ok) return json(200, g.result.value[0], cacheFor(g.result.value[1]));
+  const e = g.result.error;
+  console.warn("music-browse failed:", e instanceof Error ? e.message : e);
+  return fail(codeOf(e));
 };

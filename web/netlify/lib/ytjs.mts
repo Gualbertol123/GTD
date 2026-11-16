@@ -11,7 +11,8 @@
 // this throws, and the app keeps working, just with the quota again.
 // -----------------------------------------------------------------------------
 
-import { Innertube, Log } from "youtubei.js";
+import type { Innertube } from "youtubei.js";
+import { BUDGET_MS, NotFoundError, TtlCache, deadline, normKey } from "./http.mts";
 
 export interface Song {
   id: string;
@@ -20,36 +21,54 @@ export interface Song {
   thumb: string;
 }
 
-// Its parser logs a lot of harmless notes: keep only real errors.
-try {
-  Log.setLevel(Log.Level.ERROR);
-} catch {
-  /* older/newer versions: fine either way */
-}
-
 let client: Promise<Innertube> | null = null;
 
-/** One client per warm function instance (creating it takes ~0.2 s). */
+/**
+ * One client per warm function instance (creating it takes ~0.2 s). The
+ * library (~1.3 MB) is loaded here, on first use, not when the function
+ * starts: the login check runs meanwhile, and a refused request never loads it.
+ */
 function innertube(): Promise<Innertube> {
   if (!client) {
-    client = Innertube.create({ lang: "it", location: "IT", retrieve_player: false }).catch((e) => {
-      client = null;
-      throw e;
-    });
+    const p: Promise<Innertube> = import("youtubei.js")
+      .then(({ Innertube, Log }) => {
+        // Its parser logs a lot of harmless notes: keep only real errors.
+        try {
+          Log.setLevel(Log.Level.ERROR);
+        } catch {
+          /* older/newer versions: fine either way */
+        }
+        return Innertube.create({ lang: "it", location: "IT", retrieve_player: false });
+      })
+      .catch((e) => {
+        if (client === p) client = null;
+        throw e;
+      });
+    client = p;
   }
   return client;
 }
 
-/** Runs `fn` with the client; a failure drops the client so the next call starts fresh. */
-async function withClient<T>(fn: (yt: Innertube) => Promise<T>): Promise<T> {
-  const yt = await innertube();
-  try {
-    return await fn(yt);
-  } catch (e) {
-    client = null;
+/**
+ * Runs `fn` with the client, within `ms` (TimeoutError after). A real failure
+ * drops the client so the next call starts fresh; "not found" and a timeout do
+ * not, and neither does a late failure of a client already replaced.
+ */
+async function withClient<T>(fn: (yt: Innertube) => Promise<T>, ms = BUDGET_MS - 500): Promise<T> {
+  const used = innertube();
+  const run = used.then(fn).catch((e) => {
+    if (!(e instanceof NotFoundError) && client === used) client = null;
     throw e;
-  }
+  });
+  return deadline(run, ms);
 }
+
+/** Answers shared by every request of this warm instance (see TtlCache). */
+const cache = new TtlCache(400);
+const MIN = 60_000;
+
+/** `fn` with the client, its answer kept for `ttl` ms under `key`. */
+const cached = <T,>(key: string, ttl: number, fn: (yt: Innertube) => Promise<T>, ms?: number): Promise<T> => cache.get(key, ttl, () => withClient(fn, ms));
 
 // ---- Turning YouTube's many item shapes into a Song ---------------------------
 
@@ -101,22 +120,27 @@ function songs(nodes: any[] | undefined, max = 200): Song[] {
 
 // ---- What the functions ask for ------------------------------------------------
 
-/** Songs for some words (two pages of YouTube's own search: ~40). */
-export function searchSongs(q: string): Promise<Song[]> {
-  return withClient(async (yt) => {
+/**
+ * Songs for some words: the first page of YouTube's own search (~20, enough
+ * for the list). A second page costs another full round trip (~0.5 s), so it
+ * is asked for only when the first one is unusually short.
+ */
+export function searchSongs(q: string, ms?: number): Promise<Song[]> {
+  const run = async (yt: Innertube) => {
     const first = await yt.search(q, { type: "video" });
     let found = songs(first.videos as any[]);
-    if (found.length < 30 && first.has_continuation) {
+    if (found.length < 12 && first.has_continuation) {
       const more = await first.getContinuation().catch(() => null);
       if (more) found = songs([...(first.videos as any[]), ...(more.videos as any[])]);
     }
     return found;
-  });
+  };
+  return cached(`search:${normKey(q)}`, 10 * MIN, run, ms);
 }
 
 /** What YouTube Music suggests while typing. */
 export function suggest(q: string): Promise<string[]> {
-  return withClient(async (yt) => {
+  return cached(`suggest:${normKey(q)}`, 60 * MIN, async (yt) => {
     const sections = await yt.music.getSearchSuggestions(q);
     const out: string[] = [];
     for (const sec of sections as any[])
@@ -130,7 +154,7 @@ export function suggest(q: string): Promise<string[]> {
 
 /** "Radio": the song, then ~50 songs like it (YouTube Music's automix). */
 export function radio(videoId: string): Promise<Song[]> {
-  return withClient(async (yt) => {
+  return cached(`radio:${videoId}`, 10 * MIN, async (yt) => {
     const panel = await yt.music.getUpNext(videoId, true);
     const list = songs(panel.contents as any[]);
     // A real radio has ~50 songs. A short one (~24) is YouTube's generic
@@ -153,7 +177,7 @@ export function radio(videoId: string): Promise<Song[]> {
 
 /** YouTube Music's Explore page: its sections of songs (trends, new videos…). */
 export function explore(): Promise<{ title: string; tracks: Song[] }[]> {
-  return withClient(async (yt) => {
+  return cached("explore", 30 * MIN, async (yt) => {
     const page = await yt.music.getExplore();
     const out: { title: string; tracks: Song[] }[] = [];
     for (const sec of (page.sections ?? []) as any[]) {
@@ -165,8 +189,8 @@ export function explore(): Promise<{ title: string; tracks: Song[] }[]> {
 }
 
 /** A playlist (YouTube or YouTube Music), up to `max` songs. */
-export function playlist(list: string, max = 200): Promise<{ list: string; title: string; channel: string; thumb: string; total: number; tracks: Song[] }> {
-  return withClient(async (yt) => {
+export function playlist(list: string, max = 200, ms?: number): Promise<{ list: string; title: string; channel: string; thumb: string; total: number; tracks: Song[] }> {
+  return cached(`playlist:${list}:${max}`, 10 * MIN, async (yt) => {
     let page: any = await yt.music.getPlaylist(list);
     const header = page.header;
     const nodes: any[] = [...(page.items ?? [])];
@@ -176,7 +200,7 @@ export function playlist(list: string, max = 200): Promise<{ list: string; title
       nodes.push(...(page.items ?? page.contents ?? []));
     }
     const tracks = songs(nodes, max);
-    if (!tracks.length) throw new Error("not-found");
+    if (!tracks.length) throw new NotFoundError();
     return {
       list,
       title: str(header?.title) || "Playlist",
@@ -185,12 +209,12 @@ export function playlist(list: string, max = 200): Promise<{ list: string; title
       total: Math.max(tracks.length, Number(str(header?.song_count).replace(/\D/g, "")) || 0),
       tracks,
     };
-  });
+  }, ms);
 }
 
 /** Playlists on YouTube for some words. */
-export function findPlaylists(q: string): Promise<{ list: string; title: string; channel: string; thumb: string }[]> {
-  return withClient(async (yt) => {
+export function findPlaylists(q: string, ms?: number): Promise<{ list: string; title: string; channel: string; thumb: string }[]> {
+  return cached(`playlists:${normKey(q)}`, 60 * MIN, async (yt) => {
     const r = await yt.search(q, { type: "playlist" });
     const out: { list: string; title: string; channel: string; thumb: string }[] = [];
     for (const n of r.results as any[]) {
@@ -205,24 +229,43 @@ export function findPlaylists(q: string): Promise<{ list: string; title: string;
       if (out.length >= 24) break;
     }
     return out;
-  });
+  }, ms);
 }
 
-/** An artist's most popular songs, from their channel's "Popular" order. */
-export function artistTop(channelId: string): Promise<Song[]> {
-  return withClient(async (yt) => {
+/**
+ * An artist's most popular songs. YouTube keeps every channel's uploads in
+ * popularity order as a playlist ("UULP" + the channel id without "UC"): one
+ * call, ~0.3 s, up to 100 songs. The channel's "Popular" tab (4-6 calls, and
+ * lately often just 1-2 songs) is only the backup.
+ */
+export function artistTop(channelId: string, ms?: number): Promise<Song[]> {
+  const run = async (yt: Innertube) => {
+    const nodes: any[] = [];
+    try {
+      let page: any = await yt.getPlaylist(`UULP${channelId.slice(2)}`);
+      nodes.push(...(page.videos ?? []));
+      let guard = 0;
+      while (songs(nodes).length < 30 && page.has_continuation && guard++ < 2) {
+        page = await page.getContinuation();
+        nodes.push(...(page.videos ?? []));
+      }
+    } catch {
+      /* no such list for this channel: the tab below */
+    }
+    if (songs(nodes).length >= 10) return songs(nodes, 50);
     const ch = await yt.getChannel(channelId);
     let videos: any = await ch.getVideos();
     const popular = (videos.filters as string[] | undefined)?.find((f) => /popolar|popular/i.test(f));
     if (popular) videos = await videos.applyFilter(popular);
-    let found = songs(videos.videos);
+    nodes.push(...(videos.videos ?? []));
     let guard = 0;
-    while (found.length < 30 && videos.has_continuation && guard++ < 3) {
+    while (songs(nodes).length < 30 && videos.has_continuation && guard++ < 3) {
       videos = await videos.getContinuation();
-      found = songs([...found.map((s) => ({ id: s.id, title: s.title, author: { name: s.channel } })), ...(videos.videos ?? [])]);
+      nodes.push(...(videos.videos ?? []));
     }
-    return found;
-  });
+    return songs(nodes, 50);
+  };
+  return cached(`top:${channelId}`, 30 * MIN, run, ms);
 }
 
 export interface ChartList {
@@ -244,7 +287,7 @@ const thumbUrl = (t: any): string => (Array.isArray(t) ? t[0]?.url : t?.contents
  * listened artists.
  */
 export function charts(country: string): Promise<{ lists: ChartList[]; artists: ChartArtist[] }> {
-  return withClient(async (yt) => {
+  return cached(`charts:${country}`, 60 * MIN, async (yt) => {
     const r: any = await yt.actions.execute("/browse", {
       browseId: "FEmusic_charts",
       client: "YTMUSIC",
@@ -263,14 +306,14 @@ export function charts(country: string): Promise<{ lists: ChartList[]; artists: 
         }
       }
     }
-    if (!lists.length && !artists.length) throw new Error("no charts");
+    if (!lists.length && !artists.length) throw new NotFoundError("no charts");
     return { lists, artists: artists.slice(0, 20) };
   });
 }
 
 /** Any YouTube Music artist: name, picture and their songs / videos. */
 export function musicArtist(id: string): Promise<{ name: string; thumb: string; tracks: Song[] }> {
-  return withClient(async (yt) => {
+  return cached(`artist:${id}`, 30 * MIN, async (yt) => {
     const a: any = await yt.music.getArtist(id);
     const nodes: any[] = [];
     for (const s of a.sections ?? []) if (s.type === "MusicShelf" || /video|brani|songs/i.test(str(s.header?.title))) nodes.push(...(s.contents ?? []));
@@ -308,7 +351,7 @@ function parseLength(text: string): number {
  * and prefers official uploads over covers, karaoke, live and lyric versions.
  */
 export function matchSong(title: string, artist: string, ms = 0): Promise<Song | null> {
-  return withClient(async (yt) => {
+  return cached(`match:${normKey(title)}|${normKey(artist)}|${Math.round(ms / 1000)}`, 60 * MIN, async (yt) => {
     const first = artist.split(",")[0].trim();
     const r = await yt.search(`${first} ${title}`, { type: "video" });
     const tw = words(title);

@@ -6,7 +6,8 @@
 // answers with just what the player needs (id, title, channel, thumbnail).
 // The API key stays here, on the server, in the YOUTUBE_API_KEY environment
 // variable (free, from Google Cloud: see README §1e); without it the answer is
-// 501 and the player offers YouTube's own search instead.
+// 503 { error: "no-key" } and the player offers YouTube's own search instead.
+// Errors follow lib/http.mts: { error: code }, never a raw message.
 //
 // Only a logged-in team account may use it (same check as report-pdf), so the
 // key's daily quota cannot be spent by anyone else. Nothing is stored.
@@ -15,17 +16,13 @@
 // no quota. Only if that fails does it use the Data API below (100 units).
 // -----------------------------------------------------------------------------
 
-import { isTeamMember } from "../lib/teamAuth.mts";
+import { cacheFor, codeOf, fail, gate, isTimeout, json, msLeft } from "../lib/http.mts";
 import { artistTop, searchSongs } from "../lib/ytjs.mts";
 
 const KEY = process.env.YOUTUBE_API_KEY ?? "";
 
-function json(status: number, body: unknown, cache = "no-store"): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": cache },
-  });
-}
+// The Data API needs about this long; with less time left it is not tried.
+const FALLBACK_MS = 3000;
 
 // The API returns titles with HTML entities (&#39; &amp; …).
 function decode(s: string): string {
@@ -44,25 +41,30 @@ interface ApiItem {
 }
 
 export default async (req: Request): Promise<Response> => {
-  if (req.method !== "GET") return json(405, { error: "GET only" });
+  const start = Date.now();
+  if (req.method !== "GET") return fail("server", 405);
   const params = new URL(req.url).searchParams;
   const q = (params.get("q") ?? "").trim().slice(0, 120);
   // An artist page: one channel, most watched first.
   const channelId = params.get("channelId") ?? "";
   const order = params.get("order") === "viewCount" ? "viewCount" : "relevance";
-  if (channelId && !/^UC[\w-]{22}$/.test(channelId)) return json(400, { error: "Bad channel" });
-  if (!q && !channelId) return json(400, { error: "Empty search" });
-  if (!(await isTeamMember(req.headers.get("authorization") ?? ""))) return json(403, { error: "Log in first." });
+  if (channelId && !/^UC[\w-]{22}$/.test(channelId)) return fail("server");
+  if (!q && !channelId) return fail("server");
 
-  // Free first.
-  try {
-    const tracks = channelId ? await artistTop(channelId) : await searchSongs(q);
-    if (tracks.length) return json(200, { tracks, via: "ytjs" }, "private, max-age=600");
-  } catch (e) {
+  // Free first: YouTube.js starts while the login is checked (it spends no
+  // quota), and leaves time for the Data API if it fails.
+  const g = await gate(req, () => (channelId ? artistTop(channelId, msLeft(start) - FALLBACK_MS) : searchSongs(q, msLeft(start) - FALLBACK_MS)));
+  if ("denied" in g) return g.denied;
+  if (g.result.ok && g.result.value.length) return json(200, { tracks: g.result.value, via: "ytjs" }, cacheFor(600));
+  if (!g.result.ok) {
+    const e = g.result.error;
     console.warn("ytjs search failed, using the Data API:", e instanceof Error ? e.message : e);
+    // A timed-out YouTube.js call keeps running: no fallback on top of it.
+    if (isTimeout(e)) return fail("timeout");
   }
 
-  if (!KEY) return json(501, { error: "no-key" });
+  if (!KEY) return g.result.ok ? json(200, { tracks: [], via: "ytjs" }, cacheFor(600)) : fail("no-key");
+  if (msLeft(start) < FALLBACK_MS) return fail("timeout");
 
   const url = new URL("https://www.googleapis.com/youtube/v3/search");
   const search = new URLSearchParams({
@@ -78,11 +80,15 @@ export default async (req: Request): Promise<Response> => {
   if (channelId) search.set("channelId", channelId);
   else search.set("videoCategoryId", "10"); // Music (an artist's own channel needs no filter)
   url.search = search.toString();
-  const res = await fetch(url);
+  let res: Response;
+  try {
+    res = await fetch(url, { signal: AbortSignal.timeout(msLeft(start)) });
+  } catch (e) {
+    return fail(codeOf(e));
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    const quota = /quota/i.test(text);
-    return json(quota ? 429 : 502, { error: quota ? "quota" : `YouTube ${res.status}` });
+    return fail(/quota/i.test(text) ? "quota" : "unavailable");
   }
   const data = (await res.json()) as { items?: ApiItem[] };
   const tracks = (data.items ?? [])
@@ -94,5 +100,5 @@ export default async (req: Request): Promise<Response> => {
       thumb: it.snippet?.thumbnails?.medium?.url ?? it.snippet?.thumbnails?.default?.url ?? "",
     }));
   // The same words give the same songs for a while: let the browser reuse it.
-  return json(200, { tracks, via: "api" }, "private, max-age=600");
+  return json(200, { tracks, via: "api" }, cacheFor(600));
 };
