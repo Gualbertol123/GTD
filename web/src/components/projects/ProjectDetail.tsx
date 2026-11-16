@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Board, Op, Priority, Project, Task } from "../../lib/types";
 import { PRIORITY_DOT, STATUS_ORDER, UNASSIGNED, genId } from "../../lib/constants";
 import { statusLabel, useT } from "../../lib/i18n";
@@ -14,7 +14,7 @@ import {
   type ProjectStats,
 } from "../../lib/projects";
 import { AutoTextarea } from "../AutoTextarea";
-import { Avatars, HealthBadge, Pill, ProgressRing, fmtDay, fmtMs } from "./ProjectBits";
+import { Avatars, HealthBadge, Icon, Pill, ProgressRing, fmtDay, fmtMs } from "./ProjectBits";
 import { ProjectTasks } from "./ProjectTasks";
 
 const PRIOS: Priority[] = ["P1", "P2", "P3", "P4"];
@@ -29,12 +29,80 @@ interface Props {
   prevId: string | null;
   nextId: string | null;
   onOpen: (id: string) => void;
+  /** Called just before the project is deleted, with the ids of its linked tasks (for Undo). */
+  onDeleted?: (project: Project, taskIds: string[]) => void;
+  /** Offers an Undo for a reversible action (shown by ProjectsView, which stays mounted). */
+  notify?: (text: string, undo: () => void) => void;
+}
+
+const AUTOSAVE_MS = 600;
+
+/**
+ * Saves a text field while the user types (debounced) and, above all, on
+ * unmount: Back, Prev/Next or a tab switch remove the field without a blur.
+ * Everything the cleanup needs is read through refs, never from the closure
+ * of the first render.
+ */
+function useAutosave(
+  value: string,
+  remote: string,
+  commit: (v: string) => void,
+  { debounce = true, trim = false }: { debounce?: boolean; trim?: boolean } = {}
+) {
+  const latest = useRef(value);
+  latest.current = value;
+  const remoteRef = useRef(remote);
+  const sent = useRef<string | null>(null);
+  if (remoteRef.current !== remote) {
+    remoteRef.current = remote;
+    sent.current = null;
+  }
+  const commitRef = useRef(commit);
+  commitRef.current = commit;
+  const timer = useRef<number | null>(null);
+  const opts = useRef({ trim });
+
+  const cancel = () => {
+    if (timer.current !== null) {
+      window.clearTimeout(timer.current);
+      timer.current = null;
+    }
+  };
+  const flushRef = useRef(() => {});
+  flushRef.current = () => {
+    cancel();
+    const v = opts.current.trim ? latest.current.trim() : latest.current;
+    if (opts.current.trim && !v) return; // never save an empty name
+    if (v === remoteRef.current || v === sent.current) return;
+    sent.current = v;
+    commitRef.current(v);
+  };
+
+  useEffect(() => {
+    if (!debounce) return;
+    if ((trim ? value.trim() : value) === remoteRef.current) return;
+    timer.current = window.setTimeout(() => flushRef.current(), AUTOSAVE_MS);
+    return cancel;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, debounce]);
+
+  // Unmount: clear the pending timer and save what is left, once.
+  useEffect(() => () => flushRef.current(), []);
+
+  return {
+    flush: () => flushRef.current(),
+    /** Drop the pending edit: the field goes back to the saved value. */
+    reset: () => {
+      cancel();
+      latest.current = remoteRef.current;
+    },
+  };
 }
 
 const label = "font-trajan text-[10px] uppercase tracking-widest text-[#8A8A8A]";
 const card = "bg-white rounded-[14px] border border-[#E8E6E1]";
 
-export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, prevId, nextId, onOpen }: Props) {
+export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, prevId, nextId, onOpen, onDeleted, notify }: Props) {
   const { t, lang } = useT();
   const [err, setErr] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
@@ -42,12 +110,29 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
   const done = s.status === "done";
   const name = useSyncedField(p.name);
   const desc = useSyncedField(p.description ?? "");
+  const delBtn = useRef<HTMLButtonElement>(null);
+  const restoreDelFocus = useRef(false);
 
   const save = (op: Op) => {
     setErr(null);
     send(op, (m) => setErr(m));
   };
   const patch = (patch: Partial<Project>) => save({ type: "projectUpdate", id: p.id, patch });
+  // The name saves on blur, Enter or unmount (not while typing, so Escape can
+  // still cancel the edit); the description saves while typing too.
+  const nameSave = useAutosave(name.value, p.name, (v) => patch({ name: v }), { debounce: false, trim: true });
+  const descSave = useAutosave(desc.value, p.description ?? "", (v) => patch({ description: v }));
+
+  const closeConfirm = () => {
+    restoreDelFocus.current = true;
+    setConfirmDel(false);
+  };
+  useEffect(() => {
+    if (!confirmDel && restoreDelFocus.current) {
+      restoreDelFocus.current = false;
+      delBtn.current?.focus();
+    }
+  }, [confirmDel]);
 
   const toggleOwner = (m: string) => {
     const cur = p.owners ?? [];
@@ -68,6 +153,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
           onClick={() => prevId && onOpen(prevId)}
           disabled={!prevId}
           title={t("projects.prev")}
+          aria-label={t("projects.prev")}
           className="w-9 h-9 rounded-full bg-white border border-[#E8E6E1] text-[#0A1931] disabled:opacity-30 hover:border-[#C9A96E]"
         >
           ‹
@@ -76,6 +162,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
           onClick={() => nextId && onOpen(nextId)}
           disabled={!nextId}
           title={t("projects.next")}
+          aria-label={t("projects.next")}
           className="w-9 h-9 rounded-full bg-white border border-[#E8E6E1] text-[#0A1931] disabled:opacity-30 hover:border-[#C9A96E]"
         >
           ›
@@ -91,10 +178,21 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
           {p.reportHidden ? `○ ${t("projects.notInReport")}` : `● ${t("projects.inReport")}`}
         </button>
         {confirmDel ? (
-          <span className="flex items-center gap-2 text-[12px] bg-[#FEF2F2] border border-[#FECACA] rounded-full pl-3 pr-1 h-9">
+          <span
+            role="group"
+            aria-label={t("projects.confirmDelete")}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.stopPropagation();
+                closeConfirm();
+              }
+            }}
+            className="flex items-center gap-2 text-[12px] bg-[#FEF2F2] border border-[#FECACA] rounded-full pl-3 pr-1 h-9"
+          >
             <span className="text-[#DC2626] font-semibold">{t("projects.confirmDelete")}</span>
             <button
               onClick={() => {
+                onDeleted?.(p, board.tasks.filter((x) => x.projectId === p.id).map((x) => x.id));
                 save({ type: "projectDelete", id: p.id });
                 onBack();
               }}
@@ -102,12 +200,13 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
             >
               {t("task.yes")}
             </button>
-            <button onClick={() => setConfirmDel(false)} className="h-7 px-3 rounded-full bg-white text-[#6B6B6B] border border-[#E8E6E1]">
+            <button autoFocus onClick={closeConfirm} className="h-7 px-3 rounded-full bg-white text-[#6B6B6B] border border-[#E8E6E1]">
               {t("task.no")}
             </button>
           </span>
         ) : (
           <button
+            ref={delBtn}
             onClick={() => setConfirmDel(true)}
             className="h-9 px-3 rounded-full text-[12px] font-semibold text-[#8A8A8A] border border-[#E8E6E1] hover:text-[#DC2626] hover:border-[#FECACA]"
           >
@@ -140,21 +239,34 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                   {t("projects.status.ongoing")}
                 </Pill>
               )}
-              <span className="text-[11px] text-[#A8A29E]">{t("projects.autoStatus")}</span>
+              <span className="text-[11px] text-[#6B6B6B]">{t("projects.autoStatus")}</span>
             </div>
 
-            <input
+            <AutoTextarea
               value={name.value}
+              rows={1}
+              aria-label={t("projects.newName")}
+              title={t("ux.projects.cancelEdit")}
               onFocus={name.onFocus}
-              onChange={(e) => name.setValue(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
+              onChange={(e) => name.setValue(e.target.value.replace(/[\r\n]+/g, " "))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  nameSave.reset();
+                  name.setValue(p.name);
+                  e.currentTarget.blur();
+                }
+              }}
               onBlur={() => {
                 name.onBlur();
-                const v = name.value.trim();
-                if (v && v !== p.name) patch({ name: v });
-                else if (!v) name.setValue(p.name);
+                nameSave.flush();
+                if (!name.value.trim()) name.setValue(p.name);
               }}
-              className="w-full font-trajan text-[22px] sm:text-[26px] leading-tight text-[#0A1931] bg-transparent outline-none border-b border-transparent focus:border-[#C9A96E]"
+              className="w-full font-trajan text-[22px] sm:text-[26px] leading-tight text-[#0A1931] bg-transparent outline-none border-b border-transparent focus:border-[#C9A96E] resize-none break-words [overflow-wrap:anywhere]"
             />
 
             <fieldset disabled={!v2} className="space-y-3 disabled:opacity-50">
@@ -165,6 +277,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                     {PRIOS.map((pr) => (
                       <button
                         key={pr}
+                        aria-pressed={projectPriority(p) === pr}
                         onClick={() => patch({ priority: pr })}
                         className={`h-7 px-2.5 rounded-full text-[11px] font-semibold border inline-flex items-center gap-1 ${
                           projectPriority(p) === pr
@@ -201,18 +314,26 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                     />
                   </label>
                 </div>
-                <span className="flex items-center gap-1" role="radiogroup" aria-label={t("projects.color")}>
-                  {PROJECT_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      role="radio"
-                      aria-checked={color === c}
-                      onClick={() => patch({ color: c })}
-                      className="w-5 h-5 rounded-full hover:ring-2 hover:ring-white/70"
-                      style={{ background: c, boxShadow: color === c ? `0 0 0 2px #fff, 0 0 0 4px ${c}` : undefined }}
-                      title={c}
-                    />
-                  ))}
+                <span className="flex items-center" role="group" aria-label={t("projects.color")}>
+                  {PROJECT_COLORS.map((c) => {
+                    const cname = t(`ux.projects.color.${c}`);
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        aria-pressed={color === c}
+                        aria-label={cname}
+                        title={cname}
+                        onClick={() => patch({ color: c })}
+                        className="group/sw p-0.5 rounded-full"
+                      >
+                        <span
+                          className="block w-5 h-5 rounded-full group-hover/sw:ring-2 group-hover/sw:ring-white/70"
+                          style={{ background: c, boxShadow: color === c ? `0 0 0 2px #fff, 0 0 0 4px ${c}` : undefined }}
+                        />
+                      </button>
+                    );
+                  })}
                 </span>
               </div>
 
@@ -223,6 +344,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                   return (
                     <button
                       key={m}
+                      aria-pressed={on}
                       onClick={() => toggleOwner(m)}
                       className={`h-7 px-2.5 rounded-full text-[12px] border ${
                         on
@@ -230,7 +352,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                           : "bg-white text-[#6B6B6B] border-[#E8E6E1] hover:border-[#C9A96E]"
                       }`}
                     >
-                      {on ? "✓ " : ""}
+                      {on && <Icon name="check" size={11} strokeWidth={2.6} className="mr-1 -mt-px align-middle" />}
                       {m}
                     </button>
                   );
@@ -243,7 +365,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                 onChange={(e) => desc.setValue(e.target.value)}
                 onBlur={() => {
                   desc.onBlur();
-                  if (desc.value !== (p.description ?? "")) patch({ description: desc.value });
+                  descSave.flush();
                 }}
                 placeholder={t("projects.descriptionPlaceholder")}
                 aria-label={t("projects.description")}
@@ -284,7 +406,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
 
       {/* Tasks + notes */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
-        <ProjectTasks board={board} project={p} stats={s} v2={v2} save={save} />
+        <ProjectTasks board={board} project={p} stats={s} v2={v2} save={save} notify={notify} />
         <div className="space-y-4">
           <Notes project={p} v2={v2} patch={patch} />
           {p.items.length > 0 && <LegacyChecklist project={p} v2={v2} save={save} patch={patch} />}
@@ -334,6 +456,7 @@ function Schedule({ project: p, stats: s, color }: { project: Project; stats: Pr
 function Notes({ project: p, v2, patch }: { project: Project; v2: boolean; patch: (p: Partial<Project>) => void }) {
   const { t } = useT();
   const notes = useSyncedField(p.notes ?? "");
+  const notesSave = useAutosave(notes.value, p.notes ?? "", (v) => patch({ notes: v }));
   return (
     <div className={`${card} p-4 space-y-2`}>
       <h3 className="font-trajan text-[13px] uppercase tracking-widest text-[#0A1931]">{t("projects.notes")}</h3>
@@ -344,9 +467,10 @@ function Notes({ project: p, v2, patch }: { project: Project; v2: boolean; patch
         onChange={(e) => notes.setValue(e.target.value)}
         onBlur={() => {
           notes.onBlur();
-          if (notes.value !== (p.notes ?? "")) patch({ notes: notes.value });
+          notesSave.flush();
         }}
         placeholder={t("projects.notesPlaceholder")}
+        aria-label={t("projects.notes")}
         className="w-full min-h-[7rem] rounded-lg bg-[#FFFBF2] border border-[#E8E6E1] p-2.5 text-[12px] leading-relaxed text-[#0A1931] outline-none focus:border-[#C9A96E] disabled:opacity-50"
       />
     </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Board, BoardMode, Op, Priority, Project, Status, Task } from "../../lib/types";
 import { PRIORITY_DOT, STATUS_ORDER, UNASSIGNED, genId, isArchived } from "../../lib/constants";
 import { priorityLabel, statusLabel, useT } from "../../lib/i18n";
@@ -8,7 +8,7 @@ import { daysSince, daysUntil, toISODate } from "../../lib/dates";
 import { readPref, writePref } from "../../lib/prefs";
 import { HEALTH_COLOR, TASK_STATUS_COLOR, boardMode, projectPriority, type ProjectStats } from "../../lib/projects";
 import { TaskDetails } from "../TaskDetails";
-import { Avatars, StatusStack, fmtDay } from "./ProjectBits";
+import { Avatars, Icon, StatusStack, fmtDay } from "./ProjectBits";
 
 const PRIOS: Priority[] = ["P1", "P2", "P3", "P4"];
 type View = "list" | "board";
@@ -25,12 +25,15 @@ export function ProjectTasks({
   stats: s,
   v2,
   save,
+  notify,
 }: {
   board: Board;
   project: Project;
   stats: ProjectStats;
   v2: boolean;
   save: (op: Op) => void;
+  /** Offers an Undo (see ProjectsView). */
+  notify?: (text: string, undo: () => void) => void;
 }) {
   const { t, lang } = useT();
   const { me } = useMe();
@@ -101,7 +104,15 @@ export function ProjectTasks({
   };
 
   const move = (id: string, st: Status) => save({ type: "moveTask", id, status: st });
-  const unlink = (id: string) => save({ type: "updateTask", id, patch: { projectId: undefined } });
+  const unlink = (id: string) => {
+    const task = s.tasks.find((x) => x.id === id);
+    save({ type: "updateTask", id, patch: { projectId: undefined } });
+    if (openId === id) setOpenId(null);
+    if (task && notify)
+      notify(t("ux.projects.unlinked", { name: task.title || "—" }), () =>
+        save({ type: "updateTask", id, patch: { projectId: p.id } })
+      );
+  };
   const toggle = (id: string) => setOpenId((cur) => (cur === id ? null : id));
 
   return (
@@ -113,10 +124,11 @@ export function ProjectTasks({
           {s.done}/{s.total}
         </span>
         <span className="flex-1" />
-        <div className="flex rounded-full border border-[#E8E6E1] bg-white p-0.5">
+        <div className="flex rounded-full border border-[#E8E6E1] bg-white p-0.5" role="group" aria-label={t("ux.projects.tasksView")}>
           {(["list", "board"] as View[]).map((v) => (
             <button
               key={v}
+              aria-pressed={view === v}
               onClick={() => setView(v)}
               className={`h-7 px-3 rounded-full text-[12px] font-semibold ${view === v ? "bg-[#0A1931] text-[#C9A96E]" : "text-[#6B6B6B]"}`}
             >
@@ -139,8 +151,9 @@ export function ProjectTasks({
               </span>
             ))}
             {s.overdueTasks > 0 && (
-              <span className="font-semibold" style={{ color: HEALTH_COLOR.overdue }}>
-                ⚠ {t("projects.overdueTasks", { n: s.overdueTasks })}
+              <span className="font-semibold inline-flex items-center gap-1" style={{ color: HEALTH_COLOR.overdue }}>
+                <Icon name="warning" size={11} />
+                {t("projects.overdueTasks", { n: s.overdueTasks })}
               </span>
             )}
           </div>
@@ -155,6 +168,7 @@ export function ProjectTasks({
           <div className="rounded-[12px] bg-[#FAF9F6] border border-[#E3DFD7] p-2.5 space-y-2">
             <input
               value={title}
+              aria-label={t("projects.tasks.new")}
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && create()}
               placeholder={t("projects.tasks.new")}
@@ -175,7 +189,13 @@ export function ProjectTasks({
                   </option>
                 ))}
               </select>
-              <select value={owner} onChange={(e) => setOwner(e.target.value)} className={field}>
+              <select
+                value={owner}
+                onChange={(e) => setOwner(e.target.value)}
+                className={field}
+                aria-label={t("quick.owner")}
+                title={t("quick.owner")}
+              >
                 {[...board.members, UNASSIGNED].map((m) => (
                   <option key={m} value={m}>
                     {m === UNASSIGNED ? t("members.unassigned") : m}
@@ -198,7 +218,8 @@ export function ProjectTasks({
             <select
               value=""
               onChange={(e) => e.target.value && save({ type: "updateTask", id: e.target.value, patch: { projectId: p.id } })}
-              className="w-full h-8 rounded-full bg-white border border-dashed border-[#E3DFD7] px-3 text-[12px] text-[#6B6B6B] outline-none cursor-pointer"
+              aria-label={t("projects.tasks.link")}
+              className="w-full h-8 rounded-full bg-white border border-dashed border-[#E3DFD7] px-3 text-[12px] text-[#6B6B6B] outline-none cursor-pointer focus:border-[#C9A96E] focus:border-solid"
             >
               <option value="">{t("projects.tasks.link")}</option>
               {STATUS_ORDER.map((st) => {
@@ -225,10 +246,12 @@ export function ProjectTasks({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("projects.tasks.search")}
+            aria-label={t("projects.tasks.search")}
+            type="search"
             className="h-8 flex-1 min-w-[140px] rounded-full bg-white border border-[#E8E6E1] px-3 text-[12px] outline-none focus:border-[#C9A96E]"
           />
           {people.length > 1 && (
-            <select value={person} onChange={(e) => setPerson(e.target.value)} className={field}>
+            <select value={person} onChange={(e) => setPerson(e.target.value)} className={field} aria-label={t("ux.projects.filterPerson")}>
               <option value="all">{t("projects.tasks.allPeople")}</option>
               {people.map((m) => (
                 <option key={m} value={m}>
@@ -240,6 +263,7 @@ export function ProjectTasks({
           {view === "list" && !sequential && doneCount > 0 && (
             <button
               onClick={() => setShowDone((v) => !v)}
+              aria-pressed={showDone}
               className="h-8 px-3 rounded-full border border-[#E8E6E1] bg-white text-[12px] text-[#6B6B6B] hover:border-[#C9A96E]"
             >
               {showDone ? t("projects.tasks.hideDone") : t("projects.tasks.showDone", { n: doneCount })}
@@ -271,7 +295,7 @@ export function ProjectTasks({
                           : { background: "rgba(120,120,128,0.18)", color: "#8E8E93" }
                     }
                   >
-                    {done ? "✓" : n + 1}
+                    {done ? <Icon name="check" size={12} strokeWidth={3} /> : n + 1}
                   </span>
                   {n < s.tasks.length - 1 && <span className="flex-1 w-px mt-1" style={{ background: "rgba(120,120,128,0.3)" }} />}
                 </div>
@@ -294,22 +318,24 @@ export function ProjectTasks({
                       </span>
                     }
                     extra={
-                      <span className="flex flex-col shrink-0">
+                      <span className="flex shrink-0">
                         <button
                           onClick={() => shiftStep(task.id, -1)}
                           disabled={n === 0}
                           title={t("projects.step.up")}
-                          className="w-6 h-[14px] leading-none text-[11px] text-[#8A8A8A] disabled:opacity-25"
+                          aria-label={t("projects.step.up")}
+                          className="w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:bg-[#F5F3EF] disabled:opacity-25"
                         >
-                          ▲
+                          <Icon name="up" size={14} />
                         </button>
                         <button
                           onClick={() => shiftStep(task.id, 1)}
                           disabled={n === s.tasks.length - 1}
                           title={t("projects.step.down")}
-                          className="w-6 h-[14px] leading-none text-[11px] text-[#8A8A8A] disabled:opacity-25"
+                          aria-label={t("projects.step.down")}
+                          className="w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:bg-[#F5F3EF] disabled:opacity-25"
                         >
-                          ▼
+                          <Icon name="down" size={14} />
                         </button>
                       </span>
                     }
@@ -359,13 +385,19 @@ function DueChip({ task }: { task: Task }) {
   if (!task.dueDate) return null;
   const left = daysUntil(task.dueDate);
   const open = task.status !== "DONE";
+  // due-chip--late / --soon are hooks for the skins (glass.css).
   const cls =
     open && left !== null && left < 0
-      ? "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]"
+      ? "due-chip--late bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]"
       : open && left !== null && left <= 2
-        ? "bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]"
+        ? "due-chip--soon bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]"
         : "bg-[#F5F3EF] text-[#6B6B6B] border-[#E8E6E1]";
-  return <span className={`text-[10px] px-1.5 py-px rounded-full border whitespace-nowrap ${cls}`}>⏱ {fmtDay(task.dueDate, lang)}</span>;
+  return (
+    <span className={`due-chip text-[10px] px-1.5 py-px rounded-full border whitespace-nowrap inline-flex items-center gap-0.5 ${cls}`}>
+      <Icon name="clock" size={10} />
+      {fmtDay(task.dueDate, lang)}
+    </span>
+  );
 }
 
 function TaskMeta({ task }: { task: Task }) {
@@ -377,8 +409,9 @@ function TaskMeta({ task }: { task: Task }) {
       <Avatars names={taskOwners(task).filter((n) => n !== UNASSIGNED)} size={16} />
       <DueChip task={task} />
       {subs > 0 && (
-        <span className="tabular-nums">
-          ☑ {subsDone}/{subs}
+        <span className="tabular-nums inline-flex items-center gap-0.5">
+          <Icon name="checklist" size={10} />
+          {subsDone}/{subs}
         </span>
       )}
       {task.status === "WAITING" && task.waitingSince && <span>{t("projects.tasks.waiting", { n: daysSince(task.waitingSince) })}</span>}
@@ -393,10 +426,11 @@ function DoneToggle({ task, onMove }: { task: Task; onMove: (s: Status) => void 
     <button
       onClick={() => onMove(done ? "NEXT" : "DONE")}
       title={done ? statusLabel(lang, "NEXT") : statusLabel(lang, "DONE")}
+      aria-label={done ? statusLabel(lang, "NEXT") : statusLabel(lang, "DONE")}
       className="w-[18px] h-[18px] shrink-0 rounded-full border-[1.5px] flex items-center justify-center text-[10px] text-white"
       style={done ? { background: "#34C759", borderColor: "#34C759" } : { borderColor: "#C9C5BE" }}
     >
-      {done ? "✓" : ""}
+      {done ? <Icon name="check" size={11} strokeWidth={3} /> : null}
     </button>
   );
 }
@@ -433,7 +467,7 @@ function TaskRow({
           <DoneToggle task={task} onMove={onMove} />
         </span>
         <span className={`w-2 h-2 mt-1.5 shrink-0 rounded-full ${PRIORITY_DOT[task.priority]}`} title={task.priority} />
-        <button onClick={onToggle} className="flex-1 min-w-0 text-left space-y-1">
+        <button onClick={onToggle} aria-expanded={open} className="flex-1 min-w-0 text-left space-y-1">
           {badge && <span className="block">{badge}</span>}
           <span
             className={`block text-[13px] leading-snug break-words [overflow-wrap:anywhere] ${
@@ -448,7 +482,7 @@ function TaskRow({
         <select
           value={task.status}
           onChange={(e) => onMove(e.target.value as Status)}
-          className="h-7 max-w-[118px] shrink-0 rounded-full border border-[#E8E6E1] bg-[#F5F3EF] px-2 text-[10px] font-semibold uppercase tracking-wide text-[#0A1931] outline-none cursor-pointer"
+          className="h-7 max-w-[118px] shrink-0 rounded-full border border-[#E8E6E1] bg-[#F5F3EF] px-2 text-[10px] font-semibold uppercase tracking-wide text-[#0A1931] outline-none cursor-pointer focus:border-[#C9A96E]"
           style={{ boxShadow: `inset 3px 0 0 ${TASK_STATUS_COLOR[task.status]}` }}
           aria-label={t("quick.status")}
         >
@@ -461,9 +495,10 @@ function TaskRow({
         <button
           onClick={onUnlink}
           title={t("projects.tasks.unlink")}
-          className="shrink-0 w-7 h-7 rounded-full text-[12px] text-[#A8A29E] hover:text-[#DC2626] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+          aria-label={t("projects.tasks.unlink")}
+          className="shrink-0 w-7 h-7 rounded-full inline-flex items-center justify-center text-[#8A8A8A] hover:text-[#DC2626] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
         >
-          ⨯
+          <Icon name="x" size={13} />
         </button>
       </div>
       {open && <Editor task={task} board={board} save={save} onDeleted={onToggle} />}
@@ -501,9 +536,26 @@ function MiniBoard({
   const { t, lang } = useT();
   const [over, setOver] = useState<Status | null>(null);
   const opened = openId ? tasks.find((x) => x.id === openId) : undefined;
+  const editorRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef(new Map<string, HTMLDivElement>());
+  // The editor opens under the whole board: bring it into view and focus it.
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!opened || !el) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+    const first = el.querySelector<HTMLElement>("input, textarea, select, [contenteditable=true]");
+    (first ?? el).focus({ preventScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened?.id]);
+  const closeEditor = (id: string) => {
+    onToggle(id);
+    // Back to the card it came from.
+    window.setTimeout(() => cardRefs.current.get(id)?.focus({ preventScroll: true }), 0);
+  };
   return (
     <div className="space-y-3">
-      <div className="text-[11px] text-[#A8A29E]">{t("projects.tasks.dragHint")}</div>
+      <div className="text-[11px] text-[#6B6B6B]">{t("ux.projects.dragHint")}</div>
       <div className="overflow-x-auto -mx-1 px-1 pb-1">
         <div className="grid grid-flow-col auto-cols-[minmax(170px,1fr)] gap-2">
           {STATUS_ORDER.map((st) => {
@@ -534,13 +586,28 @@ function MiniBoard({
                 {col.map((task) => (
                   <div
                     key={task.id}
+                    ref={(el) => {
+                      if (el) cardRefs.current.set(task.id, el);
+                      else cardRefs.current.delete(task.id);
+                    }}
                     draggable
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={openId === task.id}
+                    aria-label={t("ux.projects.openTask", { name: task.title })}
                     onDragStart={(e) => {
                       e.dataTransfer.setData("text/plain", task.id);
                       e.dataTransfer.effectAllowed = "move";
                     }}
                     onClick={() => onToggle(task.id)}
-                    className={`group rounded-[10px] bg-white border p-2 cursor-grab active:cursor-grabbing space-y-1 ${
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onToggle(task.id);
+                      }
+                    }}
+                    className={`group rounded-[10px] bg-white border p-2 cursor-grab active:cursor-grabbing space-y-1 outline-none focus-visible:border-[#C9A96E] focus-visible:ring-2 focus-visible:ring-[#C9A96E]/50 ${
                       openId === task.id ? "border-[#C9A96E]" : "border-[#E8E6E1] hover:border-[#C9A96E]"
                     }`}
                   >
@@ -559,9 +626,10 @@ function MiniBoard({
                           onUnlink(task.id);
                         }}
                         title={t("projects.tasks.unlink")}
-                        className="shrink-0 text-[11px] text-[#A8A29E] hover:text-[#DC2626] opacity-0 group-hover:opacity-100"
+                        aria-label={t("projects.tasks.unlink")}
+                        className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-full inline-flex items-center justify-center text-[#8A8A8A] hover:text-[#DC2626] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
                       >
-                        ⨯
+                        <Icon name="x" size={12} />
                       </button>
                     </div>
                     <TaskMeta task={task} />
@@ -573,11 +641,36 @@ function MiniBoard({
         </div>
       </div>
       {opened && (
-        <div className="rounded-[12px] border border-[#C9A96E] bg-white">
-          <div className="flex items-center gap-2 px-2.5 pt-2.5">
+        <div
+          ref={editorRef}
+          tabIndex={-1}
+          role="region"
+          aria-label={opened.title}
+          onKeyDown={(e) => {
+            if (e.key !== "Escape") return;
+            if (e.isDefaultPrevented() || e.nativeEvent.defaultPrevented) {
+              // A field inside handled it (the title reverts and blurs): keep
+              // focus in the editor so a second Escape closes it.
+              const el = editorRef.current;
+              window.setTimeout(() => {
+                if (el && (document.activeElement === document.body || !document.activeElement)) el.focus({ preventScroll: true });
+              }, 0);
+              return;
+            }
+            e.stopPropagation();
+            closeEditor(opened.id);
+          }}
+          className="rounded-[12px] border border-[#C9A96E] bg-white outline-none scroll-mb-4"
+        >
+          <div className="flex items-center gap-2 px-2.5 pt-2">
             <span className="flex-1 text-[11px] font-bold uppercase tracking-widest text-[#8A8A8A]">{statusLabel(lang, opened.status)}</span>
-            <button onClick={() => onToggle(opened.id)} className="text-[12px] text-[#8A8A8A]">
-              ✕
+            <button
+              onClick={() => closeEditor(opened.id)}
+              aria-label={t("common.close")}
+              title={t("common.close")}
+              className="w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:bg-[#F5F3EF] hover:text-[#0A1931]"
+            >
+              <Icon name="x" size={14} />
             </button>
           </div>
           <Editor task={opened} board={board} save={save} onDeleted={() => onToggle(opened.id)} />
@@ -601,6 +694,7 @@ function BoardModePicker({ project: p, available, save }: { project: Project; av
           {MODES.map((m) => (
             <button
               key={m}
+              aria-pressed={mode === m}
               disabled={!available}
               onClick={() => m !== mode && save({ type: "projectUpdate", id: p.id, patch: { boardMode: m } })}
               className={`h-7 px-3 rounded-full text-[12px] font-semibold disabled:opacity-50 ${

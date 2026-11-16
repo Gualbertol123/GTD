@@ -181,3 +181,61 @@ export function fmtMs(ms: number, lang: "it" | "en", withYear = false): string {
     ...(withYear ? { year: "numeric" } : {}),
   });
 }
+
+// ---- Icons ---------------------------------------------------------------------
+// Small line icons drawn in currentColor, so the skins' colour remaps apply.
+
+type IconName = "x" | "up" | "down" | "clock" | "warning" | "folder" | "arrow" | "ban" | "check" | "checklist";
+
+const ICON_PATHS: Record<IconName, React.ReactNode> = {
+  x: <path d="M6 6l12 12M18 6L6 18" />,
+  up: <path d="M6 15l6-6 6 6" />,
+  down: <path d="M6 9l6 6 6-6" />,
+  clock: (
+    <>
+      <circle cx="12" cy="13" r="8" />
+      <path d="M12 9v4l2.5 2M9.5 2.5h5" />
+    </>
+  ),
+  warning: (
+    <>
+      <path d="M12 3.5L2.5 20h19L12 3.5z" />
+      <path d="M12 10v4.5M12 17.2v.3" />
+    </>
+  ),
+  folder: <path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4.6l2 2.2h8.4A1.5 1.5 0 0 1 21 8.7v9.8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z" />,
+  arrow: <path d="M4 12h15M14 6.5l5.5 5.5-5.5 5.5" />,
+  ban: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M6 6l12 12" />
+    </>
+  ),
+  check: <path d="M5 12.5l4.5 4.5L19 7.5" />,
+  checklist: (
+    <>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="3" />
+      <path d="M8 12.5l3 3 5-6" />
+    </>
+  ),
+};
+
+export function Icon({ name, size = 12, className = "", strokeWidth = 2 }: { name: IconName; size?: number; className?: string; strokeWidth?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable="false"
+      className={`inline-block shrink-0 ${className}`}
+    >
+      {ICON_PATHS[name]}
+    </svg>
+  );
+}

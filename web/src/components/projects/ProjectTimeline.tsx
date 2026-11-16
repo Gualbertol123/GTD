@@ -80,7 +80,7 @@ export function ProjectTimeline({
                 i % step === 0 ? (
                   <span
                     key={m.ms}
-                    className="absolute top-0 text-[10px] font-semibold uppercase tracking-wide text-[#A8A29E]"
+                    className="absolute top-0 text-[10px] font-semibold uppercase tracking-wide text-[#6B6B6B]"
                     style={{ left: `${pos(m.ms)}%` }}
                   >
                     {m.label}
@@ -116,14 +116,26 @@ export function ProjectTimeline({
                 const color = projectColor(p);
                 const left = pos(start);
                 const width = Math.max(0.8, pos(end + DAY) - left);
+                const pct = Math.round(s.share * 100);
+                // A small share leaves the label on the pale tint: dark text there.
+                const onTint = s.share < 0.15;
+                const health = t(`projects.health.${s.health}`);
                 return (
                   <button
                     key={p.id}
                     onClick={() => onOpen(p.id)}
+                    title={`${p.name || "—"} · ${t("ux.projects.health", { h: health })}`}
                     className="w-full grid grid-cols-[180px_1fr] gap-3 items-center text-left group"
                   >
                     <span className="flex items-center gap-2 min-w-0">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: HEALTH_COLOR[s.health] }} />
+                      <span className="w-2.5 h-2.5 rounded-[3px] shrink-0" style={{ background: color }} aria-hidden />
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ background: HEALTH_COLOR[s.health] }}
+                        role="img"
+                        aria-label={t("ux.projects.health", { h: health })}
+                        title={t("ux.projects.health", { h: health })}
+                      />
                       <span className="truncate text-[12px] font-semibold text-[#0A1931] group-hover:underline">
                         {p.name || "—"}
                       </span>
@@ -132,12 +144,21 @@ export function ProjectTimeline({
                       <span
                         className="absolute top-0.5 bottom-0.5 rounded-full overflow-hidden"
                         style={{ left: `${left}%`, width: `${width}%`, background: `${color}2E`, boxShadow: `inset 0 0 0 1px ${color}66` }}
-                        title={`${fmtDay(p.startDate, lang, true) || "…"} → ${fmtDay(p.targetDate, lang, true)} · ${Math.round(s.share * 100)}%`}
+                        title={`${fmtDay(p.startDate, lang, true) || "…"} → ${fmtDay(p.targetDate, lang, true)} · ${pct}% · ${health}`}
                       >
                         <span className="absolute inset-y-0 left-0" style={{ width: `${s.share * 100}%`, background: color }} />
-                        <span className="relative z-10 px-2 text-[10px] leading-6 font-bold text-white mix-blend-normal whitespace-nowrap" style={{ textShadow: "0 0 3px rgba(0,0,0,0.35)" }}>
-                          {Math.round(s.share * 100)}%
-                        </span>
+                        {onTint ? (
+                          <span
+                            className="relative z-10 pr-2 text-[10px] leading-6 font-bold text-[#0A1931] whitespace-nowrap"
+                            style={{ paddingLeft: `calc(${s.share * 100}% + 6px)` }}
+                          >
+                            {pct}%
+                          </span>
+                        ) : (
+                          <span className="relative z-10 px-2 text-[10px] leading-6 font-bold text-white mix-blend-normal whitespace-nowrap" style={{ textShadow: "0 0 3px rgba(0,0,0,0.35)" }}>
+                            {pct}%
+                          </span>
+                        )}
                       </span>
                     </span>
                   </button>

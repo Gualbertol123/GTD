@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { goBackTo, useRouteSub } from "../lib/history";
 import type { Board, Op, Project } from "../lib/types";
 import { useT } from "../lib/i18n";
@@ -17,7 +18,7 @@ import {
   type ProjectStats,
 } from "../lib/projects";
 import { PRIORITY_DOT } from "../lib/constants";
-import { Avatars, HealthBadge, Pill, ProgressRing, StatusStack, fmtDay, fmtMs } from "./projects/ProjectBits";
+import { Avatars, HealthBadge, Icon, Pill, ProgressRing, StatusStack, fmtDay, fmtMs } from "./projects/ProjectBits";
 import { ProjectDetail } from "./projects/ProjectDetail";
 import { ProjectTimeline } from "./projects/ProjectTimeline";
 
@@ -48,7 +49,28 @@ export function ProjectsView({ board, send }: Props) {
   const [sort, setSort] = useState<ProjectSort>("target");
   const [olderOpen, setOlderOpen] = useState(false);
   const [creating, setCreating] = useState("");
+  // "Da seguire" figure: only the projects that are overdue or at risk.
+  const [onlyAttention, setOnlyAttention] = useState(false);
+  const nameInput = useRef<HTMLInputElement>(null);
   const { me } = useMe();
+  // One Undo toast for the tab (a deleted project, an unlinked task). It lives
+  // here because the project page unmounts when its project is deleted.
+  const [toast, setToast] = useState<{ id: number; text: string; undo: () => void } | null>(null);
+  const notify = (text: string, undo: () => void) => setToast({ id: Date.now(), text, undo });
+  // Ops for an Undo, sent one per render: useBoard's send applies each op to
+  // the board of the last render, so several sends in one tick would keep only
+  // the last one on screen until the next reload.
+  const [queue, setQueue] = useState<Op[]>([]);
+  useEffect(() => {
+    if (!queue.length) return;
+    send(queue[0]);
+    setQueue((q) => q.slice(1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue]);
+  const showFilter = (f: Filter) => {
+    setFilter(f);
+    setOnlyAttention(false);
+  };
 
   const open = (id: string | null, replace = false) => {
     setOpenSub(id ?? undefined, { replace });
@@ -90,6 +112,10 @@ export function ProjectsView({ board, send }: Props) {
 
   const matches = (p: Project) => {
     const q = query.trim().toLowerCase();
+    if (onlyAttention) {
+      const h = stats.get(p.id)!.health;
+      if (h !== "overdue" && h !== "atRisk") return false;
+    }
     if (owner !== "all" && !(p.owners ?? []).includes(owner)) return false;
     if (!q) return true;
     const hay = `${p.name} ${p.description ?? ""} ${p.notes ?? ""} ${stats
@@ -102,7 +128,7 @@ export function ProjectsView({ board, send }: Props) {
   const ongoing = useMemo(
     () => sortProjects(projects.filter((p) => stats.get(p.id)!.status === "ongoing" && matches(p)), sort, stats),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [projects, stats, sort, owner, query]
+    [projects, stats, sort, owner, query, onlyAttention]
   );
   // Completed: newest completion first.
   const done = useMemo(
@@ -111,7 +137,7 @@ export function ProjectsView({ board, send }: Props) {
         .filter((p) => stats.get(p.id)!.status === "done" && matches(p))
         .sort((a, b) => (stats.get(b.id)!.completedAt ?? 0) - (stats.get(a.id)!.completedAt ?? 0)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [projects, stats, owner, query]
+    [projects, stats, owner, query, onlyAttention]
   );
   const recent = done.filter((p) => stats.get(p.id)!.recent);
   const older = done.filter((p) => !stats.get(p.id)!.recent);
@@ -123,7 +149,7 @@ export function ProjectsView({ board, send }: Props) {
     const p = newProject(name, me && board.members.includes(me) ? [me] : []);
     send({ type: "projectAdd", project: p });
     setCreating("");
-    setFilter("ongoing");
+    showFilter("ongoing");
     open(p.id);
   };
 
@@ -132,6 +158,8 @@ export function ProjectsView({ board, send }: Props) {
     const list = stats.get(selected.id)!.status === "done" ? done : ongoing;
     const idx = list.findIndex((p) => p.id === selected.id);
     return (
+      <>
+      <UndoToast toast={toast} onClose={() => setToast(null)} />
       <ProjectDetail
         key={selected.id}
         board={board}
@@ -146,7 +174,21 @@ export function ProjectsView({ board, send }: Props) {
         prevId={idx > 0 ? list[idx - 1].id : null}
         nextId={idx >= 0 && idx < list.length - 1 ? list[idx + 1].id : null}
         onOpen={open}
+        notify={notify}
+        onDeleted={(p, taskIds) =>
+          notify(t("ux.projects.deleted", { name: p.name || "—" }), () => {
+            send({ type: "projectAdd", project: p });
+            setQueue((q) => [
+              ...q,
+              // projectAdd does not write report_hidden.
+              ...(p.reportHidden ? [{ type: "projectReportHidden", id: p.id, hidden: true } as Op] : []),
+              ...taskIds.map((id): Op => ({ type: "updateTask", id, patch: { projectId: p.id } })),
+            ]);
+            open(p.id);
+          })
+        }
       />
+      </>
     );
   }
 
@@ -159,6 +201,8 @@ export function ProjectsView({ board, send }: Props) {
     }`;
 
   return (
+    <>
+    <UndoToast toast={toast} onClose={() => setToast(null)} />
     <div className="space-y-4">
       {!v2 && <MigrationNote />}
 
@@ -171,6 +215,8 @@ export function ProjectsView({ board, send }: Props) {
           </div>
           <div className="flex gap-1.5 w-full sm:w-auto">
             <input
+              ref={nameInput}
+              aria-label={t("projects.newName")}
               value={creating}
               onChange={(e) => setCreating(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && create()}
@@ -188,46 +234,67 @@ export function ProjectsView({ board, send }: Props) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
-          <Figure label={t("projects.stat.ongoing")} value={counts.ongoing} color={PROJECT_STATUS_COLOR.ongoing} onClick={() => setFilter("ongoing")} />
-          <Figure label={t("projects.stat.recent")} value={counts.recent} color={PROJECT_STATUS_COLOR.done} onClick={() => setFilter("done")} />
+          <Figure label={t("projects.stat.ongoing")} value={counts.ongoing} color={PROJECT_STATUS_COLOR.ongoing} onClick={() => showFilter("ongoing")} />
+          <Figure label={t("projects.stat.recent")} value={counts.recent} color={PROJECT_STATUS_COLOR.done} onClick={() => showFilter("done")} />
           <Figure
             label={t("projects.stat.attention")}
             value={counts.attention}
             color={counts.overdue ? HEALTH_COLOR.overdue : HEALTH_COLOR.atRisk}
             hint={counts.overdue ? t("projects.stat.overdueN", { n: counts.overdue }) : undefined}
+            pressed={onlyAttention}
             onClick={() => {
+              if (onlyAttention) {
+                setOnlyAttention(false);
+                return;
+              }
               setFilter("ongoing");
               setSort("target");
+              setOnlyAttention(true);
             }}
           />
-          <Figure label={t("projects.stat.openTasks")} value={counts.openTasks} color="#AF52DE" onClick={() => setFilter("ongoing")} />
+          <Figure label={t("projects.stat.openTasks")} value={counts.openTasks} color="#AF52DE" onClick={() => showFilter("ongoing")} />
         </div>
       </div>
 
       {/* Toolbar */}
+      {projects.length > 0 && (
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-1.5">
-          <button onClick={() => setFilter("ongoing")} className={tab(filter === "ongoing")}>
+          <button onClick={() => showFilter("ongoing")} aria-pressed={filter === "ongoing"} className={tab(filter === "ongoing")}>
             {t("projects.filter.ongoing")}
             <Count n={counts.ongoing} />
           </button>
-          <button onClick={() => setFilter("done")} className={tab(filter === "done")}>
+          <button onClick={() => showFilter("done")} aria-pressed={filter === "done"} className={tab(filter === "done")}>
             {t("projects.filter.done")}
             <Count n={counts.done} />
           </button>
         </div>
+        {onlyAttention && filter === "ongoing" && (
+          <button
+            onClick={() => setOnlyAttention(false)}
+            aria-label={t("ux.projects.clearFilter")}
+            title={t("ux.projects.clearFilter")}
+            className="h-8 pl-3 pr-2 rounded-full border border-[#FDE68A] bg-[#FEF3C7] text-[12px] font-semibold text-[#92400E] inline-flex items-center gap-1.5"
+          >
+            {t("ux.projects.onlyAttention")}
+            <Icon name="x" size={12} strokeWidth={2.5} />
+          </button>
+        )}
         <div className="flex-1" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("projects.search")}
+          aria-label={t("projects.search")}
+          type="search"
           className="h-8 w-full sm:w-[200px] rounded-full bg-white border border-[#E8E6E1] px-3 text-[12px] outline-none focus:border-[#C9A96E]"
         />
         {owners.length > 0 && (
           <select
             value={owner}
             onChange={(e) => setOwner(e.target.value)}
-            className="h-8 rounded-full bg-white border border-[#E8E6E1] px-2 text-[12px] text-[#0A1931] outline-none"
+            aria-label={t("ux.projects.filterOwner")}
+            className="h-8 rounded-full bg-white border border-[#E8E6E1] px-2 text-[12px] text-[#0A1931] outline-none focus:border-[#C9A96E] focus-visible:border-[#C9A96E]"
           >
             <option value="all">{t("projects.owner.all")}</option>
             {owners.map((o) => (
@@ -242,7 +309,8 @@ export function ProjectsView({ board, send }: Props) {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as ProjectSort)}
-              className="h-8 rounded-full bg-white border border-[#E8E6E1] px-2 text-[12px] text-[#0A1931] outline-none"
+              aria-label={t("ux.projects.sortBy")}
+              className="h-8 rounded-full bg-white border border-[#E8E6E1] px-2 text-[12px] text-[#0A1931] outline-none focus:border-[#C9A96E] focus-visible:border-[#C9A96E]"
             >
               {(["target", "progress", "priority", "name", "updated"] as ProjectSort[]).map((s) => (
                 <option key={s} value={s}>
@@ -250,10 +318,11 @@ export function ProjectsView({ board, send }: Props) {
                 </option>
               ))}
             </select>
-            <div className="flex rounded-full border border-[#E8E6E1] bg-white p-0.5">
+            <div className="flex rounded-full border border-[#E8E6E1] bg-white p-0.5" role="group" aria-label={t("ux.projects.viewMode")}>
               {(["cards", "timeline"] as ViewMode[]).map((m) => (
                 <button
                   key={m}
+                  aria-pressed={view === m}
                   onClick={() => setViewMode(m)}
                   className={`h-7 px-3 rounded-full text-[12px] font-semibold ${
                     view === m ? "bg-[#0A1931] text-[#C9A96E]" : "text-[#6B6B6B]"
@@ -266,12 +335,21 @@ export function ProjectsView({ board, send }: Props) {
           </>
         )}
       </div>
+      )}
 
       {projects.length === 0 ? (
         <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-10 text-center">
-          <div className="text-[28px]">◎</div>
-          <div className="text-[14px] text-[#0A1931] font-semibold mt-1">{t("projects.none")}</div>
-          <div className="text-[12px] text-[#8A8A8A] mt-1">{t("projects.noneHint")}</div>
+          <div className="flex justify-center text-[#8A8A8A]">
+            <Icon name="folder" size={30} strokeWidth={1.6} />
+          </div>
+          <div className="text-[14px] text-[#0A1931] font-semibold mt-2">{t("projects.none")}</div>
+          <div className="text-[12px] text-[#6B6B6B] mt-1">{t("projects.noneHint")}</div>
+          <button
+            onClick={() => nameInput.current?.focus()}
+            className="mt-4 h-9 px-4 rounded-full bg-[#0A1931] text-[#C9A96E] text-[12px] font-semibold"
+          >
+            + {t("projects.new")}
+          </button>
         </div>
       ) : filter === "ongoing" ? (
         visible.length === 0 ? (
@@ -290,8 +368,8 @@ export function ProjectsView({ board, send }: Props) {
 
           {/* Older: a collapsible bar, like the board's Archived one. */}
           <section className="bg-white rounded-[14px] border border-[#E8E6E1]">
-            <button onClick={() => setOlderOpen((v) => !v)} className="w-full flex items-center gap-3 px-4 h-12 text-left">
-              <span className="text-[11px] text-[#8A8A8A]">{olderOpen ? "▼" : "▶"}</span>
+            <button onClick={() => setOlderOpen((v) => !v)} aria-expanded={olderOpen} className="w-full flex items-center gap-3 px-4 h-12 text-left">
+              <span className="text-[#8A8A8A]"><Icon name={olderOpen ? "down" : "arrow"} size={12} /></span>
               <span className="font-trajan text-[12px] uppercase tracking-widest text-[#0A1931]">{t("projects.older")}</span>
               <Count n={older.length} />
               <span className="text-[11px] text-[#8A8A8A] truncate">{t("projects.olderHint")}</span>
@@ -313,6 +391,7 @@ export function ProjectsView({ board, send }: Props) {
         </div>
       )}
     </div>
+    </>
   );
 }
 
@@ -347,17 +426,23 @@ function Figure({
   color,
   hint,
   onClick,
+  pressed,
 }: {
   label: string;
   value: number;
   color: string;
   hint?: string;
   onClick: () => void;
+  /** Set only on a figure that is a toggle filter, and only while it is on. */
+  pressed?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className="text-left rounded-[12px] bg-[#F5F3EF] border border-[#E8E6E1] px-3 py-2.5 hover:border-[#C9A96E] transition-colors"
+      aria-pressed={pressed ? true : undefined}
+      className={`text-left rounded-[12px] bg-[#F5F3EF] border px-3 py-2.5 hover:border-[#C9A96E] transition-colors ${
+        pressed ? "border-[#C9A96E] ring-1 ring-[#C9A96E]" : "border-[#E8E6E1]"
+      }`}
     >
       <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#8A8A8A]">
         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
@@ -415,7 +500,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
               ) : (
                 <>
                   <span className={`w-2.5 h-2.5 rounded-full ${PRIORITY_DOT[projectPriority(p)]}`} />
-                  <span className="text-[10px] font-semibold text-[#A8A29E]">{projectPriority(p)}</span>
+                  <span className="text-[10px] font-semibold text-[#6B6B6B]">{projectPriority(p)}</span>
                 </>
               )}
             </div>
@@ -443,7 +528,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
           </div>
           {!done && boardMode(p) !== "all" && (
             <div className="text-[11px] text-[#8A8A8A] truncate">
-              {boardMode(p) === "sequential" ? "⇢ " : "⊘ "}
+              <Icon name={boardMode(p) === "sequential" ? "arrow" : "ban"} size={11} className="mr-1 -mt-px align-middle" />
               {t(`projects.mode.${boardMode(p)}`)}
               {boardMode(p) === "sequential" && s.current && (
                 <>
@@ -464,7 +549,12 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
         <div className="mt-auto flex items-center gap-2 flex-wrap text-[11px] text-[#6B6B6B]">
           <Avatars names={p.owners ?? []} />
           <span className="flex-1" />
-          {p.targetDate && !done && <span className="tabular-nums">⏱ {fmtDay(p.targetDate, lang)}</span>}
+          {p.targetDate && !done && (
+            <span className="tabular-nums inline-flex items-center gap-1">
+              <Icon name="clock" size={11} />
+              {fmtDay(p.targetDate, lang)}
+            </span>
+          )}
           {!done && <HealthBadge health={s.health} daysLeft={s.daysLeft} />}
         </div>
         {p.reportHidden && (
@@ -487,5 +577,55 @@ function OlderRow({ project: p, stats: s, onOpen }: { project: Project; stats: P
         ✓ {fmtMs(s.completedAt!, lang, true)}
       </span>
     </button>
+  );
+}
+
+// The tab's Undo toast: one at a time, gone after 6 s. Into <body> so no panel's
+// backdrop-filter becomes its containing block (and no glass is nested).
+function UndoToast({
+  toast,
+  onClose,
+}: {
+  toast: { id: number; text: string; undo: () => void } | null;
+  onClose: () => void;
+}) {
+  const { t } = useT();
+  useEffect(() => {
+    if (!toast) return;
+    const h = window.setTimeout(onClose, 6000);
+    return () => window.clearTimeout(h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast?.id]);
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed left-1/2 -translate-x-1/2 bottom-6 z-[60] w-[min(92vw,460px)] pointer-events-none"
+    >
+      {toast && (
+        <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-white border border-[#E8E6E1] shadow-[0_10px_30px_rgba(10,25,49,0.18)] pl-4 pr-1.5 h-11 text-[13px] text-[#0A1931]">
+          <span className="flex-1 min-w-0 truncate">{toast.text}</span>
+          <button
+            onClick={() => {
+              onClose();
+              toast.undo();
+            }}
+            className="h-8 px-3 rounded-full text-[13px] font-semibold text-[#8B6F3E] hover:bg-[#F5F3EF]"
+          >
+            {t("ux.projects.undo")}
+          </button>
+          <button
+            onClick={onClose}
+            aria-label={t("ux.projects.dismiss")}
+            title={t("ux.projects.dismiss")}
+            className="w-8 h-8 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:bg-[#F5F3EF]"
+          >
+            <Icon name="x" size={14} />
+          </button>
+        </div>
+      )}
+    </div>,
+    document.body
   );
 }
