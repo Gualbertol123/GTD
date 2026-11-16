@@ -2045,12 +2045,22 @@ export interface SpotifySong {
   ms: number;
 }
 export interface SpotifyList {
-  kind: "playlist" | "album";
+  /** "tracks": songs pasted from the Spotify app (no playlist behind them). */
+  kind: "playlist" | "album" | "tracks";
   id: string;
   name: string;
   owner: string;
   cover: string;
   songs: SpotifySong[];
+  /** "api": the official Web API (the site's keys); "embed": Spotify's public page (a playlist's first 100). */
+  via?: "api" | "embed";
+  /** The real number of songs (API only). */
+  total?: number;
+  /** More than 1000 songs: only the first 1000 were taken. */
+  truncated?: boolean;
+  /** A playlist of 100+ songs read from the embed page: there may be more. */
+  limited?: boolean;
+  reason?: "no-key" | "spotify-owned" | "api-error";
 }
 
 /** Is this a Spotify playlist / album link? */
@@ -2060,9 +2070,66 @@ export function isSpotifyLink(s: string): boolean {
 
 const SPOTIFY_MS = 25000;
 
-/** A public Spotify playlist (first 100 songs) or album: name, cover, songs. */
+/**
+ * The track ids in text copied from the Spotify app (Ctrl+A, Ctrl+C on a
+ * playlist: one https://open.spotify.com/track/… link per line, or
+ * spotify:track:… URIs). Unique, in order; anything else is ignored. Lines
+ * pasted into a one-line field may arrive glued together: still found.
+ */
+export function parseSpotifyTracks(text: string): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const m of text.matchAll(/(?:open\.spotify\.com\/(?:intl-[a-z-]+\/)?(?:embed\/)?track\/|spotify:track:)([A-Za-z0-9]{22})/g)) {
+    if (!seen.has(m[1])) {
+      seen.add(m[1]);
+      out.push(m[1]);
+    }
+  }
+  return out;
+}
+
+/** Two or more track links: a list of songs pasted from the Spotify app. */
+export const isSpotifyTrackList = (s: string) => parseSpotifyTracks(s).length >= 2;
+
+/** A public Spotify playlist or album: name, cover, songs (all of them with the site's keys, else a playlist's first 100). */
 export function fetchSpotify(url: string, opts?: CallOpts) {
   return callFn<SpotifyList>(`/.netlify/functions/music-spotify?url=${encodeURIComponent(url.trim())}`, { timeoutMs: SPOTIFY_MS, keepMs: 10 * 60 * 1000 }, opts);
+}
+
+/**
+ * Reads pasted songs (track ids) from Spotify, 25 per call, two calls at a
+ * time; `progress` is told how many are done. Those Spotify failed on are
+ * asked once more. Returns one song or null (unknown / failed) per id.
+ */
+export async function readSpotifyTracks(ids: string[], progress: (done: number) => void, cancelled: () => boolean, opts?: CallOpts): Promise<(SpotifySong | null)[]> {
+  const out: (SpotifySong | null)[] = new Array(ids.length).fill(null);
+  const batches: number[] = [];
+  const SIZE = 25;
+  for (let i = 0; i < ids.length; i += SIZE) batches.push(i);
+  let done = 0;
+  const call = (part: string[]) =>
+    callFn<{ songs: (SpotifySong | null)[]; failed?: number[] }>(`/.netlify/functions/music-spotify`, { method: "POST", body: { tracks: part }, timeoutMs: SPOTIFY_MS }, opts);
+  const worker = async () => {
+    while (batches.length && !cancelled() && !opts?.signal?.aborted) {
+      const start = batches.shift()!;
+      const part = ids.slice(start, start + SIZE);
+      const r = await call(part);
+      let again: number[] = [];
+      if ("error" in r) again = r.error === "aborted" ? [] : part.map((_, i) => i);
+      else {
+        r.songs.forEach((s, i) => (out[start + i] = s ?? null));
+        again = (r.failed ?? []).filter((i) => i >= 0 && i < part.length);
+      }
+      if (again.length && !cancelled()) {
+        const r2 = await call(again.map((i) => part[i]));
+        if (!("error" in r2)) r2.songs.forEach((s, k) => (out[start + again[k]] = s ?? null));
+      }
+      done += part.length;
+      progress(done);
+    }
+  };
+  await Promise.all([worker(), worker()]);
+  return out;
 }
 
 /**

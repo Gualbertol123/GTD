@@ -16,9 +16,12 @@ import {
   findYtPlaylists,
   getMusic,
   isSpotifyLink,
+  isSpotifyTrackList,
   mlog,
   matchSpotify,
   music,
+  parseSpotifyTracks,
+  readSpotifyTracks,
   musicErrorText,
   playlistIdFrom,
   searchMusic,
@@ -34,6 +37,7 @@ import {
   type MusicFail,
   type Track,
   type SpotifyList,
+  type SpotifySong,
   type YtPlaylist,
 } from "../lib/music";
 import {
@@ -166,6 +170,7 @@ export function MusicTab() {
   };
 
   const job = useSpotifyJob();
+  const jobStep = job ? spStep(job) : null;
   const onImport = view.kind === "import" || view.kind === "yt" || view.kind === "spotify";
 
   return (
@@ -181,11 +186,11 @@ export function MusicTab() {
           <button className={`mt-nav${view.kind === "search" ? " is-on" : ""}`} aria-current={view.kind === "search" ? "page" : undefined} onClick={() => go({ kind: "search" })}>
             <IconSearch size={22} /> {t("mt.search")}
           </button>
-          <button className={`mt-nav${onImport ? " is-on" : ""}`} aria-current={onImport ? "page" : undefined} onClick={() => go(job && job.phase === "matching" ? { kind: "spotify" } : { kind: "import" })}>
+          <button className={`mt-nav${onImport ? " is-on" : ""}`} aria-current={onImport ? "page" : undefined} onClick={() => go(jobStep ? { kind: "spotify" } : { kind: "import" })}>
             <IconImport size={22} /> {t("mt.import")}
-            {job?.phase === "matching" && job.list && (
-              <span className="mt-navchip" aria-label={t("mt.importing", { n: job.done, m: job.list.songs.length })}>
-                {job.done}/{job.list.songs.length}
+            {jobStep && (
+              <span className="mt-navchip" aria-label={t("mt.importing", { n: jobStep.n, m: jobStep.m })}>
+                {jobStep.n}/{jobStep.m}
               </span>
             )}
           </button>
@@ -1272,7 +1277,7 @@ function ImportPage({ go }: { go: Go }) {
         className="mt-search mt-search--static"
         onSubmit={(e) => {
           e.preventDefault();
-          if (isSpotifyLink(link)) {
+          if (isSpotifyLink(link) || isSpotifyTrackList(link)) {
             void startSpotify(link.trim());
             return go({ kind: "spotify" });
           }
@@ -1369,12 +1374,19 @@ const ListCards = memo(function ListCards({ lists, go }: { lists: YtPlaylist[]; 
 // sidebar's Import shows "12/34"), and coming back shows where it is.
 
 interface SpJob {
+  /** What was pasted: a playlist / album link, or a list of track links. */
   url: string;
   phase: "reading" | "matching" | "done" | "error";
   error: string | null;
   list: SpotifyList | null;
   done: number;
   matches: (Track | null)[];
+  /** Pasted songs: their track ids, how many are read so far, how many Spotify could not read. */
+  ids?: string[];
+  read?: number;
+  unread?: number;
+  /** The name typed before saving (else the list's own). */
+  name?: string;
 }
 let spJob: SpJob | null = null;
 let spCtrl: AbortController | null = null;
@@ -1393,23 +1405,53 @@ function useSpotifyJob(): SpJob | null {
   return useSyncExternalStore(subscribeSp, () => spJob, () => spJob);
 }
 
-async function startSpotify(url: string): Promise<void> {
+/** The step running now as "n of m" (the sidebar's chip), or null when none is. */
+function spStep(j: SpJob): { n: number; m: number } | null {
+  if (j.phase === "reading" && j.ids) return { n: j.read ?? 0, m: j.ids.length };
+  if (j.phase === "matching" && j.list) return { n: j.done, m: j.list.songs.length };
+  return null;
+}
+
+/** A playlist / album link, or 2+ track links pasted from the Spotify app. */
+async function startSpotify(input: string): Promise<void> {
   spCtrl?.abort();
   const ctrl = new AbortController();
   spCtrl = ctrl;
   const mine = () => spCtrl === ctrl;
-  if (!isSpotifyLink(url)) return setSp({ url, phase: "error", error: "bad-link", list: null, done: 0, matches: [] });
-  setSp({ url, phase: "reading", error: null, list: null, done: 0, matches: [] });
-  const r = await fetchSpotify(url, { signal: ctrl.signal });
+  const ids = parseSpotifyTracks(input);
+  if (ids.length >= 2) return startPasted(input, ids, ctrl);
+  if (!isSpotifyLink(input)) return setSp({ url: input, phase: "error", error: "bad-link", list: null, done: 0, matches: [] });
+  setSp({ url: input, phase: "reading", error: null, list: null, done: 0, matches: [] });
+  const r = await fetchSpotify(input, { signal: ctrl.signal });
   if (!mine() || !spJob) return;
   if (isFail(r)) {
     if (r.error !== "aborted") setSp({ ...spJob, phase: "error", error: r.error });
     return;
   }
-  setSp({ ...spJob, list: r, phase: "matching" });
-  const found = await matchSpotify(r.songs, (n) => mine() && spJob && setSp({ ...spJob, done: n }), () => !mine(), { signal: ctrl.signal });
+  await matchList(r, ctrl);
+}
+
+/** Step 1 of 2 for pasted songs: read each one from Spotify; then the same matching. */
+async function startPasted(url: string, ids: string[], ctrl: AbortController): Promise<void> {
+  const mine = () => spCtrl === ctrl;
+  setSp({ url, phase: "reading", error: null, list: null, done: 0, matches: [], ids, read: 0 });
+  const read = await readSpotifyTracks(ids, (n) => mine() && spJob && setSp({ ...spJob, read: n }), () => !mine(), { signal: ctrl.signal });
   if (!mine() || !spJob) return;
-  setSp({ ...spJob, matches: found, done: r.songs.length, phase: "done" });
+  const songs = read.filter((s): s is SpotifySong => !!s);
+  if (!songs.length) return setSp({ ...spJob, phase: "error", error: "unavailable" });
+  const list: SpotifyList = { kind: "tracks", id: `t${ids.length}-${ids[0]}`, name: "", owner: "Spotify", cover: "", songs, via: "embed" };
+  setSp({ ...spJob, unread: ids.length - songs.length });
+  await matchList(list, ctrl);
+}
+
+/** Every song of the list found on YouTube, with the progress shown. */
+async function matchList(list: SpotifyList, ctrl: AbortController): Promise<void> {
+  const mine = () => spCtrl === ctrl;
+  if (!spJob) return;
+  setSp({ ...spJob, list, phase: "matching", done: 0 });
+  const found = await matchSpotify(list.songs, (n) => mine() && spJob && setSp({ ...spJob, done: n }), () => !mine(), { signal: ctrl.signal });
+  if (!mine() || !spJob) return;
+  setSp({ ...spJob, matches: found, done: list.songs.length, phase: "done" });
 }
 
 /** Ask YouTube once more for the songs not found. */
@@ -1436,30 +1478,55 @@ async function retrySpotifyMissing(): Promise<void> {
   setSp({ ...spJob, matches, done: j.list.songs.length, phase: "done" });
 }
 
+/** README §1e: how the site admin adds Spotify's free keys. */
+const SPOTIFY_KEYS_HELP = "https://github.com/Gualbertol123/prova_sito_GTD#1e-music";
+
+/** A labelled progress bar (one import step). */
+function StepBar({ label, n, m }: { label: string; n: number; m: number }) {
+  return (
+    <div className="mt-progress" role="progressbar" aria-valuemin={0} aria-valuemax={m} aria-valuenow={n} aria-valuetext={label}>
+      <div className="mt-progress__label">{label}</div>
+      <div className="mt-progress__bar">
+        <span style={{ width: `${m ? (n / m) * 100 : 0}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function SpotifyPage({ playlists, available, go }: { playlists: Playlist[]; available: boolean; go: Go }) {
   const { t } = useT();
   const { me } = useMe();
   const job = useSpotifyJob();
   const [link, setLink] = useState(job?.url ?? "");
+  const [editing, setEditing] = useState(false);
 
   const list = job?.list ?? null;
   const phase = job?.phase ?? "idle";
+  const pasted = !!job?.ids;
   const matches = useMemo(() => job?.matches ?? [], [job?.matches]);
   const tracks = useMemo(() => matches.filter((m): m is Track => !!m), [matches]);
   const missing = list && phase === "done" ? list.songs.filter((_, i) => !matches[i]) : [];
-  const label = list?.name ?? "Spotify";
+  const label = job?.name || (list ? (list.kind === "tracks" ? t("sp.pastedName", { n: list.songs.length }) : list.name) : "Spotify");
   const srcKey = list ? `sp:${list.id}` : "";
-  const saved = list && playlists.find((p) => p.name === list.name && p.tracks[0]?.id === tracks[0]?.id);
+  const saved = list && playlists.find((p) => p.name === label && p.tracks[0]?.id === tracks[0]?.id);
   const error = job?.error ?? null;
   const busy = phase === "reading" || phase === "matching";
+  const typed = parseSpotifyTracks(link).length;
+  const kindLabel = list ? t(list.kind === "album" ? "sp.album" : list.kind === "tracks" ? "sp.pasted" : "sp.playlist") : t(pasted ? "sp.pasted" : "sp.button");
 
   const save = () => {
     if (!list) return;
-    const { playlist, saved: done } = createPlaylist(list.name, me, tracks);
-    music.toast(t("mt.created", { p: list.name }));
+    const { playlist, saved: done } = createPlaylist(label, me, tracks);
+    music.toast(t("mt.created", { p: label }));
     reportWrite(done, t);
     go({ kind: "playlist", id: playlist.id });
   };
+
+  let sub: string = t("sp.intro");
+  if (list) {
+    const count = list.via === "api" && list.total ? t("sp.total", { n: list.total }) : t("mt.songs").replace("{n}", String(list.songs.length));
+    sub = list.kind === "tracks" ? count : `${list.owner} · ${count}`;
+  }
 
   return (
     <div className="mt-page">
@@ -1474,10 +1541,29 @@ function SpotifyPage({ playlists, available, go }: { playlists: Playlist[]; avai
             <IconImport size={56} />
           </span>
         )}
-        <div>
-          <small>{list ? t(list.kind === "album" ? "sp.album" : "sp.playlist") : t("sp.button")}</small>
-          <h1>{list?.name ?? t("sp.title")}</h1>
-          <small>{list ? `${list.owner} · ${t("mt.songs").replace("{n}", String(list.songs.length))}` : t("sp.intro")}</small>
+        <div className="mt-hero__text">
+          <small>{kindLabel}</small>
+          {!list ? (
+            <h1>{t("sp.title")}</h1>
+          ) : editing ? (
+            <RenameField
+              name={label}
+              onDone={(name) => {
+                setEditing(false);
+                if (name && spJob) setSp({ ...spJob, name });
+              }}
+            />
+          ) : (
+            <h1 className="mt-title">
+              <span className="mt-title__text" onClick={() => setEditing(true)} title={t("mt.rename")}>
+                {label}
+              </span>
+              <button className="mt-iconbtn mt-title__edit" onClick={() => setEditing(true)} aria-label={`${t("mt.renameBtn")} ${label}`} title={t("mt.renameBtn")}>
+                <IconPencil size={18} />
+              </button>
+            </h1>
+          )}
+          <small>{sub}</small>
         </div>
       </div>
 
@@ -1485,6 +1571,7 @@ function SpotifyPage({ playlists, available, go }: { playlists: Playlist[]; avai
         className="mt-search mt-search--static"
         onSubmit={(e) => {
           e.preventDefault();
+          setEditing(false);
           void startSpotify(link.trim());
         }}
       >
@@ -1496,6 +1583,7 @@ function SpotifyPage({ playlists, available, go }: { playlists: Playlist[]; avai
           {busy && link.trim() === job?.url ? <IconSpinner size={16} title={t("music.loading")} /> : t("sp.go")}
         </button>
       </form>
+      {typed >= 2 && link.trim() !== job?.url && <p className="mt-hint">{t("sp.pastedCount", { n: typed })}</p>}
       {error === "bad-link" && (
         <div className="mp-note" role="alert">
           {t("sp.badLink")}
@@ -1509,14 +1597,16 @@ function SpotifyPage({ playlists, available, go }: { playlists: Playlist[]; avai
       {error && error !== "bad-link" && error !== "not-found" && <ErrorNote code={error} onRetry={() => job && void startSpotify(job.url)} />}
       {!job && <p className="mt-hint">{t("sp.how")}</p>}
 
-      {phase === "reading" && <div className="mt-spin mt-spin--block" />}
+      {phase === "reading" && !pasted && <div className="mt-spin mt-spin--block" />}
+      {phase === "reading" && job?.ids && <StepBar label={t("sp.reading", { n: job.read ?? 0, m: job.ids.length })} n={job.read ?? 0} m={job.ids.length} />}
       {phase === "matching" && list && (
-        <div className="mt-progress" role="progressbar" aria-valuemin={0} aria-valuemax={list.songs.length} aria-valuenow={job?.done ?? 0}>
-          <div className="mt-progress__label">{t("sp.matching").replace("{n}", String(job?.done ?? 0)).replace("{m}", String(list.songs.length))}</div>
-          <div className="mt-progress__bar">
-            <span style={{ width: `${list.songs.length ? ((job?.done ?? 0) / list.songs.length) * 100 : 0}%` }} />
-          </div>
-        </div>
+        <StepBar
+          label={t(pasted ? "sp.matchingStep" : "sp.matching")
+            .replace("{n}", String(job?.done ?? 0))
+            .replace("{m}", String(list.songs.length))}
+          n={job?.done ?? 0}
+          m={list.songs.length}
+        />
       )}
 
       {phase === "done" && list && (
@@ -1534,7 +1624,23 @@ function SpotifyPage({ playlists, available, go }: { playlists: Playlist[]; avai
             )}
             <span className="mt-hint">{t("sp.found").replace("{n}", String(tracks.length)).replace("{m}", String(list.songs.length))}</span>
           </div>
-          {list.kind === "playlist" && list.songs.length >= 100 && <p className="mt-hint">{t("sp.first100")}</p>}
+          {list.truncated && <p className="mt-hint">{t("sp.truncated", { n: list.total ?? 0 })}</p>}
+          {list.limited && (
+            <div className="mt-hint" role="note">
+              <p style={{ margin: "0 0 4px" }}>
+                {t(list.reason === "spotify-owned" ? "sp.limitedOwned" : "sp.limited")} {t("sp.pasteHow")}
+              </p>
+              {list.reason === "no-key" && (
+                <p style={{ margin: 0 }}>
+                  {t("sp.adminKeys")}{" "}
+                  <a href={SPOTIFY_KEYS_HELP} target="_blank" rel="noopener noreferrer">
+                    {t("sp.adminLink")}
+                  </a>
+                </p>
+              )}
+            </div>
+          )}
+          {!!job?.unread && <p className="mt-hint">{t("sp.unread", { n: job.unread })}</p>}
           {tracks.length > 0 && <TrackTable tracks={tracks} label={label} srcKey={srcKey} />}
           {missing.length > 0 && (
             <details className="mt-missing">

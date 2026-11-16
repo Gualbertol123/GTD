@@ -168,14 +168,32 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
   YouTube's auto-generated *Mix* lists (`RD…`) and private lists can't be read.
   Server side: `netlify/functions/music-playlist.mts` (same key and login).
 - **Importa da Spotify (Importa page, green button):** paste a public Spotify
-  playlist or album link (or paste it in the normal link field). The app reads
-  its songs from Spotify's public embed page (no Spotify account, no key; a
-  playlist's first 100 songs, an album's all — `netlify/lib/spotify.mts`),
-  finds each one on YouTube with YouTube.js, preferring official videos
-  (`matchSong` in `netlify/lib/ytjs.mts`, 10 songs per call, with a progress
-  bar), then plays it or saves it as a team playlist; songs not found are
-  listed. Unofficial like YouTube.js: if Spotify changes that page, the import
-  says so. Function: `netlify/functions/music-spotify.mts`.
+  playlist or album link (or paste it in the normal link field). Its songs are
+  read, each one is found on YouTube with YouTube.js, preferring official
+  videos (`matchSong` in `netlify/lib/ytjs.mts`, with a progress bar that keeps
+  going if you leave the page), then it plays or is saved as a team playlist;
+  songs not found are listed. Where the songs come from
+  (`netlify/lib/spotify.mts`, function `netlify/functions/music-spotify.mts`):
+  - **With the site's Spotify keys** (optional, see Setup step 4): the official
+    Spotify Web API gives **every song, up to 1000** (the page shows the
+    playlist's total, and says so when only the first 1000 were taken).
+  - **Without keys**, or when the API refuses: Spotify's public embed page, no
+    account and no key, but only a playlist's **first 100 songs** (an album's
+    all). The page then explains how to get the rest. Since late 2024 Spotify
+    refuses new apps the playlists made by Spotify itself (editorial and
+    algorithmic ones, ids often starting `37i9dQZF1`), so those need the
+    paste method below even with keys.
+  - **Paste the songs (no key needed, any length):** in the Spotify desktop or
+    web app open the playlist, click a song, press **Ctrl+A** (Cmd+A on a
+    Mac), then **Ctrl+C**, and paste into the Spotify link field. That copies
+    one `https://open.spotify.com/track/…` link per song; each song is read
+    from its own public embed page (step 1 of 2), then found on YouTube (step
+    2 of 2). The list is named *Da Spotify (N brani)*; click the name to change
+    it before saving.
+
+  The embed pages are unofficial: if Spotify changes them, the import says so.
+  Nothing taken from them is used to call Spotify's API; only the site's own
+  keys are.
 - On a phone the music stops when the screen locks or the app goes to the
   background (a limit of YouTube embeds on iOS / Android).
 - **Every control answers at once.**
@@ -228,6 +246,19 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
    costs only 1 unit per 50 songs, and the suggested playlist searches are
    kept in each browser for a day. When it runs out the player says so and
    offers YouTube's own search until the next day.
+4. *(Optional)* **Spotify keys**, so "Importa da Spotify" reads whole
+   playlists (up to 1000 songs) instead of the first 100. Free:
+   1. [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard)
+      → *Create app* (any name and description; Redirect URI
+      `http://localhost` is fine; tick *Web API*).
+   2. Open the app's *Settings*, copy the *Client ID* and the *Client secret*
+      into Netlify → Site configuration → Environment variables as
+      `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`.
+   3. Redeploy.
+   The keys are read only by `netlify/lib/spotify.mts` on the server (Client
+   Credentials flow: no user login, public playlists only), never sent to
+   browsers or logged, and **must never be put in the code**. Playlists made by
+   Spotify itself still give only 100 songs this way: use the paste method.
 
 **Why the player frame sends a referrer:** since 2025 YouTube refuses to play
 an embed whose page sends none ("Error 153"), and this site sends
@@ -480,8 +511,8 @@ prova_sito_GTD/
     ├── netlify/functions/music-search.mts ← GET → YouTube search for the music player (team login only; YOUTUBE_API_KEY)
     ├── netlify/functions/music-playlist.mts ← GET → read / find YouTube playlists for Importa (same rules)
     ├── netlify/functions/music-browse.mts ← GET → suggestions, radio, charts, trends, artists (YouTube.js)
-    ├── netlify/functions/music-spotify.mts ← GET a Spotify playlist/album, POST → match its songs on YouTube
-    ├── netlify/lib/spotify.mts          ← reads a public Spotify playlist/album (embed page)
+    ├── netlify/functions/music-spotify.mts ← GET a Spotify playlist/album, POST pasted track links → songs, POST songs → YouTube matches
+    ├── netlify/lib/spotify.mts          ← reads a Spotify playlist/album (Web API with the site's keys, else the embed page) and single tracks
     ├── netlify/lib/ytjs.mts             ← YouTube.js wrapper: every result shape → { id, title, channel, thumb }
     ├── netlify/lib/teamAuth.mts  ← the functions' shared "is this the team login?" check
     ├── netlify/lib/reportPdf.mts ← the PDF layout (@react-pdf/renderer)
