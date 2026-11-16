@@ -22,7 +22,21 @@
 import { useSyncExternalStore } from "react";
 
 export const SPOTIFY_CLIENT_ID: string = (import.meta.env.VITE_SPOTIFY_CLIENT_ID ?? "").trim();
-export const SPOTIFY_SCOPES = "playlist-read-private playlist-read-collaborative";
+export const SPOTIFY_SCOPES = [
+  // Import: your playlists (own + collaborative), liked songs, saved albums,
+  // followed artists, recently played.
+  "playlist-read-private",
+  "playlist-read-collaborative",
+  "user-library-read",
+  "user-follow-read",
+  "user-read-recently-played",
+  // Spotify mode: the Web Playback SDK and the player endpoints (Premium).
+  "streaming",
+  "user-read-email",
+  "user-read-private",
+  "user-modify-playback-state",
+  "user-read-playback-state",
+].join(" ");
 const AUTHORIZE = "https://accounts.spotify.com/authorize";
 const TOKEN = "https://accounts.spotify.com/api/token";
 /** Where the app goes after the callback (the Spotify import page). */

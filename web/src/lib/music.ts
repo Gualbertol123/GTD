@@ -47,6 +47,11 @@ export interface Track {
   title: string;
   channel: string;
   thumb?: string;
+  /**
+   * The same song on Spotify (a track id, 22 chars), when known: imported from
+   * Spotify, or matched once for Spotify mode. Stored in team playlists.
+   */
+  spotify?: string;
   // Search results only (music-search, lib/musicSort): what the result is,
   // how likely it is the official song, YouTube's order, and its views.
   // Never stored in a playlist (musicDb keeps id, title, channel, thumb).

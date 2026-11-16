@@ -13,7 +13,7 @@ vi.mock("../supabaseClient", () => ({
   },
 }));
 
-import { authorizeUrl, base64url, codeChallenge, parseCallback, randomString, stateMatches } from "../spotifyAuth";
+import { SPOTIFY_SCOPES, authorizeUrl, base64url, codeChallenge, parseCallback, randomString, stateMatches } from "../spotifyAuth";
 
 const PL = "0jAWhVakmxvxg2aLaYAMXk";
 
@@ -87,13 +87,17 @@ describe("PKCE helpers", () => {
     expect(parseCallback("not a url")).toBeNull();
   });
 
+  it("asks for the import and Spotify-mode permissions", () => {
+    for (const sc of ["playlist-read-private", "user-library-read", "user-follow-read", "streaming", "user-modify-playback-state"]) expect(SPOTIFY_SCOPES.split(" ")).toContain(sc);
+  });
+
   it("authorize address: code + S256, scopes, redirect", () => {
     const u = new URL(authorizeUrl("CH", "ST", "https://site.example/callback", "cid"));
     expect(u.origin + u.pathname).toBe("https://accounts.spotify.com/authorize");
     expect(Object.fromEntries(u.searchParams)).toEqual({
       response_type: "code",
       client_id: "cid",
-      scope: "playlist-read-private playlist-read-collaborative",
+      scope: SPOTIFY_SCOPES,
       redirect_uri: "https://site.example/callback",
       state: "ST",
       code_challenge_method: "S256",

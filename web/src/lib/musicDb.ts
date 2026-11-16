@@ -145,7 +145,7 @@ function fromRow(r: Row): Playlist {
   };
 }
 
-const clean = (t: Track): Track => ({ id: t.id, title: t.title, channel: t.channel, thumb: t.thumb });
+const clean = (t: Track): Track => ({ id: t.id, title: t.title, channel: t.channel, thumb: t.thumb, ...(t.spotify ? { spotify: t.spotify } : {}) });
 
 export function getPlaylist(id: string | null | undefined): Playlist | undefined {
   return id ? store.playlists.find((p) => p.id === id) : undefined;
