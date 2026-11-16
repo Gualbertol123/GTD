@@ -3,6 +3,7 @@ import { readPref, writePref } from "./prefs";
 import type { Priority, Status } from "./types";
 import { M_EN, M_IT } from "./i18n.mobile";
 import { MUSIC_EN, MUSIC_IT } from "./i18n.music";
+import { UX_EN, UX_IT } from "./i18n.ux";
 
 export type Lang = "it" | "en";
 
@@ -1086,7 +1087,7 @@ const EN: Dict = {
   "common.close": "Close",
 };
 
-const DICTS: Record<Lang, Dict> = { it: { ...IT, ...M_IT, ...MUSIC_IT }, en: { ...EN, ...M_EN, ...MUSIC_EN } };
+const DICTS: Record<Lang, Dict> = { it: { ...IT, ...M_IT, ...MUSIC_IT, ...UX_IT }, en: { ...EN, ...M_EN, ...MUSIC_EN, ...UX_EN } };
 
 /** For tests: every key of each language. */
 export const DICT_KEYS: Record<Lang, string[]> = { it: Object.keys(DICTS.it), en: Object.keys(DICTS.en) };
