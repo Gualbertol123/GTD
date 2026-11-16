@@ -185,6 +185,10 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
   - A song YouTube refuses is skipped straight away. Playback stops after 5 refusals in a row or a full lap of the list.
   - If YouTube can't be reached (an ad-blocker or the network), the player says so and offers *Riprova*.
   - The 500 ms position update redraws only the seek bar.
+  - **If YouTube refuses to start** (a phone's autoplay rule, or YouTube's own "confirm you're not a bot" / age wall), the app doesn't spin forever. It shows YouTube's frame with *Tocca il video per avviare la musica*, and one tap inside the frame starts the music. A stall while loading, or a song that doesn't move on, also gives up after a few seconds instead of spinning.
+  - **Console log:** every command sent to YouTube, every YouTube event, and what the app decided, as `[music] …` lines in the browser console.
+    - `__music.dump()` prints the last 500 lines with the current state. Send it along when reporting a playback problem.
+    - Turn it off with `localStorage.setItem("gtd-music-log","0")`.
 - **Every song has a ⋯ button** for the song menu, alongside right-click and long-press.
   - A single click plays the song, and Enter / Space work from the keyboard.
   - Removing a song or deleting a playlist can be undone for a few seconds.
