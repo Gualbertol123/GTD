@@ -149,6 +149,8 @@ export interface MusicState {
   toast: Toast | null;
   /** "I have YouTube Premium": the player comes from youtube.com, not youtube-nocookie.com. */
   premium: boolean;
+  /** Bumped to make MusicPlayer build a new YouTube player (the stall rescue's last step). */
+  rebuild: number;
   /** Create the YouTube player now (a music control is about to be used). */
   warm: boolean;
 }
@@ -181,6 +183,7 @@ let state: MusicState = {
   needsTap: false,
   toast: null,
   premium: readPref("musicPremium") === "1",
+  rebuild: 0,
   warm: false,
 };
 const listeners = new Set<() => void>();
@@ -499,6 +502,9 @@ let localVolAt = -1e9;
 let lastCmd = { kind: "", at: 0 };
 /** When the app last asked YouTube to pause (a PAUSED right after Play is its echo only if this is recent). */
 let lastPauseAt = -1e9;
+/** The last video YouTube really played: its later BUFFERING is a reload (network), not a start. */
+let startedId: string | null = null;
+const pageHidden = () => typeof document !== "undefined" && document.hidden;
 /** The app asked YouTube to pause and it has not confirmed yet: a late start is undone. */
 let pausePending = false;
 /** The "did it start?" check (armBlocked); undefined when none is pending. */
@@ -624,8 +630,9 @@ function cmd(kind: string): void {
   lastCmd = { kind, at: now() };
   pausePending = kind === "pause";
   if (kind === "pause") lastPauseAt = lastCmd.at;
-  // A new command from the user: the frozen-time rescue starts over.
+  // A new command from the user: the stall rescue starts over.
   frozenStage = 0;
+  stall.stage = 0;
 }
 
 /** A start YouTube reports now is the echo of a load the app has since paused. */
@@ -924,6 +931,19 @@ function armBlocked(ms = state.needsTap ? 3000 : 6000, retry = false): void {
     // PLAYING: started (a frozen second is the watchdog's job).
     if (s === S.PLAYING) return;
     const t = safe(() => p.getCurrentTime(), 0) || 0;
+    const vid = safe(() => p.getVideoData()?.video_id ?? "", "");
+    if (s === S.BUFFERING && vid && vid === startedId) {
+      // The song had already played: YouTube is stuck reloading it (network).
+      // Not a refused start: never give up, rescue it step by step.
+      if (t > t0 + 0.1) return armBlocked(8000, true); // slow, but it moves
+      return rescue(p, t, "stuck buffering in the middle of the song");
+    }
+    // In the background the browser slows everything down: never give up a
+    // start there; the check runs again (and when the page is shown).
+    if (pageHidden()) {
+      if (!retry) mlog("start check: page in the background, not giving up: checking again later", snap());
+      return armBlocked(8000, true);
+    }
     if (s === S.BUFFERING) {
       if (t > t0 + 0.1) {
         mlog("start check: still buffering but the second moves: waiting", { t: Math.round(t) });
@@ -1024,12 +1044,16 @@ export function onYtState(s: number): void {
     }
     setMusic({ status: "buffering" });
     if (!blockTimer) {
-      mlog("  buffering with no start check pending: arming one");
-      armBlocked();
+      // A song that already played and reloads: look again sooner (the rescue
+      // ladder starts there); a start keeps the usual wait.
+      const midSong = !!vid && vid === startedId;
+      mlog(midSong ? "  YouTube reloads the song: checking it in 4 s" : "  buffering with no start check pending: arming one");
+      armBlocked(midSong ? 4000 : undefined);
     }
     return;
   }
   if (s === S.PLAYING) {
+    if (vid) startedId = vid;
     expectId = null;
     leftIds.clear();
     clearBlock();
@@ -1088,10 +1112,14 @@ export function onYtState(s: number): void {
       mlog("  ignored: echo of an earlier pause right after Play");
       return;
     }
-    // Paused while the app was still waiting for the start: YouTube refused it
-    // (a phone's autoplay rule). Say so now, not after the start check.
+    // Paused while the app is waiting for the start: that is YouTube leaving
+    // the previous song (it reports PAUSED, often with no video id, a few ms
+    // after loadPlaylist / playVideoAt), not a refusal. A real refusal leaves
+    // YouTube standing still, which the start check (armBlocked) catches.
     if (state.playing && (state.status === "loading" || state.status === "buffering")) {
-      return giveUp("YouTube paused right after play (autoplay refused)");
+      mlog("  ignored: YouTube leaving the previous song while the new one loads");
+      if (!blockTimer) armBlocked();
+      return;
     }
     if (state.playing || state.status !== "paused") {
       mlog("  paused in YouTube (frame, media key or the system): following it");
@@ -1278,6 +1306,10 @@ function watchdog(p: YtLike): void {
   }
   if (moving) {
     frozenStage = 0;
+    if (stall.stage) {
+      mlog(`rescue worked at step ${stall.stage}: the song plays on`, snap());
+      stall.stage = 0;
+    }
     // (Not while YouTube is still muted by itself: the frame is where a tap unmutes it.)
     if (state.needsTap && !(state.mode !== "video" && !state.muted && safe(() => p.isMuted(), false))) {
       mlog("YouTube plays and the second moves: its frame can step back");
@@ -1298,23 +1330,68 @@ function watchdog(p: YtLike): void {
   wd.lastT = t;
 }
 
-/** One step of the frozen-time rescue (see watchdog). Never pauses YouTube: a late start is followed. */
+/** The second froze while YouTube says PLAYING (see watchdog): same rescue as a stuck reload. */
 function unfreeze(p: YtLike, t: number): void {
   wd.stillSince = now();
+  // In the background the browser may stop updating the second: not a stall.
+  if (pageHidden()) return;
   frozenStage++;
-  if (frozenStage === 1) {
-    mlog(`frozen at ${Math.round(t)} s while PLAYING: showing buffering and nudging YouTube (seek + play)`, snap(), "warn");
-    setMusic({ status: "buffering" });
-    p.seekTo(t, true);
-    p.playVideo();
-  } else if (frozenStage === 2 && state.queue.length && state.index >= 0) {
-    mlog(`still frozen at ${Math.round(t)} s: loading the song again at that second`, snap(), "warn");
-    setMusic({ status: "loading" });
-    ytLoad(state.index, t, false, true);
-  } else {
-    frozenStage = 3;
-    giveUp(`the second stayed at ${Math.round(t)} s while PLAYING`, "music.stalled");
+  rescue(p, t, "the second froze while PLAYING");
+}
+
+/**
+ * The stall rescue: a song that had been playing is stuck (YouTube reloading
+ * it for ever, or a frozen second). Each step runs only if the one before did
+ * not help, always at the same song and second, and never pauses or gives up:
+ *   1. nudge: seek to this second + play (YouTube re-opens the stream);
+ *   2. reload the song at this second (a new connection to the stream);
+ *   3. build a new YouTube player (a new frame, a new connection) and go on
+ *      at this song and second — the last resort, not while the page is hidden;
+ *   4. then: offline → wait for the connection and go on at once; online →
+ *      reload at this second every 20 s, saying the connection is the problem.
+ * The ladder starts over when the second moves again, or on any user command.
+ */
+const stall = { stage: 0, t: 0, toastAt: -1e9 };
+function rescue(p: YtLike, t: number, why: string): void {
+  if (!state.playing) return;
+  if (stall.stage === 0) stall.t = t;
+  stall.stage++;
+  const at = Math.max(0, Math.max(t, stall.t) - 0.5);
+  const i = state.index;
+  const canLoad = state.queue.length > 0 && i >= 0;
+  const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+  const info = { step: stall.stage, at: Math.round(at), offline, hidden: pageHidden(), ...snap() };
+  if (now() - stall.toastAt > 30000) {
+    stall.toastAt = now();
+    toast(tr(offline ? "music.noConnection" : "music.slowNetwork"));
   }
+  setMusic({ status: "buffering" });
+  if (offline) {
+    // Nothing to fetch from: the 'online' event goes on at once (see below).
+    mlog(`rescue: ${why}, and the device is offline: waiting for the connection`, info, "warn");
+    return armBlocked(10000, true);
+  }
+  if (stall.stage === 1) {
+    mlog(`rescue step 1/3: ${why}: nudging YouTube (seek to ${Math.round(at)} s + play)`, info, "warn");
+    p.seekTo(at, true);
+    p.playVideo();
+    return armBlocked(5000, true);
+  }
+  if (stall.stage === 2 || (stall.stage === 3 && pageHidden()) || !canLoad) {
+    mlog(`rescue step 2/3: ${why}: reloading the song at ${Math.round(at)} s (new stream connection)`, info, "warn");
+    if (canLoad) ytLoad(i, at, false, true);
+    else p.playVideo();
+    return armBlocked(6000, true);
+  }
+  if (stall.stage === 3) {
+    mlog(`rescue step 3/3 (last resort): ${why}: building a new YouTube player, going on at ${Math.round(at)} s`, info, "warn");
+    resumeAt = at;
+    setMusic({ rebuild: state.rebuild + 1 });
+    return armBlocked(15000, true);
+  }
+  mlog(`rescue: ${why} again after a new player: reloading at ${Math.round(at)} s (the network is the problem)`, info, "warn");
+  ytLoad(i, at, false, true);
+  armBlocked(20000, true);
 }
 
 /**
@@ -1342,6 +1419,19 @@ if (typeof document !== "undefined" && typeof window !== "undefined" && typeof d
   window.addEventListener("pagehide", (e) => mlog("page hide", { persisted: (e as PageTransitionEvent).persisted, ...snap() }));
   document.addEventListener("freeze", () => mlog("page frozen by the browser", snap()));
   document.addEventListener("resume", () => recheck("resumed by the browser"));
+  window.addEventListener("offline", () => mlog("the device went offline", snap(), "warn"));
+  window.addEventListener("online", () => {
+    mlog("the device is online again", snap());
+    // Music was wanted and is stuck: go on at once, at the same second.
+    const p = yt;
+    if (!p || !state.playing || state.status === "playing") return;
+    const t = safe(() => p.getCurrentTime(), 0) || time.time;
+    if (state.queue.length && state.index >= 0 && startedId === state.queue[state.index]?.id) {
+      mlog(`  reloading the song at ${Math.round(t)} s`);
+      ytLoad(state.index, Math.max(0, t - 0.5), false, true);
+    } else p.playVideo();
+    armBlocked(10000, true);
+  });
 }
 
 // ---- Commands -----------------------------------------------------------------
@@ -1449,7 +1539,10 @@ export const music = {
     }
     const n = nextIndex(state.index, q.length, state.repeat);
     if (n === null) {
-      if (state.source.kind === "mix") advanceMix();
+      if (state.source.kind === "mix") return advanceMix();
+      // The last song: say so, instead of a button that seems dead.
+      mlog("  last song of the queue: nothing after it (repeat is off)");
+      toast(tr("music.lastSong"));
       return;
     }
     goTo(n);
@@ -1584,6 +1677,9 @@ export function musicUsedThisSession(): boolean {
 /** For tests: back to a fresh state. */
 export function __resetMusicForTests(): void {
   detachPlayer();
+  startedId = null;
+  stall.stage = 0;
+  stall.toastAt = -1e9;
   state = { ...state, view: "closed", source: null, playing: false, status: "idle", now: null, shuffle: false, repeat: false, queue: [], index: -1, toast: null, failed: null, docked: false };
   time = { time: 0, duration: 0 };
   original = null;

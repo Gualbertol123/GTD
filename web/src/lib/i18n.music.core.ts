@@ -2,6 +2,9 @@
 // in both languages (i18n test).
 
 export const CORE_IT: Record<string, string> = {
+  "music.slowNetwork": "Connessione lenta: riprendo il brano dallo stesso punto…",
+  "music.noConnection": "Sei offline: il brano riparte appena torna la connessione.",
+  "music.lastSong": "È l'ultimo brano della coda (attiva Ripeti per ricominciare).",
   "music.loading": "Caricamento",
   "music.seek": "Posizione nel brano",
   "music.retry": "Riprova",
@@ -23,6 +26,9 @@ export const CORE_IT: Record<string, string> = {
 };
 
 export const CORE_EN: Record<string, string> = {
+  "music.slowNetwork": "Slow connection: picking the song up from the same point…",
+  "music.noConnection": "You're offline: the song goes on as soon as the connection is back.",
+  "music.lastSong": "This is the last song in the queue (turn on Repeat to start over).",
   "music.loading": "Loading",
   "music.seek": "Seek",
   "music.retry": "Retry",

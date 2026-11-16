@@ -19,6 +19,7 @@ import {
   fetchExplore,
   fetchSuggestions,
   getMusic,
+  musicLog,
   getMusicTime,
   insertTracks,
   lastRequest,
@@ -677,15 +678,114 @@ describe("real YouTube behaviour (the 'loop playing, no sound' report)", () => {
     expect(getMusic().needsTap).toBe(false);
   });
 
-  it("PAUSED right after play (autoplay refused): paused + frame at once", () => {
+  it("Next/Prev: YouTube's PAUSED while it leaves the old song is not a refusal (real log)", () => {
+    clock();
+    music.play({ kind: "videos", label: "L", tracks: list(5), start: 0 });
+    ev(p, S.PLAYING);
+    playFor(1000);
+    music.next();
+    // Real order seen on a desktop: PAUSED (old song), UNSTARTED, BUFFERING, PLAYING.
+    ev(p, S.PAUSED);
+    let s = getMusic();
+    expect(s.playing).toBe(true);
+    expect(s.status).toBe("loading");
+    expect(s.needsTap).toBe(false);
+    expect(s.toast).toBeNull();
+    ev(p, S.UNSTARTED);
+    ev(p, S.BUFFERING);
+    ev(p, S.PLAYING);
+    s = getMusic();
+    expect(s.status).toBe("playing");
+    expect(s.index).toBe(1);
+    expect(s.needsTap).toBe(false);
+  });
+
+  it("a real refusal (YouTube stays PAUSED) is still caught by the start check", () => {
+    clock();
     music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
     ev(p, S.UNSTARTED);
     ev(p, S.PAUSED);
+    expect(getMusic().status).toBe("loading");
+    run(6100);
     const s = getMusic();
     expect(s.playing).toBe(false);
     expect(s.status).toBe("paused");
     expect(s.needsTap).toBe(true);
     expect(s.toast?.text).toBe("music.tapToPlay");
+    expect(p.log).not.toContain("pause");
+  });
+
+  it("stuck reloading in the middle of a song: nudge, reload at the same second, new player; never pauses (real log)", () => {
+    clock();
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    ev(p, S.PLAYING);
+    playFor(1500);
+    const at = p.time;
+    // YouTube reloads the song and stays stuck.
+    ev(p, S.BUFFERING);
+    p.log.length = 0;
+    run(6100);
+    // Step 1: nudge at the same point, and say why.
+    expect(p.log).toContain(`seek:${at - 0.5}`);
+    expect(getMusic().toast?.text).toBe("music.slowNetwork");
+    expect(getMusic().status).toBe("buffering");
+    run(8100);
+    // Step 2: the song again, at the same second (a new stream connection).
+    expect(p.log.some((l) => l.startsWith("load:") && l.endsWith(`:${at - 0.5}`))).toBe(true);
+    const before = getMusic().rebuild;
+    run(10100);
+    // Step 3 (last resort): a new YouTube player is asked for.
+    expect(getMusic().rebuild).toBe(before + 1);
+    let s = getMusic();
+    expect(s.playing).toBe(true);
+    expect(s.needsTap).toBe(false);
+    expect(p.log).not.toContain("pause");
+    expect(p.log).not.toContain("stop");
+    // It plays on: the ladder starts over.
+    ev(p, S.PLAYING);
+    playFor(2000);
+    s = getMusic();
+    expect(s.status).toBe("playing");
+    expect(musicLog.some((e) => e.ev.startsWith("rescue worked"))).toBe(true);
+  });
+
+  it("slow but moving: no rescue", () => {
+    clock();
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+    ev(p, S.PLAYING);
+    playFor(1500);
+    ev(p, S.BUFFERING);
+    p.log.length = 0;
+    for (let k = 0; k < 20; k++) {
+      p.time += 0.3;
+      run(1000);
+    }
+    expect(p.log.filter((l) => l.startsWith("seek") || l.startsWith("load"))).toEqual([]);
+  });
+
+  it("a page in the background never gives up a start", () => {
+    clock();
+    const g = globalThis as unknown as { document?: unknown };
+    const had = g.document;
+    g.document = { hidden: true };
+    try {
+      music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
+      ev(p, S.UNSTARTED);
+      run(30000);
+      expect(getMusic().playing).toBe(true);
+      expect(getMusic().needsTap).toBe(false);
+    } finally {
+      g.document = had;
+    }
+  });
+
+  it("Next on the last song says so instead of doing nothing", () => {
+    music.play({ kind: "videos", label: "L", tracks: list(3), start: 2 });
+    ev(p, S.PLAYING);
+    music.next();
+    const s = getMusic();
+    expect(s.index).toBe(2);
+    expect(s.toast?.text).toBe("music.lastSong");
   });
 
   it("PAUSED right after a quick Pause then Play is the pause's echo: ignored", () => {
@@ -751,31 +851,31 @@ describe("real YouTube behaviour (the 'loop playing, no sound' report)", () => {
     expect(getMusic().muted).toBe(true);
   });
 
-  it("PLAYING with a frozen second: nudge, reload at that second, then give up; never pauses or destroys", () => {
+  it("PLAYING with a frozen second: nudge, reload at that second, new player; never pauses or destroys", () => {
     clock();
     music.play({ kind: "videos", label: "L", tracks: list(3), start: 0 });
     p.time = 42;
     ev(p, S.PLAYING);
     p.log.length = 0;
     run(12000);
-    expect(p.log).toContain("seek:42");
+    expect(p.log).toContain("seek:41.5");
     expect(getMusic().status).toBe("buffering");
-    run(11000);
-    expect(p.log).toContain("load:0:42");
     p.state = S.PLAYING; // YouTube says PLAYING again, still stuck
-    run(11000);
+    run(12000);
+    expect(p.log).toContain("load:0:41.5");
+    p.state = S.PLAYING;
+    const before = getMusic().rebuild;
+    run(12000);
+    expect(getMusic().rebuild).toBe(before + 1);
     const s = getMusic();
-    expect(s.playing).toBe(false);
-    expect(s.needsTap).toBe(true);
+    expect(s.playing).toBe(true);
     expect(p.log).not.toContain("pause");
     expect(p.log).not.toContain("stop");
-    // It does not flip back to playing while the second stands still.
-    run(5000);
-    expect(getMusic().playing).toBe(false);
     // A real resume is followed.
+    p.state = S.PLAYING;
     playFor(3000);
     expect(getMusic().playing).toBe(true);
-    expect(getMusic().needsTap).toBe(false);
+    expect(getMusic().status).toBe("playing");
   });
 
   it("a YouTube list that never gives its ids stops waiting and plays as YouTube has it", () => {

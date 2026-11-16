@@ -133,6 +133,7 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
   const side = useMusicSel((s) => s.side);
   const failed = useMusicSel((s) => s.failed);
   const premium = useMusicSel((s) => s.premium);
+  const rebuild = useMusicSel((s) => s.rebuild);
   // YouTube refused a start from the app (a phone's rule, a wall in its frame):
   // its frame is shown, tappable, until the music plays.
   const needsTap = useMusicSel((s) => s.needsTap);
@@ -145,6 +146,7 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
   const creating = useRef(false);
   const mounted = useRef(true);
   const builtFor = useRef(premium);
+  const builtRebuild = useRef(rebuild);
   const [ready, setReady] = useState(false);
 
   // The engine's own messages follow the UI language.
@@ -269,11 +271,14 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wanted, failed]);
 
-  // "Ho YouTube Premium" changed: the player is rebuilt on the other host; the
-  // engine puts the song, second and queue back when the new one is ready.
+  // "Ho YouTube Premium" changed (the other host), or the stall rescue asked
+  // for a fresh player (a new frame, a new connection): the player is built
+  // again; the engine puts the song, second and queue back when it is ready.
   useEffect(() => {
-    if (builtFor.current === premium) return;
+    if (builtFor.current === premium && builtRebuild.current === rebuild) return;
+    if (builtRebuild.current !== rebuild) mlog("building a new YouTube player (stall rescue)");
     builtFor.current = premium;
+    builtRebuild.current = rebuild;
     const p = player.current;
     if (!p) return; // not made yet: it will use the new host
     detachPlayer();
@@ -287,7 +292,7 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
     host.current?.querySelectorAll("iframe").forEach((f) => f.remove());
     create();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [premium]);
+  }, [premium, rebuild]);
 
   const audio = mode === "audio";
   // On the Music tab the tab is the player: this one only hosts the frame
