@@ -568,6 +568,12 @@ html[data-skin="glass"] button {
 html[data-skin="glass"] button:not(:disabled):hover {
   outline-color: var(--rim-top);
 }
+/* A button with no rounding of its own (a whole task card, a row, a panel
+   header that is clickable) takes its container's corners: its hover rim then
+   follows the rounded card instead of drawing a square box around it. */
+html[data-skin="glass"] button:not([class*="rounded"]) {
+  border-radius: inherit;
+}
 html[data-skin="glass"] button:not(:disabled):active {
   opacity: 0.8;
 }
