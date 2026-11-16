@@ -500,6 +500,86 @@ let loopApplied: boolean | null = null;
 
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
+// ---- Console log ----------------------------------------------------------------
+// Every command sent to YouTube, every YouTube event and what the app decided,
+// as "[music] …" lines in the browser console. On by default; turn it off with
+// localStorage.setItem("gtd-music-log", "0"). The last 500 lines are also kept
+// in window.__music.log; window.__music.dump() prints them with the state.
+
+const STATE_NAME: Record<number, string> = { [-1]: "UNSTARTED", 0: "ENDED", 1: "PLAYING", 2: "PAUSED", 3: "BUFFERING", 5: "CUED" };
+const ytStateName = (n: number) => STATE_NAME[n] ?? `state ${n}`;
+export const musicLog: { t: number; ev: string; data?: unknown }[] = [];
+
+function logOn(): boolean {
+  if (import.meta.env?.MODE === "test") return false;
+  try {
+    return localStorage.getItem("gtd-music-log") !== "0";
+  } catch {
+    return true;
+  }
+}
+
+/** One line in the console and in the in-memory log. */
+export function mlog(ev: string, data?: unknown, level: "info" | "warn" = "info"): void {
+  const t = Math.round(now());
+  musicLog.push({ t, ev, data });
+  if (musicLog.length > 500) musicLog.shift();
+  if (!logOn() || typeof console === "undefined") return;
+  const line = `[music] ${(t / 1000).toFixed(2)}s ${ev}`;
+  if (level === "warn") console.warn(line, data ?? "");
+  else console.info(line, data ?? "");
+}
+
+/** What the app and YouTube each think, in one object (for log lines). */
+function snap(): Record<string, unknown> {
+  const p = yt;
+  return {
+    app: `${state.status}${state.playing ? "" : " (paused intent)"}`,
+    index: state.index,
+    queue: state.queue.length,
+    now: state.now?.id ?? null,
+    expect: expectId,
+    yt: p ? ytStateName(safe(() => p.getPlayerState(), -9)) : "no player",
+    ytVideo: p ? safe(() => p.getVideoData()?.video_id ?? "", "?") : null,
+    ytIndex: p ? safe(() => p.getPlaylistIndex(), -1) : null,
+    ytTime: p ? Math.round(safe(() => p.getCurrentTime(), 0) || 0) : null,
+    adopting: !!adopting,
+  };
+}
+
+const YT_COMMANDS = new Set(["loadPlaylist", "cuePlaylist", "playVideoAt", "playVideo", "pauseVideo", "stopVideo", "nextVideo", "previousVideo", "seekTo", "setLoop", "mute", "unMute"]);
+
+/** The player, with every command logged (getters and setVolume are not, they are too chatty). */
+function logged(p: YtLike): YtLike {
+  if (typeof Proxy === "undefined") return p;
+  return new Proxy(p, {
+    get(target, key, recv) {
+      const v = Reflect.get(target, key, recv);
+      if (typeof v !== "function") return v;
+      const name = String(key);
+      return (...args: unknown[]) => {
+        if (YT_COMMANDS.has(name)) {
+          const shown = args.map((a) => (Array.isArray(a) ? `[${a.length} ids, first ${String(a[0])}]` : a));
+          mlog(`→ YouTube.${name}`, shown);
+        }
+        return (v as (...a: unknown[]) => unknown).apply(target, args);
+      };
+    },
+  });
+}
+
+if (typeof window !== "undefined") {
+  (window as unknown as { __music?: unknown }).__music = {
+    log: musicLog,
+    state: () => state,
+    snap: () => snap(),
+    dump: () => {
+      console.table(musicLog.map((e) => ({ s: (e.t / 1000).toFixed(2), event: e.ev, data: typeof e.data === "string" ? e.data : JSON.stringify(e.data) })));
+      console.info("[music] now", snap());
+    },
+  };
+}
+
 function cmd(kind: string): void {
   lastCmd = { kind, at: now() };
   pausePending = kind === "pause";
@@ -511,8 +591,10 @@ function ownPauseWanted(): boolean {
 }
 
 /** YouTube's player is ready (MusicPlayer). Everything asked before now is applied. */
-export function attachPlayer(p: YtLike): void {
+export function attachPlayer(p0: YtLike): void {
+  const p = logged(p0);
   yt = p;
+  mlog("player ready", { pending: state.source ? sourceLogName(state.source) : null, playing: state.playing });
   ytIds = null;
   loopApplied = null;
   p.setVolume(state.volume);
@@ -525,6 +607,7 @@ export function attachPlayer(p: YtLike): void {
 
 /** The player is going away (rebuild, unmount): later commands wait for the next one. */
 export function detachPlayer(): void {
+  mlog("player detached (rebuild or unmount)");
   if (yt) resumeAt = safe(() => yt!.getCurrentTime(), 0) || time.time;
   yt = null;
   ytIds = null;
@@ -577,6 +660,8 @@ function ytLoad(i: number, start = 0, cue = false): void {
     return;
   }
   const ids = q.map((t) => t.id);
+  mlog(`load song ${i + 1}/${q.length}`, { id: expectId, title: q[i]?.title, start: Math.round(start), mode: cue ? "cue (stay paused)" : sameIds(ytIds, q) && start === 0 ? "jump in loaded list" : "load list" });
+  noteLoad(expectId);
   if (cue) p.cuePlaylist(ids, i, start);
   else if (sameIds(ytIds, q) && start === 0) p.playVideoAt(i);
   else p.loadPlaylist(ids, i, start);
@@ -599,6 +684,7 @@ function goTo(i: number, auto = false): void {
 /** A YouTube list whose ids come later (mix, artist, pasted link). */
 function startList(list: string, shuffle: boolean): void {
   const adds = adopting?.adds ?? [];
+  mlog("YouTube list: waiting for its songs", { list, shuffle });
   adopting = { list, shuffle, adds };
   ytIds = null;
   expectId = null;
@@ -615,6 +701,7 @@ function startList(list: string, shuffle: boolean): void {
       clearInterval(adoptTimer);
       // The list never told its ids: just play it as YouTube has it.
       if (adopting && yt && state.playing) {
+        mlog("YouTube list gave no song ids in 10 s: playing it as YouTube has it", undefined, "warn");
         adopting = null;
         yt.playVideo();
       }
@@ -634,6 +721,7 @@ function adopt(): void {
   if (!ids || !ids.length) return;
   adopting = null;
   clearInterval(adoptTimer);
+  mlog(`YouTube list read: ${ids.length} songs`, { shuffle: a.shuffle });
   let q: Track[] = ids.map((id) => ({ id, title: "", channel: "" }));
   if (a.shuffle) {
     q = shuffled(q);
@@ -656,6 +744,7 @@ function adopt(): void {
 
 /** The favourites mix: the next artist's songs. */
 function advanceMix(): void {
+  mlog("mix: next artist");
   if (!mix) mix = { order: shuffled(ARTISTS), pos: 0 };
   mix.pos = (mix.pos + 1) % mix.order.length;
   original = null;
@@ -664,8 +753,26 @@ function advanceMix(): void {
   startList(mix.order[mix.pos].list, true);
 }
 
+function sourceLogName(s: Source): string {
+  if (s.kind === "videos") return `${s.key ?? "songs"} "${s.label}"`;
+  if (s.kind === "list") return `list ${s.list}`;
+  if (s.kind === "artist") return `artist ${s.artist}`;
+  return "mix";
+}
+
+/** The same song loaded again and again in a short time: say so (a load loop). */
+const recentLoads: { id: string | null; at: number }[] = [];
+function noteLoad(id: string | null): void {
+  const t = now();
+  recentLoads.push({ id, at: t });
+  while (recentLoads.length && t - recentLoads[0].at > 20000) recentLoads.shift();
+  const same = recentLoads.filter((l) => l.id === id).length;
+  if (same >= 3) mlog(`the same song was loaded ${same} times in 20 s (a loop?)`, snap(), "warn");
+}
+
 /** Stop where we are (end of the queue, or nothing can play). */
 function halt(message?: string): void {
+  mlog("stop", { why: message ?? "end of the queue", ...snap() }, "warn");
   clearTimeout(blockTimer);
   expectId = null;
   setMusic({ playing: false, status: "paused" });
@@ -684,6 +791,7 @@ function armBlocked(ms = 6000): void {
     if (!p || !state.playing || adopting) return;
     const s = safe(() => p.getPlayerState(), S.PLAYING);
     if (s === S.PLAYING || s === S.BUFFERING) return;
+    mlog(`nothing started ${ms / 1000} s after play (autoplay blocked?): showing paused`, snap(), "warn");
     setMusic({ playing: false, status: "paused" });
     toast(tr("music.tapToPlay"));
   }, ms);
@@ -705,8 +813,12 @@ export function onYtState(s: number): void {
   const p = yt;
   if (!p) return;
   const vid = safe(() => p.getVideoData()?.video_id ?? "", "");
+  mlog(`← YouTube ${ytStateName(s)}`, { video: vid, app: state.status, playing: state.playing, expect: expectId });
   // An event about the song before the one asked for: ignore it.
-  if (expectId && vid && vid !== expectId && s !== S.UNSTARTED && s !== S.CUED && now() - expectAt < 8000) return;
+  if (expectId && vid && vid !== expectId && s !== S.UNSTARTED && s !== S.CUED && now() - expectAt < 8000) {
+    mlog(`  ignored: about ${vid}, the app asked for ${expectId}`);
+    return;
+  }
 
   if (s === S.CUED) {
     if (adopting) adopt();
@@ -720,6 +832,7 @@ export function onYtState(s: number): void {
     if (!state.playing) {
       // Paused while it loaded: keep it paused.
       if (ownPauseWanted() || !state.source) {
+        mlog("  paused again: the app asked to pause while it loaded");
         p.pauseVideo();
         return;
       }
@@ -737,6 +850,7 @@ export function onYtState(s: number): void {
     if (adopting) adopt();
     if (!state.playing) {
       if (ownPauseWanted() || !state.source) {
+        mlog("  paused again: the app asked to pause while it loaded");
         p.pauseVideo();
         setMusic({ status: "paused" });
         return;
@@ -779,7 +893,10 @@ export function onYtState(s: number): void {
   if (s === S.PAUSED) {
     pausePending = false;
     // Our own pause echoing back after a quick Play: not the user's wish.
-    if (state.playing && lastCmd.kind === "play" && now() - lastCmd.at < 900) return;
+    if (state.playing && lastCmd.kind === "play" && now() - lastCmd.at < 900) {
+      mlog("  ignored: echo of an earlier pause right after Play");
+      return;
+    }
     if (state.playing || state.status !== "paused") setMusic({ playing: false, status: "paused" });
     return;
   }
@@ -794,9 +911,11 @@ export function onYtState(s: number): void {
     const n = nextIndex(state.index, q.length, state.repeat);
     if (n === null) {
       if (state.source?.kind === "mix") return advanceMix();
+      mlog("  end of the queue");
       setMusic({ playing: false, status: "paused" });
       return;
     }
+    mlog(`  song ended: on to ${n + 1}/${q.length}`, { id: q[n].id, youtubeMovesOnItself: sameIds(ytIds, q) });
     setTime(0, 0);
     setMusic({ index: n, now: nowOf(q[n]), status: "loading" });
     expectId = q[n].id;
@@ -811,12 +930,25 @@ export function onYtState(s: number): void {
   }
 }
 
+const ERROR_MEANING: Record<number, string> = {
+  2: "bad request (player parameters)",
+  5: "HTML5 player error",
+  100: "video not found / private / removed",
+  101: "owner does not allow embedding",
+  150: "owner does not allow embedding",
+  153: "no referrer sent (embed refused)",
+};
+
 /** YouTube's onError: 2 / 153 = the player cannot play here at all; others = this video. */
 export function onYtError(code: number): void {
   const p = yt;
   if (!p) return;
   const vid = safe(() => p.getVideoData()?.video_id ?? "", "");
-  if (expectId && vid && vid !== expectId && now() - expectAt < 8000) return;
+  mlog(`← YouTube ERROR ${code}`, { video: vid, expect: expectId, meaning: ERROR_MEANING[code] ?? "unknown", errorsInARow: errCount + 1 }, "warn");
+  if (expectId && vid && vid !== expectId && now() - expectAt < 8000) {
+    mlog("  ignored: about a song the app has already left");
+    return;
+  }
   expectId = null;
   if (code === 2 || code === 153) return halt(tr("music.playerError"));
   errCount++;
@@ -846,6 +978,7 @@ function tick(): void {
   if (!p) return;
   tickN++;
   if (adopting && tickN % 2 === 0) adopt();
+  if (tickN % 2 === 0) watchdog(p);
   if (state.status !== "playing" && tickN % 3 !== 0) return;
   const t = safe(() => p.getCurrentTime(), 0) || 0;
   const d = safe(() => p.getDuration(), 0) || 0;
@@ -864,6 +997,47 @@ function tick(): void {
     if (typeof vol === "number" && !muted && vol !== state.volume) patch.volume = vol;
     if (Object.keys(patch).length) setMusic(patch);
   }
+}
+
+/**
+ * Once a second: does what the app shows match what YouTube does? Logs a
+ * warning when it doesn't, and puts it right where that is safe:
+ * - YouTube plays but the app still shows loading (its PLAYING event was
+ *   missed or set aside): the app follows YouTube.
+ * - The app wants music but YouTube has stood still for a while: logged
+ *   (the 6 s autoplay check shows Play again when nothing starts).
+ * - YouTube says PLAYING but the second does not move: logged (ads, network).
+ */
+let wd = { since: 0, kind: "", lastT: -1, stillSince: 0 };
+function watchdog(p: YtLike): void {
+  const ys = safe(() => p.getPlayerState(), -9);
+  const t = safe(() => p.getCurrentTime(), 0) || 0;
+  const tnow = now();
+  let kind = "";
+  if (ys === S.PLAYING && state.status !== "playing" && state.playing) kind = "yt-playing-app-not";
+  else if (state.playing && ys !== S.PLAYING && ys !== S.BUFFERING && !adopting) kind = "app-playing-yt-not";
+  else if (ys === S.PLAYING && !state.playing && !ownPauseWanted()) kind = "yt-playing-app-paused";
+  if (kind !== wd.kind) wd = { ...wd, since: tnow, kind };
+  const forMs = tnow - wd.since;
+  if (kind === "yt-playing-app-not" && forMs > 1500) {
+    mlog("watchdog: YouTube is playing but the app still shows loading: following YouTube", snap(), "warn");
+    expectId = null;
+    onYtState(S.PLAYING);
+    wd.kind = "";
+  } else if (kind === "yt-playing-app-paused" && forMs > 1500) {
+    mlog("watchdog: YouTube is playing while the app shows paused: following YouTube", snap(), "warn");
+    setMusic({ playing: true });
+    onYtState(S.PLAYING);
+    wd.kind = "";
+  } else if (kind === "app-playing-yt-not" && forMs > 8000 && Math.round(forMs / 1000) % 8 === 0) {
+    mlog(`watchdog: the app wants music but YouTube is ${ytStateName(ys)} for ${Math.round(forMs / 1000)} s`, snap(), "warn");
+  }
+  // The second does not move while YouTube says PLAYING.
+  if (ys === S.PLAYING && Math.abs(t - wd.lastT) < 0.05) {
+    if (!wd.stillSince) wd.stillSince = tnow;
+    else if (tnow - wd.stillSince > 5000 && Math.round((tnow - wd.stillSince) / 1000) % 5 === 0) mlog(`watchdog: YouTube says PLAYING but the time has stayed at ${Math.round(t)} s for ${Math.round((tnow - wd.stillSince) / 1000)} s (ad, network, or a blocked frame)`, snap(), "warn");
+  } else wd.stillSince = 0;
+  wd.lastT = t;
 }
 
 // ---- Commands -----------------------------------------------------------------
@@ -885,6 +1059,7 @@ export const music = {
   },
   play: (s0: Source) => {
     const s = withKey(s0);
+    mlog("PLAY asked", { source: sourceLogName(s), songs: s.kind === "videos" ? s.tracks.length : "YouTube list", start: s.kind === "videos" ? s.start : 0, player: yt ? "ready" : "not ready yet (applied when ready)" });
     playSeq++;
     errCount = 0;
     original = null;
@@ -916,6 +1091,7 @@ export const music = {
   },
   toggle: () => {
     if (!state.source) return;
+    mlog(state.playing ? "PAUSE pressed" : "PLAY pressed", snap());
     if (state.playing) {
       // Pause now, also while it loads (YouTube is paused again if it starts).
       cmd("pause");
@@ -942,6 +1118,7 @@ export const music = {
   },
   next: () => {
     if (!state.source) return;
+    mlog("NEXT pressed", { index: state.index, queue: state.queue.length });
     const q = state.queue;
     if (!q.length) {
       // A YouTube list not read yet: YouTube knows what is next.
@@ -963,6 +1140,7 @@ export const music = {
   },
   prev: () => {
     if (!state.source) return;
+    mlog("PREV pressed", { index: state.index, time: Math.round(time.time) });
     const q = state.queue;
     const n = prevIndex(state.index, q.length, state.repeat);
     if (time.time > 4 || n === null) return music.seek(0);

@@ -5,6 +5,7 @@ import { useBackClose } from "../lib/history";
 import {
   ARTISTS,
   attachPlayer,
+  mlog,
   coverOf,
   forgetMusicFailures,
   detachPlayer,
@@ -205,6 +206,7 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
     frame.allow = "autoplay; encrypted-media; picture-in-picture";
     frame.title = "YouTube";
     box.appendChild(frame);
+    mlog("creating the YouTube player", { host: ytHost });
     const p: YTPlayer = new YT.Player(frame, {
       events: {
         onReady: () => {
@@ -232,6 +234,7 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
       .then(build)
       .catch(() => {
         creating.current = false;
+        mlog("YouTube's player script could not be loaded (ad-blocker, network?)", undefined, "warn");
         if (mounted.current) setMusic({ failed: "api", playing: false, status: "idle" });
       });
   };
