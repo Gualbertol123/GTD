@@ -9,7 +9,9 @@
     "build": "node scripts/gen-pdf-fonts.mjs && tsc -b && tsc -p netlify/tsconfig.json && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc -b && tsc -p netlify/tsconfig.json"
+    "typecheck": "tsc -b && tsc -p netlify/tsconfig.json",
+    "perf:music": "node scripts/perf/run.mjs",
+    "perf:fns": "node scripts/perf/fns.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
