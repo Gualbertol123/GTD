@@ -1,0 +1,37 @@
+/* "Uscita audio" panel (components/AudioOutput.tsx). Portalled to <body>:
+   opaque, no backdrop-filter, so it never nests a blur. */
+.ao-panel {
+  position: fixed;
+  z-index: 1200;
+  width: 320px;
+  max-width: calc(100vw - 16px);
+  padding: 14px;
+  border-radius: 16px;
+  background: #151a2b;
+  color: #eef1f8;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+}
+html[data-appearance="light"] .ao-panel { background: #ffffff; color: #1c1c1e; border-color: rgba(60, 60, 67, 0.18); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18); }
+.ao-head { display: flex; flex-direction: column; gap: 2px; }
+.ao-head b { font-size: 14px; }
+.ao-now { opacity: 0.75; }
+.ao-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ao-list li { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 10px; background: rgba(127, 127, 127, 0.1); }
+.ao-list li.is-on { background: rgba(10, 132, 255, 0.18); outline: 1px solid rgba(10, 132, 255, 0.45); }
+.ao-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ao-tag { font-size: 11px; font-weight: 600; color: #0a84ff; }
+.ao-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 40px; padding: 0 14px; border-radius: 999px;
+  background: #0a84ff; color: #fff; font-weight: 600; text-decoration: none;
+}
+.ao-primary:focus-visible, .ao-link:focus-visible { outline: 2px solid #64b5ff; outline-offset: 2px; }
+.ao-names { display: flex; flex-direction: column; gap: 3px; }
+.ao-link { align-self: flex-start; background: none; border: 0; padding: 0; color: #0a84ff; font-weight: 600; cursor: pointer; }
+.ao-note { margin: 0; opacity: 0.85; }
+.ao-fine { margin: 0; font-size: 11px; opacity: 0.6; }

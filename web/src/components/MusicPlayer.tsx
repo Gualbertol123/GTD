@@ -1,5 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
+import { AudioOutputButton } from "./AudioOutput";
 import { useT } from "../lib/i18n";
 import { useBackClose } from "../lib/history";
 import {
@@ -393,7 +394,7 @@ export function MusicPlayer({ mobile }: { mobile: boolean }) {
       }}
     >
       {mobile && view === "open" && <BackToMini />}
-      {!inTab && view === "open" && <Head />}
+      {!inTab && view === "open" && <Head mobile={mobile} />}
       <div className="mp-video" ref={host} aria-hidden={sp || undefined} />
       {tap && !inTab && <TapHint />}
       {!inTab && audio && view === "open" && <BigCover />}
@@ -425,7 +426,7 @@ export function TapHint({ className = "mp-tapnote" }: { className?: string }) {
   );
 }
 
-function Head() {
+function Head({ mobile }: { mobile: boolean }) {
   const { t } = useT();
   return (
     <div className="mp-head">
@@ -433,6 +434,8 @@ function Head() {
         <IconNote size={17} /> <span className="mp-head__label">{t("music.title")}</span>
       </span>
       <ModeSwitch />
+      {/* Phones pick their output from the system (Control Center / quick settings). */}
+      {!mobile && <AudioOutputButton className="mp-icon" />}
       <button className="mp-icon" onClick={music.minimize} aria-label={t("music.minimize")} title={t("music.minimize")}>
         <IconChevronDown size={18} />
       </button>

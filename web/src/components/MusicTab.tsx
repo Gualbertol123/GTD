@@ -109,6 +109,7 @@ import { SpotifyLibrary } from "./SpotifyLibrary";
 import { addFromLink, addSpotifyList, importStep, onImportEvent } from "../lib/spotifyAddAll";
 import { AddAllButton, ImportProgress, importErrorText, taskToast, toastLinkProblem, useImportState } from "./SpotifyCheck";
 import "../styles/musicTab.css";
+import { AudioOutputButton } from "./AudioOutput";
 
 // -----------------------------------------------------------------------------
 // The MUSIC tab (desktop): a full music app around the same player.
@@ -2980,6 +2981,7 @@ function PlayerBar({ barRef, queueOpen, onQueue }: { barRef: RefObject<HTMLEleme
         </button>
         <ModeSwitch bar />
         <EngineSwitch />
+        <AudioOutputButton />
         <Volume />
       </div>
     </footer>

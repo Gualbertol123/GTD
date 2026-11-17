@@ -1,6 +1,21 @@
 // Usability-review strings for the "music" area. Same keys in both languages (i18n test).
 
 export const UX_MUSIC_IT: Record<string, string> = {
+  "ux.music.out": "Uscita audio",
+  "ux.music.outInUse": "In uso: {d}",
+  "ux.music.outActive": "In uso",
+  "ux.music.outUnnamed": "Uscita {n}",
+  "ux.music.outShowNames": "Mostra i nomi dei dispositivi",
+  "ux.music.outNamesNote": "Il browser lo chiede come accesso al microfono: non viene registrato nulla, serve solo a leggere i nomi.",
+  "ux.music.outNoList": "Questo browser non mostra le uscite audio ai siti.",
+  "ux.music.outChange": "Cambia uscita…",
+  "ux.music.outTipWin": "Scorciatoia: Win + Ctrl + V apre subito la scelta dell'uscita (Windows 11). In «Volume e preferenze dispositivo delle app» puoi mandare solo il browser su un'uscita.",
+  "ux.music.outTipMac": "Scorciatoia: Opzione + clic sull'icona del volume nella barra dei menu, oppure Centro di Controllo → Audio.",
+  "ux.music.outTipOther": "Scegli l'uscita dalle impostazioni audio del dispositivo (su telefono: Centro di Controllo o le impostazioni rapide).",
+  "ux.music.outWhy": "La musica suona nel lettore di YouTube o di Spotify: i siti non possono spostarne l'audio, lo sceglie il computer. Qui vedi quale uscita è attiva.",
+  "ux.music.outNow": "Uscita audio: {d}",
+  "ux.music.outAdded": "Collegata: {d}",
+
   // YouTube | Spotify while signed out: say first that the page leaves for Spotify.
   "ux.music.spSignInQ": "Per usare Spotify devi accedere (serve Premium). Si apre la pagina di Spotify: la musica si ferma e torni qui.",
   "ux.music.spSignInGo": "Accedi con Spotify",
@@ -40,6 +55,21 @@ export const UX_MUSIC_IT: Record<string, string> = {
 };
 
 export const UX_MUSIC_EN: Record<string, string> = {
+  "ux.music.out": "Audio output",
+  "ux.music.outInUse": "In use: {d}",
+  "ux.music.outActive": "In use",
+  "ux.music.outUnnamed": "Output {n}",
+  "ux.music.outShowNames": "Show device names",
+  "ux.music.outNamesNote": "The browser asks for it as microphone access: nothing is recorded, it only reads the names.",
+  "ux.music.outNoList": "This browser doesn't show audio outputs to websites.",
+  "ux.music.outChange": "Change output…",
+  "ux.music.outTipWin": "Shortcut: Win + Ctrl + V opens the output picker right away (Windows 11). In \"App volume and device preferences\" you can send just the browser to an output.",
+  "ux.music.outTipMac": "Shortcut: Option-click the volume icon in the menu bar, or Control Center → Sound.",
+  "ux.music.outTipOther": "Choose the output in the device's sound settings (on a phone: Control Center or quick settings).",
+  "ux.music.outWhy": "The music plays in YouTube's or Spotify's player: websites can't move its audio, the computer chooses. Here you see which output is active.",
+  "ux.music.outNow": "Audio output: {d}",
+  "ux.music.outAdded": "Connected: {d}",
+
   "ux.music.spSignInQ": "To use Spotify you need to sign in (Premium is required). Spotify's page opens: the music stops and you come back here.",
   "ux.music.spSignInGo": "Sign in with Spotify",
   "ux.music.spSignInTitle": "Sign in to Spotify?",
