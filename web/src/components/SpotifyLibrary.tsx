@@ -1,5 +1,8 @@
 import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useT } from "../lib/i18n";
+import { useMe } from "../lib/identity";
+import { usePlaylists } from "../lib/musicDb";
+import { LIKED_KEY, isActive, keyOfList, lastTask, startAddAll, teamFor, type ImportTask } from "../lib/spotifyAddAll";
 import { matchSpotify, mlog, music, type SpotifyList, type Track } from "../lib/music";
 import type { SpLibSec, View } from "../lib/musicTabRoute";
 import { beginSpotifyLogin, signOutSpotify, spotifyLoginAvailable, useSpotifyAuth } from "../lib/spotifyAuth";
@@ -19,6 +22,7 @@ import {
   searchSpotify,
   spotifyErrorText,
   songOf,
+  takeAddAllIntent,
   type ListResult,
   type SearchPage,
   type SearchType,
@@ -26,16 +30,18 @@ import {
   type SpTrack,
 } from "../lib/spotifyLibrary";
 import { Cover } from "./MusicPlayer";
-import { IconBack, IconExternal, IconNote, IconPlus, IconSearch, IconSpinner, IconUser } from "./MusicIcons";
+import { IconBack, IconCheck, IconExternal, IconNote, IconPlus, IconSearch, IconSpinner, IconUser } from "./MusicIcons";
+import { AddAllButton, SpotifyCheck, useImportState, useSpotifyAccount } from "./SpotifyCheck";
 
 // -----------------------------------------------------------------------------
 // "La mia libreria Spotify" (MUSICA tab, #/music/splib/…): the signed-in
 // person's own Spotify library — playlists, liked songs, saved albums,
 // followed artists, recently played, and a Spotify search. Every list opens
-// to its songs; any playlist, album, the liked songs or the recent list can be
-// imported into the team library through the same two-step job as "Importa
-// da Spotify" (each song found on YouTube, its Spotify id kept in
-// Track.spotify). Single songs go to a team playlist with "+".
+// to its songs; any playlist, album, the liked songs or the recent list is
+// added to the team library in one click (lib/spotifyAddAll: each song found
+// on YouTube, its Spotify id kept in Track.spotify, saved with its source).
+// "Le mie playlist" opens with the check and "Aggiungi tutte le mie playlist"
+// (components/SpotifyCheck). Single songs go to a team playlist with "+".
 //
 // Spotify's rules: every item shows its cover art and details, a "da Spotify"
 // label and an "Apri su Spotify" link back to Spotify; nothing here plays
@@ -54,8 +60,11 @@ export interface SpotifyLibraryProps {
   go: Go;
   /** Opens the tab's "+" menu for a song (MusicTab's AddMenu). */
   onAdd: (track: Track, anchor: HTMLElement) => void;
-  /** Starts the import job (MusicTab's Spotify job store) and shows its page. */
-  onImport: (list: SpotifyList, name: string, url: string) => void;
+  /** One click: the list is matched on YouTube and saved as a team playlist with its source (lib/spotifyAddAll). */
+  /** Returns the task queued (null: refused, e.g. already running). */
+  onImport: (list: SpotifyList, name: string, url: string) => ImportTask | null;
+  /** Opens a team playlist (the check's "Vedi", "Già nella libreria"). */
+  onOpenPlaylist: (id: string) => void;
   /** A Spotify import is reading or matching: signing in (which leaves the page) would drop it. */
   importBusy?: boolean;
 }
@@ -186,11 +195,20 @@ const SECS: { sec: SpLibSec; key: string }[] = [
   { sec: "search", key: "spl.secSearch" },
 ];
 
-export function SpotifyLibrary({ view, go, onAdd, onImport, importBusy }: SpotifyLibraryProps) {
+export function SpotifyLibrary({ view, go, onAdd, onImport, onOpenPlaylist, importBusy }: SpotifyLibraryProps) {
   const { t } = useT();
+  const { me } = useMe();
   const auth = useSpotifyAuth();
   const sec: SpLibSec = view.sec ?? "playlists";
-  const ctx: Ctx = { go, onAdd, onImport, sec };
+  const ctx: Ctx = { go, onAdd, onImport, onOpenPlaylist, sec };
+
+  // Back from the sign-in that "Aggiungi tutte le mie playlist" started: the import starts by itself.
+  useEffect(() => {
+    if (auth.status !== "in" || !takeAddAllIntent()) return;
+    mlog("add-all: back from the sign-in, starting");
+    void startAddAll({ owner: me, likedName: t("spl.secLiked") });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.status]);
 
   useEffect(() => {
     if (auth.status === "out") cache.clear();
@@ -230,9 +248,11 @@ export function SpotifyLibrary({ view, go, onAdd, onImport, importBusy }: Spotif
         {hero}
         <div className="spl-signin">
           <p>{t(auth.status === "error" ? "sp.loginFailed" : "spl.signIn")}</p>
+          <AddAllButton blocked={importBusy} />
+          <p className="mt-hint spl-signin__note">{t("oc.allSignIn")}</p>
           <button
             type="button"
-            className="mt-pill mt-pill--solid"
+            className="mt-pill"
             disabled={auth.status === "busy" || importBusy}
             aria-describedby="spl-signin-note"
             onClick={() => {
@@ -305,6 +325,7 @@ interface Ctx {
   go: Go;
   onAdd: SpotifyLibraryProps["onAdd"];
   onImport: SpotifyLibraryProps["onImport"];
+  onOpenPlaylist: SpotifyLibraryProps["onOpenPlaylist"];
   sec: SpLibSec;
 }
 
@@ -426,23 +447,50 @@ function Songs({ tracks, ctx }: { tracks: SpTrack[]; ctx: Ctx }) {
   );
 }
 
+/**
+ * "Aggiungi alla libreria del team", one click: matched on YouTube and saved
+ * with its source, no review page. A list already in the library (by its
+ * source) offers "Già nella libreria · Apri" instead of a duplicate.
+ */
 function ImportButton({ name, list, url, ctx }: { name: string; list: SpotifyList; url: string; ctx: Ctx }) {
   const { t } = useT();
-  const [started, setStarted] = useState(false);
+  const s = useImportState();
+  const { playlists } = usePlaylists();
+  const spMe = useSpotifyAccount();
+  const [clicked, setClicked] = useState(false);
+  // The recent list has no key of its own: the task queued for it is followed by its key.
+  const [queuedKey, setQueuedKey] = useState<string | null>(null);
+  const key = keyOfList(list);
+  const follow = key ?? queuedKey;
+  const task = follow ? lastTask(s, follow) : undefined;
+  const busy = isActive(task) || (clicked && !task);
+  // The liked songs: this Spotify account's only (unknown account: not claimed as in).
+  const have = key ? teamFor({ key, kind: key === LIKED_KEY ? "liked" : "playlist" }, playlists, spMe) : undefined;
+  useEffect(() => {
+    if (task && !isActive(task)) setClicked(false);
+  }, [task]);
+  if (have && !busy)
+    return (
+      <button type="button" className="mt-pill spl-import" onClick={() => ctx.onOpenPlaylist(have.id)}>
+        <IconCheck size={16} /> {t("oc.inLibrary")}
+      </button>
+    );
   return (
     <button
       type="button"
       className="mt-pill mt-pill--solid spl-import"
-      disabled={!list.songs.length || started}
+      disabled={!list.songs.length || busy}
+      aria-busy={busy}
       onClick={() => {
-        setStarted(true);
+        setClicked(true);
         const full = t("spl.sourceName", { name });
-        mlog("splib: import into the team library", { name: full, songs: list.songs.length });
-        music.toast(t("spl.importStarted", { p: full }));
-        ctx.onImport(list, full, url);
+        mlog("splib: add to the team library (one click)", { name: full, songs: list.songs.length, key });
+        const queued = ctx.onImport(list, full, url);
+        if (queued) setQueuedKey(queued.key);
+        else setClicked(false);
       }}
     >
-      {started ? <IconSpinner size={16} /> : <IconPlus size={16} />} {t("spl.import")}
+      {busy ? <IconSpinner size={16} /> : <IconPlus size={16} />} {t(busy ? (task?.status === "queued" ? "oc.queued" : "oc.adding") : "oc.one")}
     </button>
   );
 }
@@ -471,7 +519,13 @@ function PlaylistsSec({ ctx }: { ctx: Ctx }) {
   const r = useSp("playlists", (s) => myPlaylists(s));
   if (r.error) return <ErrorBox error={r.error} retry={r.retry} />;
   if (!r.data) return <Loading />;
-  return <Cards items={r.data} ctx={ctx} />;
+  // The check reads the same list (one /me/playlists for both), then the cards.
+  return (
+    <>
+      <SpotifyCheck items={r.data} onOpen={ctx.onOpenPlaylist} />
+      <Cards items={r.data} ctx={ctx} />
+    </>
+  );
 }
 
 function AlbumsSec({ ctx }: { ctx: Ctx }) {

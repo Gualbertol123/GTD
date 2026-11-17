@@ -448,6 +448,22 @@ describe("Spotify track → Track keeps the Spotify id", () => {
     expect(store.has("gtd-splib-return")).toBe(false);
   });
 
+  it("“Aggiungi tutte” before signing in: the intent comes back once, only with a real return", async () => {
+    await signedIn();
+    vi.stubGlobal("window", { addEventListener() {}, removeEventListener() {} });
+    const { markLibraryReturn, takeLibraryReturn, takeAddAllIntent } = await import("../spotifyLibrary");
+    markLibraryReturn("add-all");
+    expect(takeLibraryReturn("https://site.example/callback?error=access_denied&state=s")).toBe(false);
+    expect(takeAddAllIntent()).toBe(false);
+    markLibraryReturn("add-all");
+    expect(takeLibraryReturn("https://site.example/callback?code=abc&state=s")).toBe(true);
+    expect(takeAddAllIntent()).toBe(true);
+    expect(takeAddAllIntent()).toBe(false); // once
+    markLibraryReturn(); // the plain library sign-in: no import
+    expect(takeLibraryReturn("https://site.example/callback?code=abc&state=s")).toBe(true);
+    expect(takeAddAllIntent()).toBe(false);
+  });
+
   it("a playlist opened straight from a link knows it is yours", async () => {
     await signedIn();
     vi.stubGlobal(

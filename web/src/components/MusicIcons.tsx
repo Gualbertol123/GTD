@@ -260,3 +260,32 @@ export const IconSpinner = (p: P) => (
     <path d="M12 2.5a9.5 9.5 0 0 1 9.5 9.5" />
   </Svg>
 );
+/** A drawn check in a ring: a list that is in the team library. */
+export const IconCheckCircle = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9.5" />
+    <path d="m7.5 12.3 3 3 6-6.3" />
+  </Svg>
+);
+/** A triangle with "!": incomplete (songs missing). */
+export const IconAlert = (p: P) => (
+  <Svg {...p}>
+    <path d="M10.3 4.2 2.6 17.6A2 2 0 0 0 4.3 20.6h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z" />
+    <path d="M12 9.5v4.2" />
+    <path d="M12 17h.01" />
+  </Svg>
+);
+/** A ring with a cross: something failed. */
+export const IconError = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9.5" />
+    <path d="m9 9 6 6" />
+    <path d="m15 9-6 6" />
+  </Svg>
+);
+/** An empty dashed ring: still to add. */
+export const IconPending = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9.5" strokeDasharray="3 3" />
+  </Svg>
+);

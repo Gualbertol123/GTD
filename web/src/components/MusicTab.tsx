@@ -104,8 +104,10 @@ import {
   IconVolume,
 } from "./MusicIcons";
 import { beginSpotifyLogin, signOutSpotify, spotifyLoginAvailable, spotifyUserToken, takeReturnLink, useSpotifyAuth } from "../lib/spotifyAuth";
-import { myPlaylists, readLinkAsUser, spotifyLinkTarget, spotifyMe, takeLibraryReturn, withSpotifyIds, type SpItem } from "../lib/spotifyLibrary";
+import { myPlaylists, readLinkAsUser, spotifyLinkTarget, takeLibraryReturn, withSpotifyIds, type SpItem } from "../lib/spotifyLibrary";
 import { SpotifyLibrary } from "./SpotifyLibrary";
+import { addFromLink, addSpotifyList, importStep, onImportEvent } from "../lib/spotifyAddAll";
+import { AddAllButton, ImportProgress, importErrorText, taskToast, toastLinkProblem, useImportState } from "./SpotifyCheck";
 import "../styles/musicTab.css";
 
 // -----------------------------------------------------------------------------
@@ -193,7 +195,32 @@ export function MusicTab() {
   };
 
   const job = useSpotifyJob();
-  const jobStep = job ? spStep(job) : null;
+  const imp = useImportState();
+  // The one-click import (lib/spotifyAddAll): its "n/m" lists; else the preview job's songs.
+  const impStep = importStep(imp.job);
+  const jobStep = impStep && impStep.of ? { n: impStep.i, m: impStep.of } : job ? spStep(job) : null;
+
+  // One-click imports: "Aggiunta «X» (N brani, M non trovati)" with "Apri"; a run of several, its count.
+  useEffect(
+    () =>
+      onImportEvent((e) => {
+        if (e.type === "task") {
+          const msg = taskToast(e.task, t);
+          if (!msg) return;
+          const id = e.task.playlistId;
+          if (msg.error || !id) music.toast(msg.text, msg.error ? "error" : "info");
+          else showAction(msg.text, t("oc.open"), () => go({ kind: "playlist", id }));
+          return;
+        }
+        const tasks = e.job.tasks.filter((x) => !x.announce);
+        if (e.job.cancelled) return music.toast(t("oc.cancelled"));
+        // Reading the playlists failed (quota, not allowed, offline): said on every page.
+        if (e.job.listError) return music.toast(t("oc.listError", { why: importErrorText(e.job.listError, t) }), "error");
+        if (!tasks.length && e.job.already !== undefined) return music.toast(t("oc.runNothing"));
+        if (tasks.length) music.toast(t("oc.runDone", { ok: tasks.filter((x) => x.status === "done").length, n: tasks.length }));
+      }),
+    [t, go]
+  );
   const onImport = view.kind === "import" || view.kind === "yt" || view.kind === "spotify";
 
   // La mia libreria Spotify: the section last open there (the sidebar reopens it),
@@ -219,7 +246,7 @@ export function MusicTab() {
           <button className={`mt-nav${view.kind === "search" ? " is-on" : ""}`} aria-current={view.kind === "search" ? "page" : undefined} onClick={() => go({ kind: "search" })}>
             <IconSearch size={22} /> {t("mt.search")}
           </button>
-          <button className={`mt-nav${onImport ? " is-on" : ""}`} aria-current={onImport ? "page" : undefined} onClick={() => go(jobStep ? { kind: "spotify" } : { kind: "import" })}>
+          <button className={`mt-nav${onImport ? " is-on" : ""}`} aria-current={onImport ? "page" : undefined} onClick={() => go(jobStep && !impStep ? { kind: "spotify" } : { kind: "import" })}>
             <IconImport size={22} /> {t("mt.import")}
             {jobStep && (
               <span className="mt-navchip" aria-label={t("mt.importing", { n: jobStep.n, m: jobStep.m })}>
@@ -277,14 +304,15 @@ export function MusicTab() {
         {view.kind === "spotify" && <SpotifyPage playlists={playlists} available={available} go={go} />}
         {view.kind === "splib" && (
           <SpotifyLibrary
-            importBusy={job?.phase === "reading" || job?.phase === "matching"}
+            importBusy={job?.phase === "reading" || job?.phase === "matching" || !!imp.job?.running}
             view={view}
             go={go}
             onAdd={(track, anchor) => openAddMenu({ track, anchor })}
             onImport={(list, name, url) => {
-              startSpotifyLibraryImport(list, name, url);
-              go({ kind: "spotify" });
+              mlog("splib: one-click add", { name, url: url ? "spotify" : "recent" });
+              return addSpotifyList(list, name, me);
             }}
+            onOpenPlaylist={(id) => go({ kind: "playlist", id })}
           />
         )}
         {view.kind === "yt" && <YtPlaylistPage key={view.list} list={view.list} playlists={playlists} available={available} go={go} />}
@@ -362,7 +390,7 @@ function reportWrite(p: Promise<WriteResult>, t: T): void {
 
 // An "Undo" pill (6 s) after a remove or a delete. Its own small store: the
 // player's toast has no button.
-type Undo = { id: number; text: string; run: () => void } | null;
+type Undo = { id: number; text: string; run: () => void; label?: string } | null;
 let undo: Undo = null;
 let undoSeq = 0;
 const undoListeners = new Set<() => void>();
@@ -379,6 +407,12 @@ function showUndo(text: string, run: () => void) {
   const id = ++undoSeq;
   setUndo({ id, text, run });
   window.setTimeout(() => undo?.id === id && setUndo(null), 6000);
+}
+/** The same pill with another action ("Apri" after a one-click import), a little longer. */
+function showAction(text: string, label: string, run: () => void) {
+  const id = ++undoSeq;
+  setUndo({ id, text, run, label });
+  window.setTimeout(() => undo?.id === id && setUndo(null), 8000);
 }
 const subscribeUndo = (l: () => void) => {
   undoListeners.add(l);
@@ -404,7 +438,7 @@ function UndoHost() {
             u.run();
           }}
         >
-          {t("mt.undo")}
+          {u.label ?? t("mt.undo")}
         </button>
       </div>
     </div>,
@@ -1306,6 +1340,10 @@ const SUGGESTED: { q: string; key: string }[] = [
 
 function ImportPage({ go }: { go: Go }) {
   const { t } = useT();
+  const { me } = useMe();
+  // The preview job reading or matching: signing in (a full-page trip) would drop it.
+  const preview = useSpotifyJob();
+  const previewBusy = preview?.phase === "reading" || preview?.phase === "matching";
   const [link, setLink] = useState("");
   const [linkError, setLinkError] = useState(false);
   const [q, setQ] = useState("");
@@ -1354,28 +1392,28 @@ function ImportPage({ go }: { go: Go }) {
         </p>
       </div>
 
-      <button className="mt-spotify" onClick={() => go({ kind: "spotify" })}>
-        <span className="mt-spotify__icon" aria-hidden="true">
-          <IconImport size={22} />
-        </span>
-        <span>
-          <b>{t("sp.button")}</b>
-          <small>{t("sp.buttonHint")}</small>
-        </span>
-      </button>
+      {spotifyLoginAvailable() && (
+        <section className="oc-box" aria-label={t("oc.all")}>
+          <div className="oc-box__row">
+            <AddAllButton blocked={previewBusy} />
+            <p className="mt-hint">{t("oc.allHint")}</p>
+          </div>
+          <ImportProgress />
+        </section>
+      )}
 
       <form
         className="mt-search mt-search--static"
         onSubmit={(e) => {
           e.preventDefault();
-          if (isSpotifyLink(link) || isSpotifyTrackList(link)) {
-            void startSpotify(link.trim());
-            return go({ kind: "spotify" });
-          }
-          const list = playlistIdFrom(link);
-          if (!list) return setLinkError(true);
+          // One click: read, matched and saved with its source; "Anteprima" (below) looks first.
+          const r = addFromLink(link, me, { pastedName: (n) => t("sp.pastedName", { n }), ytList: playlistIdFrom, trackIds: parseSpotifyTracks });
+          mlog("import page: one-click link", { result: r.kind });
+          if (r.kind === "bad") return setLinkError(true);
           setLinkError(false);
-          go({ kind: "yt", list });
+          if (r.kind === "already") return showAction(t("oc.already", { p: r.playlist.name }), t("oc.open"), () => go({ kind: "playlist", id: r.playlist.id }));
+          if (r.kind === "busy") return toastLinkProblem("busy", t);
+          setLink("");
         }}
       >
         <span aria-hidden="true" className="mt-search__icon">
@@ -1392,10 +1430,32 @@ function ImportPage({ go }: { go: Go }) {
           aria-invalid={linkError}
           aria-describedby={linkError ? "mt-linkerr" : undefined}
         />
-        <button type="submit" className="mt-pill mt-pill--solid" disabled={!link.trim()}>
-          {t("mt.open")}
+        <button type="submit" className="mt-pill mt-pill--solid oc-one" disabled={!link.trim()}>
+          <IconPlus size={16} /> {t("oc.go")}
         </button>
       </form>
+      <div className="oc-link">
+        <p className="mt-hint">{t("oc.linkHint")}</p>
+        <button
+          type="button"
+          className="mt-link"
+          title={t("oc.previewTip")}
+          onClick={() => {
+            // The old way, optional: look at the songs first, then Salva.
+            if (isSpotifyLink(link) || isSpotifyTrackList(link)) {
+              void startSpotify(link.trim());
+              return go({ kind: "spotify" });
+            }
+            const list = playlistIdFrom(link);
+            if (!list) return link.trim() ? setLinkError(true) : go({ kind: "spotify" });
+            setLinkError(false);
+            go({ kind: "yt", list });
+          }}
+        >
+          {t("oc.preview")}
+        </button>
+      </div>
+      {!spotifyLoginAvailable() && <ImportProgress />}
       {linkError && (
         <div className="mp-note" id="mt-linkerr" role="alert">
           {t("ux.music.badLink")}
@@ -1597,33 +1657,6 @@ async function retrySpotifyMissing(): Promise<void> {
   const matches = j.matches.slice();
   idx.forEach((i, k) => (matches[i] = withSpotifyIds([found[k] ?? null], [j.list!.songs[i]])[0]));
   setSp({ ...spJob, matches, done: j.list.songs.length, phase: "done" });
-}
-
-/**
- * "Importa nella libreria del team" from La mia libreria Spotify: the songs are
- * already read (with their Spotify ids), so the job goes straight to step 2
- * (finding each on YouTube). `name` is the editable name, with its source.
- */
-function startSpotifyLibraryImport(list: SpotifyList, name: string, url: string): void {
-  spCtrl?.abort();
-  const ctrl = new AbortController();
-  spCtrl = ctrl;
-  // The source to sync with: the liked songs need the importer's Spotify user id.
-  const liked = list.id.startsWith("liked:");
-  const src = liked ? null : spotifySourceOf(list, { library: true });
-  mlog("spotify import: from the library", { name, songs: list.songs.length, source: src?.kind ?? (liked ? "liked (resolving)" : null) });
-  setSp({ url: "", source: url, phase: "reading", error: null, list: null, done: 0, matches: [], name, src });
-  if (liked)
-    // Asked fresh with the token in hand: the liked songs are this account's.
-    void spotifyMe(undefined, { fresh: true })
-      .catch(() => null)
-      .then((me) => {
-        if (spCtrl !== ctrl || !spJob) return;
-        const s = spotifySourceOf(list, { library: true, me });
-        mlog("spotify import: liked songs source", { resolved: !!s });
-        setSp({ ...spJob, src: s });
-      });
-  void matchList(list, ctrl);
 }
 
 /** Says (once saved) that an import was kept without its source: migration 022 is missing. */

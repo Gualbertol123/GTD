@@ -870,3 +870,45 @@ p.mt-splogin { gap: 6px; font-size: 13px; }
 .mt .mt-search input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px #ff6b6b; }
 /* La mia libreria Spotify, signed out: what happens when you sign in. */
 .spl-signin p.spl-signin__note { font-size: 12.5px; max-width: 46ch; }
+
+/* ---- One-click imports and the check (components/SpotifyCheck.tsx) ---------------
+   Same glass as the import panel: plain fills, no blur of their own. */
+.oc-all { display: inline-flex; align-items: center; gap: 6px; }
+.oc-box { margin: 18px 0 14px; padding: 14px 16px; border-radius: 14px; background: var(--gl-fill); box-shadow: var(--gl-rim); }
+.oc-box__row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.oc-box__row .mt-hint { margin: 0; font-size: 13px; max-width: 62ch; }
+.oc-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 12px 0; }
+.oc-progress .mt-progress { flex: 1 1 260px; margin: 0; }
+.oc-progress__label { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--mt-text-2); }
+.oc-progress__name { color: var(--mt-text); font-weight: 600; }
+.oc-check { margin: 4px 0 22px; padding: 14px 16px; border-radius: 14px; background: var(--gl-fill); box-shadow: var(--gl-rim); }
+.oc-check__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
+.oc-check__head .mt-h2 { margin: 0; }
+.oc-sum { display: flex; align-items: center; gap: 6px; margin: 10px 0 8px; font-weight: 700; font-size: 14.5px; color: var(--mt-text); }
+.oc-sum.is-ok { color: #3ddc84; }
+.oc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; max-height: 420px; overflow: auto; }
+.oc-row { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 10px; }
+.oc-row:hover { background: rgba(255, 255, 255, 0.04); }
+.oc-row__icon { display: inline-grid; place-items: center; width: 24px; flex: none; color: var(--mt-text-2); }
+.oc-row.is-added .oc-row__icon { color: #3ddc84; }
+.oc-row.is-incomplete .oc-row__icon { color: #f5c451; }
+.oc-row.is-error .oc-row__icon { color: #ff8a8a; }
+.oc-row__main { flex: 1; min-width: 0; }
+.oc-row__name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+.oc-row__main small { display: block; font-size: 12.5px; color: var(--mt-text-2); margin-top: 1px; }
+.oc-row__state { font-weight: 600; color: var(--mt-text); }
+.oc-row.is-error .oc-row__state { color: #ff8a8a; }
+.oc-row__acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; flex: none; }
+.oc-row__acts .mt-pill { display: inline-flex; align-items: center; gap: 5px; }
+.oc-note, .oc-credit { margin: 10px 0 0; font-size: 12.5px; }
+.oc-link { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: -4px 0 12px; }
+.oc-link .mt-hint { margin: 0; font-size: 13px; }
+.oc-one { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 720px) {
+  .oc-row { flex-wrap: wrap; }
+  .oc-row__acts { width: 100%; justify-content: flex-start; padding-left: 34px; }
+}
+/* aria-disabled (kept focusable while an import runs) looks like disabled. */
+.mt .mt-pill[aria-disabled="true"] { opacity: 0.55; cursor: default; }
+.mt .mt-pill[aria-disabled="true"]:hover { box-shadow: none; }
+.oc-wait { display: block; margin: 4px 0 0; font-size: 13px; }

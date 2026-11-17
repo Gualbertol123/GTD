@@ -442,6 +442,12 @@ export async function likedTracks(signal?: AbortSignal, progress?: (n: number, t
   return { tracks, total, capped: r.capped || total > LIKED_CAP };
 }
 
+/** How many liked songs there are (one tiny page: Spotify's `total`). */
+export async function likedTotal(signal?: AbortSignal): Promise<number> {
+  const j = await spGet<{ total?: number }>("/me/tracks?limit=1", signal);
+  return Number(j.total) || 0;
+}
+
 export async function savedAlbums(signal?: AbortSignal): Promise<SpItem[]> {
   const { items } = await pageAll<{ album?: ApiAlbum }>("/me/albums?limit=50", { signal });
   return items.map((x) => albumItem(x.album)).filter(notNull);
@@ -591,16 +597,24 @@ export function spotifyLinkTarget(s: string): { kind: "playlist" | "album"; id: 
 // from the back/forward cache) or a refusal clears it, so it never sends a
 // later visit to Importa da Spotify elsewhere.
 const RETURN_KEY = "gtd-splib-return";
+/** What to do once back (the one-button "Aggiungi tutte le mie playlist" started before signing in). */
+const INTENT_KEY = "gtd-splib-intent";
+export type LibraryIntent = "add-all";
+/** The intent of the last real return, until taken. */
+let returnIntent: LibraryIntent | null = null;
 const dropReturn = () => {
   try {
     sessionStorage.removeItem(RETURN_KEY);
+    sessionStorage.removeItem(INTENT_KEY);
   } catch {
     /* blocked storage: nothing kept */
   }
 };
-export function markLibraryReturn(): void {
+export function markLibraryReturn(intent?: LibraryIntent): void {
   try {
     sessionStorage.setItem(RETURN_KEY, String(Date.now()));
+    if (intent) sessionStorage.setItem(INTENT_KEY, intent);
+    else sessionStorage.removeItem(INTENT_KEY);
   } catch {
     /* private mode: the person opens the library again */
     return;
@@ -636,6 +650,12 @@ export function takeLibraryReturn(from = loadedAt()): boolean {
     return false;
   }
   if (!v) return false;
+  let intent: string | null = null;
+  try {
+    intent = sessionStorage.getItem(INTENT_KEY);
+  } catch {
+    intent = null;
+  }
   dropReturn();
   let callback = false;
   try {
@@ -645,8 +665,16 @@ export function takeLibraryReturn(from = loadedAt()): boolean {
     callback = false;
   }
   const fresh = Date.now() - v < 15 * 60_000;
-  mlog(callback && fresh ? "splib: back from sign-in: to the library" : "splib: stale return flag dropped", { callback, fresh });
+  mlog(callback && fresh ? "splib: back from sign-in: to the library" : "splib: stale return flag dropped", { callback, fresh, intent });
+  returnIntent = callback && fresh && intent === "add-all" ? "add-all" : null;
   return callback && fresh;
+}
+
+/** True once when the sign-in was started by "Aggiungi tutte le mie playlist" (after takeLibraryReturn). */
+export function takeAddAllIntent(): boolean {
+  const v = returnIntent === "add-all";
+  returnIntent = null;
+  return v;
 }
 
 /** Tests: forget the cached user id. */

@@ -228,6 +228,11 @@ const clean = (t: Track): Track => ({
   ...((t as SourcedTrack).src ? { src: (t as SourcedTrack).src } : {}),
 });
 
+/** Every team playlist in the store now (outside React: the add-all import and its check). */
+export function getPlaylists(): Playlist[] {
+  return store.playlists;
+}
+
 export function getPlaylist(id: string | null | undefined): Playlist | undefined {
   return id ? store.playlists.find((p) => p.id === id) : undefined;
 }
@@ -1165,21 +1170,35 @@ export const SOURCE_STALE_MS = 24 * 60 * 60 * 1000;
  * (the button): even when not due or detached, and a radio is refreshed now.
  * Joins a sync already running for it. Never throws.
  */
-export function syncPlaylist(id: string, opts: { force?: boolean; now?: number } = {}): Promise<SyncResult> {
+export function syncPlaylist(id: string, opts: { force?: boolean; now?: number; signal?: AbortSignal; keepUnused?: boolean } = {}): Promise<SyncResult> {
   const p = getPlaylist(id);
   if (!p) return Promise.resolve({ status: "error", error: "not-found" });
   const force = !!opts.force;
   if (p.radio) return guarded(id, force, () => refreshOne(id, force ? 0 : RADIO_STALE_MS));
   if (!p.source) return Promise.resolve({ status: "skipped", reason: "no-source" });
   mlog("source-pl sync", { id, kind: p.source.kind, forced: force });
-  return guarded(id, force, () => syncSource(id, force));
+  return guarded(id, force, () => syncSource(id, force, opts));
 }
 
-async function syncSource(id: string, force: boolean): Promise<SyncResult> {
+/**
+ * `signal`: "Annulla" (checked before matching and before the write; once the
+ * write is sent it happened). `keepUnused`: no song of the playlist is removed
+ * (the songs the source doesn't have stay, after it). The first sync after a
+ * link (syncedAt null) always keeps them: an older playlist linked to a source
+ * never loses its songs to it.
+ */
+async function syncSource(id: string, force: boolean, opts: { signal?: AbortSignal; keepUnused?: boolean } = {}): Promise<SyncResult> {
+  const signal = opts.signal;
+  const aborted = (): SyncResult => {
+    mlog("source-pl sync: cancelled before the write", { id });
+    return { status: "error", error: "aborted" };
+  };
   const before = getPlaylist(id);
   if (!before?.source) return { status: "skipped", reason: "no-source" };
   const src = before.source;
+  if (signal?.aborted) return aborted();
   const read = await readSource(src);
+  if (signal?.aborted) return aborted();
   if ("skip" in read) {
     mlog("source-pl sync skipped: liked songs of another Spotify account", { id });
     return { status: "skipped", reason: read.skip };
@@ -1197,7 +1216,8 @@ async function syncSource(id: string, force: boolean): Promise<SyncResult> {
   const found: (Track | null)[] = [];
   if (songs.length) {
     setSyncState(id, { phase: "matching", n: 0, m: songs.length });
-    const m = await matchSpotify(songs, (n) => setSyncState(id, { phase: "matching", n, m: songs.length }), () => false);
+    const m = await matchSpotify(songs, (n) => setSyncState(id, { phase: "matching", n, m: songs.length }), () => !!signal?.aborted, signal ? { signal } : undefined);
+    if (signal?.aborted) return aborted();
     found.push(...withSourceKeys(m, songs));
   }
   const missing: SyncMissing[] = [];
@@ -1216,12 +1236,15 @@ async function syncSource(id: string, force: boolean): Promise<SyncResult> {
   };
   read.items.forEach((it, i) => put(slots[i] ?? (it.track ? it.track : fill.get(i))));
   // Limited: only part of the source was read, so the songs not seen are kept (after it).
-  if (read.limited) unused.forEach(put);
+  // The same for the first sync after a link, or when asked (keepUnused).
+  const keep = read.limited || !!opts.keepUnused || src.syncedAt == null;
+  if (keep) unused.forEach(put);
 
   // Detached, re-sourced or deleted meanwhile: the daily sync stops (the server checks too).
   const cur = getPlaylist(id);
   if (!cur?.source) return { status: "skipped", reason: "no-source" };
   if (!force && !cur.source.auto) return { status: "skipped", reason: "not-due" };
+  if (signal?.aborted) return aborted();
   setSyncState(id, { phase: "saving", n: songs.length, m: songs.length });
   // The plan was made from `before`; the list may have changed while the source was read
   // and the songs found (a song added or removed by hand, here or in another browser).
@@ -1259,7 +1282,8 @@ async function syncSource(id: string, force: boolean): Promise<SyncResult> {
       const f = flights.get(id);
       if (f) offer(f, got);
       else putLocal(id, got);
-      mlog("source-pl synced", { id, songs: got.tracks.length });
+      mlog("source-pl synced", { id, songs: got.tracks.length, kept: keep ? unused.length : 0 });
+      recordSourceStats(id, { readable: read.items.length, missing: missing.length, at: Date.now() });
       return { status: "done", ...c, missing, unchanged: same, limited: read.limited };
     }
     // Refused: not due / detached (another browser did it), or the list changed since `base`.
@@ -1344,6 +1368,54 @@ export async function setPlaylistSource(id: string, source: NewSource): Promise<
       .eq("id", id)
       .select()
   );
+}
+
+// ---- What the last import / sync of a playlist could not find (this browser) -------------
+
+/**
+ * The songs the source had (readable ones: no local files, no episodes) and
+ * the songs not found on YouTube at the last import or sync of a playlist.
+ * Kept in this browser (localStorage), so the check can say "Incompleta"
+ * after a reload without comparing with Spotify's raw count.
+ */
+export interface SourceStats {
+  readable: number;
+  missing: number;
+  at: number;
+}
+const STATS_KEY = "music.sourceStats.v1";
+let statsMem: Record<string, SourceStats> | null = null;
+function statsAll(): Record<string, SourceStats> {
+  if (statsMem) return statsMem;
+  try {
+    const raw = localStorage.getItem(STATS_KEY);
+    const v = raw ? JSON.parse(raw) : null;
+    statsMem = v && typeof v === "object" ? v : {};
+  } catch {
+    statsMem = {};
+  }
+  return statsMem!;
+}
+export function recordSourceStats(id: string, st: SourceStats): void {
+  const all = { ...statsAll(), [id]: st };
+  statsMem = all;
+  try {
+    localStorage.setItem(STATS_KEY, JSON.stringify(all));
+  } catch {
+    /* private mode: kept in memory */
+  }
+}
+export function sourceStats(id: string): SourceStats | undefined {
+  return statsAll()[id];
+}
+/** Tests. */
+export function forgetSourceStats(): void {
+  statsMem = null;
+  try {
+    localStorage.removeItem(STATS_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Lower-case, accents and punctuation out: to compare playlist names. */

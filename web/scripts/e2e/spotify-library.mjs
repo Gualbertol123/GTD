@@ -4,8 +4,8 @@
 // production build). Nothing real is called: Supabase, the Netlify music
 // functions and YouTube come from the perf harness mocks
 // (scripts/perf/lib/mocks.mjs); accounts.spotify.com, api.spotify.com and
-// sdk.scdn.co are answered here, and a fake Spotify token is put in
-// sessionStorage as if the person had signed in.
+// sdk.scdn.co are answered here, and the person signs in with the app's own
+// "Accedi con Spotify" against a mocked accounts.spotify.com (lib/spotify-signin.mjs).
 //
 //   node scripts/e2e/spotify-library.mjs              build, serve, check
 //   node scripts/e2e/spotify-library.mjs --no-build   reuse the last build
@@ -13,10 +13,10 @@
 //
 // It checks: the library opens on "Le mie playlist" with every page of
 // /me/playlists; a playlist that is not yours shows the details-only note;
-// your own playlist lists its songs, "Importa nella libreria del team" runs
-// the two-step job (its page shows no Spotify cover art and an empty link
-// field), and the team playlist saved to Supabase (the mocked upsert body) has
-// every song's Spotify id in `spotify`; "Indietro" on an item opened from a
+// your own playlist lists its songs, "Aggiungi alla libreria del team" saves
+// it in one click (no review page; a toast with "Apri"), and the team playlist
+// saved to Supabase (the mocked upsert body) has every song's Spotify id in
+// `spotify`, its source and no Spotify cover art; "Indietro" on an item opened from a
 // link goes to its section, never out of the app. Exits 1 on any failure.
 // -----------------------------------------------------------------------------
 
@@ -27,6 +27,7 @@ import { fileURLToPath } from "node:url";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { installMocks, cat } from "../perf/lib/mocks.mjs";
+import { routeSpotifyAccounts, signInWith } from "./lib/spotify-signin.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
@@ -143,10 +144,6 @@ async function main() {
     browser = await chromium.launch();
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: "block", locale: "it-IT" });
     await installMocks(context, { origin: BASE });
-    // Signed in with Spotify (this tab's token), as after "Accedi con Spotify".
-    await context.addInitScript(
-      `try { sessionStorage.setItem("gtd-spotify-token", ${JSON.stringify(JSON.stringify({ access: "fake-access", refresh: "fake-refresh", exp: Date.now() + 3600_000 }))}); } catch (e) {}`
-    );
     // Registered after installMocks: these win over its catch-all.
     await context.route("https://api.spotify.com/**", async (route) => {
       const req = route.request();
@@ -155,7 +152,7 @@ async function main() {
       await sleep(40);
       await route.fulfill(body ? { status: 200, contentType: "application/json", body: JSON.stringify(body) } : { status: 404, contentType: "application/json", body: '{"error":{"status":404}}' });
     });
-    await context.route("https://accounts.spotify.com/**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ access_token: "fake-access", expires_in: 3600 }) }));
+    await routeSpotifyAccounts(context, { access: "fake-access" });
     await context.route("https://sdk.scdn.co/**", (route) =>
       route.fulfill({
         status: 200,
@@ -171,9 +168,13 @@ async function main() {
     await context.route(/^http:\/\/supabase\.mock\/rest\/v1\/music_playlists/, async (route) => {
       const req = route.request();
       if (req.method() === "POST") {
+        let body = null;
         try {
-          upserts.push(JSON.parse(req.postData() || "null"));
+          body = JSON.parse(req.postData() || "null");
+          upserts.push(body);
         } catch {}
+        // As Supabase does with .select(): the rows written come back.
+        if (body) return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(Array.isArray(body) ? body : [body]) });
       }
       await route.fallback();
     });
@@ -188,6 +189,8 @@ async function main() {
 
     // 1. The sidebar entry opens the library on "Le mie playlist": every page of /me/playlists.
     await page_.locator(".mt-side").getByRole("button", { name: /Libreria Spotify/ }).click();
+    // Signed out: the app's own sign-in (mocked accounts.spotify.com) brings it back to the library.
+    await signInWith(page_, page_.getByRole("button", { name: /^Accedi con Spotify$/ }));
     await page_.locator(".spl-card").first().waitFor({ timeout: 10000 });
     await page_.waitForFunction((n) => document.querySelectorAll(".spl-card").length === n, PLAYLISTS.length, { timeout: 5000 }).catch(() => {});
     check((await page_.locator(".spl-card").count()) === PLAYLISTS.length, `all ${PLAYLISTS.length} playlists listed (2 pages of 50)`);
@@ -210,20 +213,23 @@ async function main() {
     check((await page_.locator(".spl-row").count()) === SONGS.length, `the playlist lists its ${SONGS.length} songs`);
     check((await page_.locator('.spl-row a[href^="https://open.spotify.com/track/"]').count()) === SONGS.length, "every song links back to Spotify");
     const t0 = Date.now();
-    await page_.getByRole("button", { name: /Importa nella libreria del team/ }).click();
-    await page_.locator(".mt-progress, .mt-actions").first().waitFor({ timeout: 2000 });
-    check(Date.now() - t0 < 1500, "the import shows its page at once");
-    check(/#\/music\/spotify/.test(page_.url()), "the import runs on the Importa da Spotify page (its job store)");
-    await page_.getByRole("button", { name: /Salva nella libreria del team/ }).waitFor({ timeout: 20000 });
-    const title = (await page_.locator(".mt-hero .mt-title__text").textContent())?.trim();
-    check(title === "Viaggio Spotify", `the name is the list's (“${title}”)`);
-    check((await page_.locator('.mt-hero--spotify img[src*="i.scdn.co"]').count()) === 0, "the import page shows no Spotify cover art");
-    check((await page_.locator(".mt-search--static input").inputValue()) === "", "the link field is empty (a submit cannot replace the job)");
-    await page_.getByRole("button", { name: /Salva nella libreria del team/ }).click();
-    for (let i = 0; i < 80 && !upserts.length; i++) await sleep(100);
-    check(/playlist/.test(decodeURIComponent(page_.url())), "saving opens the new team playlist");
+    await page_.getByRole("button", { name: /Aggiungi alla libreria del team/ }).click();
+    const fb0 = await page_
+      .waitForFunction(() => !!document.querySelector('.spl-import[aria-busy="true"], .mp-toast'), null, { timeout: 1500 })
+      .then(() => Date.now() - t0)
+      .catch(() => 9999);
+    check(fb0 < 300, `"Aggiungi" answers at once (${fb0} ms)`);
+    check(/#\/music\/splib/.test(page_.url()), "one click: no review page (still on the library)");
+    for (let i = 0; i < 200 && !upserts.flat().some((r) => r && r.name === "Viaggio Spotify"); i++) await sleep(100);
     const row = upserts.flat().find((r) => r && r.name === "Viaggio Spotify");
-    check(!!row, "the team playlist was upserted to Supabase");
+    check(!!row, "the team playlist was upserted to Supabase, named after the list");
+    check(!!row && row.source_kind === "spotify-playlist" && row.source_id === MY_LIST, "…with its source (spotify-playlist)");
+    check(!!row && !JSON.stringify(row).includes("i.scdn.co"), "…and no Spotify cover art");
+    await page_.locator(".mp-toast", { hasText: "Aggiunta «Viaggio Spotify»" }).waitFor({ timeout: 8000 });
+    check(true, "a toast says “Aggiunta «Viaggio Spotify» (…)”");
+    await page_.locator(".mp-toast").getByRole("button", { name: "Apri" }).click();
+    await page_.waitForFunction(() => /#\/music\/playlist\//.test(location.hash), null, { timeout: 5000 }).catch(() => {});
+    check(/playlist\//.test(decodeURIComponent(page_.url())), "“Apri” opens the new team playlist");
     if (row) {
       // The mock matches every song but each 7th (index 6): 11 of 12.
       const want = SONGS.filter((_, i) => i % 7 !== 6).map((s) => s.id);

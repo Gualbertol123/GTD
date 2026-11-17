@@ -215,20 +215,55 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
   by hand detaches the daily sync (`source_auto = false`, the source is
   kept): **Sincronizza** still works as a one-off and *Riattiva sync
   automatica* turns it back on. Renaming keeps it.
+- **One click: *Aggiungi tutte le mie playlist* and the check**
+  (`src/lib/spotifyAddAll.ts`, `components/SpotifyCheck.tsx`). One primary
+  button, on *La mia libreria Spotify* and on *Importa*: it adds every own and
+  collaborative Spotify playlist plus *Brani che ti piacciono* to the team
+  library, saved straight away under the Spotify name with their source (no
+  review, no edit step: rename later on the playlist page). Not signed in, it
+  starts *Accedi con Spotify* and the import starts by itself on the way back.
+  A list already added (a team playlist with source `spotify-playlist/<id>`,
+  or `spotify-liked` of this Spotify account) is skipped; an older import of
+  yours with the same name and no source (every song from Spotify) is linked
+  to it instead of duplicated, and its first sync keeps all its songs; a
+  same-name playlist made by hand or by someone else is never touched (the
+  list is added as its own playlist); empty playlists are not followed; Spotify's
+  own and other people's playlists can't be read (details only) and are left
+  out with a note. The job runs in the background (it survives navigation),
+  one list at a time, a song in several playlists is matched once, one failing
+  list never stops the others, and *Annulla* stops it. Progress: *Playlist 3 di
+  12 · brani 40 di 85*, and the sidebar's *Importa* shows `3/12`. **The
+  check**, *Le tue playlist Spotify* (top of *Le mie playlist*), lists each
+  list against the team playlists' sources (realtime, so it is the real state):
+  *Aggiunta* (songs vs Spotify's count, last sync), *In corso*, *Incompleta*
+  (N songs not found on YouTube at the last import / sync, kept in this
+  browser, never Spotify's raw count: *Riprova i mancanti* syncs that same team
+  playlist; *Vedi*), *Errore* (why, *Riprova*), *Da aggiungere* (*Aggiungi*),
+  with a summary: *12 di 12 playlist aggiunte*, or *9 di 12 aggiunte · 2
+  incomplete · 1 da aggiungere*. The same one click everywhere else: a list's
+  *Aggiungi alla libreria del team* in the library (a playlist, an album, the
+  liked songs; *Già nella libreria · Apri* when it is in), and the Importa
+  link field (a Spotify playlist / album link, pasted Spotify track links named
+  *Da Spotify (N brani)*, or a YouTube / YouTube Music playlist with source
+  `youtube-playlist`), each ending with a toast *Aggiunta «X» (N brani, M non
+  trovati)* and *Apri*. *Anteprima* next to the field is the old look-first
+  page, optional. Check: `node scripts/e2e/spotify-addall.mjs` (Playwright,
+  everything mocked).
 - **Importa (MUSICA tab):** bring any public YouTube or YouTube Music
   playlist into the team library — paste its link (`…playlist?list=…`, also
-  `music.youtube.com` links) or search YouTube's playlists (suggested
+  `music.youtube.com` links) and press *Aggiungi* (one click, above), or
+  search YouTube's playlists (suggested
   searches for the three favourite artists and a few genres). The preview
   plays it straight away; **Salva nella libreria del team** stores it (up to
   200 songs, deleted / private videos skipped) as an ordinary team playlist.
   YouTube's auto-generated *Mix* lists (`RD…`) and private lists can't be read.
   Server side: `netlify/functions/music-playlist.mts` (same key and login).
-- **Importa da Spotify (Importa page, green button):** paste a public Spotify
-  playlist or album link (or paste it in the normal link field). Its songs are
+- **Importa da Spotify (the Importa link field, or *Anteprima* to look
+  first):** paste a public Spotify playlist or album link. Its songs are
   read, each one is found on YouTube with YouTube.js, preferring official
   videos (`matchSong` in `netlify/lib/ytjs.mts`, with a progress bar that keeps
-  going if you leave the page), then it plays or is saved as a team playlist;
-  songs not found are listed. Where the songs come from
+  going if you leave the page), then it is saved as a team playlist (with
+  *Anteprima*: it plays, then *Salva*); songs not found are listed. Where the songs come from
   (`netlify/lib/spotify.mts`, function `netlify/functions/music-spotify.mts`):
   - **With the site's Spotify keys** (optional, see Setup step 4): the official
     Spotify Web API. Since Spotify's February/March 2026 rules, an app in
@@ -260,8 +295,7 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
     Mac), then **Ctrl+C**, and paste into the Spotify link field. That copies
     one `https://open.spotify.com/track/…` link per song; each song is read
     from its own public embed page (step 1 of 2), then found on YouTube (step
-    2 of 2). The list is named *Da Spotify (N brani)*; click the name to change
-    it before saving.
+    2 of 2). The list is named *Da Spotify (N brani)* (rename it on its page).
 
   The embed pages are unofficial: if Spotify changes them, the import says so.
   Nothing taken from them is used to call Spotify's API; only the site's own
@@ -276,10 +310,10 @@ Premium). Nothing is downloaded or stored: only video ids and titles.
   *Cerca su Spotify* (songs, albums, playlists; 10 per type, *Altri risultati*
   pages on). Anything opens to its songs; someone else's or Spotify's own
   playlists give only the details (Spotify's 2026 rule), and the page offers
-  the paste method. **Importa nella libreria del team** on any playlist,
-  album, the liked songs or the recent list runs the same two-step job as
-  *Importa da Spotify* (each song found on YouTube; it keeps going if you leave
-  the page), named after the list (editable before saving); **+** on a
+  the paste method. **Aggiungi alla libreria del team** on any playlist,
+  album, the liked songs or the recent list saves it in one click (the
+  background job above: each song found on YouTube, named after the list,
+  with its source); **+** on a
   single song adds it to a team playlist. Every song saved this way, and every
   song of the link / pasted import when Spotify gave its id, keeps its Spotify
   track id (`Track.spotify`), so Spotify mode plays it without searching.
