@@ -428,7 +428,7 @@ function Figure({
       <div className="flex items-baseline gap-2">
         <span className="text-[24px] font-semibold tabular-nums text-[#0A1931] leading-tight mt-0.5">{value}</span>
         {hint && (
-          <span className="text-[10px] font-semibold" style={{ color }}>
+          <span className="tint-text text-[10px] font-semibold" style={{ "--tint": color } as React.CSSProperties}>
             {hint}
           </span>
         )}
@@ -498,7 +498,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
               {s.total ? t("projects.tasksCount", { n: `${s.done}/${s.total}` }) : t("projects.noTasksYet")}
             </span>
             {s.overdueTasks > 0 && !done && (
-              <span className="font-semibold" style={{ color: HEALTH_COLOR.overdue }}>
+              <span className="tint-text font-semibold" style={{ "--tint": HEALTH_COLOR.overdue } as React.CSSProperties}>
                 · {t("projects.overdueTasks", { n: s.overdueTasks })}
               </span>
             )}

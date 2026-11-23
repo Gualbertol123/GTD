@@ -151,7 +151,7 @@ export function ProjectTasks({
               </span>
             ))}
             {s.overdueTasks > 0 && (
-              <span className="font-semibold inline-flex items-center gap-1" style={{ color: HEALTH_COLOR.overdue }}>
+              <span className="tint-text font-semibold inline-flex items-center gap-1" style={{ "--tint": HEALTH_COLOR.overdue } as React.CSSProperties}>
                 <Icon name="warning" size={11} />
                 {t("projects.overdueTasks", { n: s.overdueTasks })}
               </span>

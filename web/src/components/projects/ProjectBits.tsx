@@ -68,8 +68,8 @@ export function Bar({ value, color, height = 6 }: { value: number; color: string
 export function Pill({ color, children, solid = false }: { color: string; children: React.ReactNode; solid?: boolean }) {
   return (
     <span
-      className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
-      style={solid ? { background: color, color: "#fff" } : { color, background: `${color}1F` }}
+      className={`inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${solid ? "tint-solid" : "tint"}`}
+      style={{ "--tint": color } as React.CSSProperties}
     >
       {children}
     </span>

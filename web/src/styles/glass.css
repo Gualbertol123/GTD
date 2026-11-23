@@ -130,6 +130,10 @@ html[data-skin="glass"][data-appearance="dark"] {
   --ctl-track: var(--fill-3);
   --ctl-track-border: transparent;
 
+  /* Tinted chips (index.css .tint): pulled toward white on dark glass. */
+  --tint-ink: #ffffff;
+  --tint-mix: 55%;
+
   --scrim: rgba(4, 8, 20, 0.5);
   --option-bg: #1c2033;
   --canvas: #0b1020;
@@ -214,6 +218,9 @@ html[data-skin="glass"][data-appearance="light"] {
 
   /* A white rim is invisible on white glass: hover darkens the rim instead. */
   --ctl-hover-border: rgba(60, 60, 67, 0.35);
+
+  --tint-ink: #11131a;
+  --tint-mix: 42%;
 
   --scrim: rgba(226, 232, 245, 0.55);
   --option-bg: #ffffff;

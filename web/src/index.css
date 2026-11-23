@@ -66,6 +66,32 @@
   }
 }
 
+/* -----------------------------------------------------------------------------
+   Tints — a chip, badge or count in a user or status colour (a project's
+   colour, On track / At risk / Overdue), set inline as --tint.
+   Raw system colours are not text colours: orange on its own tint was 1.7:1.
+   So the text is the colour pulled toward the label ink (42% colour on light
+   surfaces, 55% on dark glass) and the fill is the colour at 12%; every
+   project and health colour then clears 4.5:1 on every surface.
+   .tint-text is the text alone (an inline "3 overdue"); .tint-solid is a
+   filled badge with white text on the colour deepened toward navy.
+   --------------------------------------------------------------------------- */
+:root {
+  --tint-ink: #0a1931;
+  --tint-mix: 42%;
+}
+.tint,
+.tint-text {
+  color: color-mix(in srgb, var(--tint) var(--tint-mix), var(--tint-ink));
+}
+.tint {
+  background-color: color-mix(in srgb, var(--tint) 12%, transparent);
+}
+.tint-solid {
+  color: #ffffff;
+  background-color: color-mix(in srgb, var(--tint) 60%, #0a1931);
+}
+
 html,
 body {
   margin: 0;

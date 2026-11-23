@@ -192,8 +192,8 @@ export function TaskCard({
           )}
           {project && (
             <span
-              className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full max-w-full truncate"
-              style={{ color: projectColor(project), background: `${projectColor(project)}1A` }}
+              className="tint inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full max-w-full truncate"
+              style={{ "--tint": projectColor(project) } as React.CSSProperties}
               title={project.name}
             >
               ◆ <span className="truncate">{project.name}</span>
