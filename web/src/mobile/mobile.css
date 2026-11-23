@@ -46,7 +46,7 @@ html[data-layout="mobile"] {
 
   --m-text: #0a1931;
   --m-text-2: #4a5568;
-  --m-text-3: #7b8190;
+  --m-text-3: #636977; /* >= 4.6:1 on cream, white and the tray (#7B8190 was 3.5:1) */
   --m-accent: #0a1931;
   --m-on-accent: #c9a96e; /* navy + gold: the brand pair, as on the desktop */
   --m-warm: #c9a96e;
@@ -93,7 +93,7 @@ html[data-layout="mobile"][data-skin="glass"] {
 
   --m-text: var(--label);
   --m-text-2: var(--label-2);
-  --m-text-3: color-mix(in srgb, var(--label-3) 80%, transparent);
+  --m-text-3: var(--label-3); /* faded to 80% it fell to 3.8:1 on light glass */
   --m-accent: var(--ios-blue);
   --m-on-accent: #ffffff;
   --m-warm: var(--ios-orange);
@@ -125,6 +125,9 @@ html[data-layout="mobile"] {
   --m-red-soft: color-mix(in srgb, var(--m-red) 16%, transparent);
   --m-gold-soft: color-mix(in srgb, var(--m-warm) 18%, transparent);
   --m-accent-soft: color-mix(in srgb, var(--m-accent) 18%, transparent);
+  /* The accent as a fill behind on-accent text (chosen pill/segment, primary
+     buttons): Glass uses its deeper fill step so white labels clear 4.5:1. */
+  --m-accent-fill: var(--accent-fill, var(--m-accent));
 }
 
 /* ---- Page ------------------------------------------------------------------ */
@@ -393,7 +396,7 @@ html[data-typing] .m-dock {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--m-accent);
+  background: var(--m-accent-fill);
   color: var(--m-on-accent);
   box-shadow:
     0 8px 20px color-mix(in srgb, var(--m-accent) 45%, transparent),
@@ -493,7 +496,9 @@ html[data-typing] .m-dock {
   line-height: 1.12;
   margin: 2px 2px 0;
 }
-.m-greeting em { font-style: normal; color: var(--m-warm); }
+/* --m-gold, the text step of the warm accent: --m-warm (#C9A96E) is a fill
+   colour and read 2:1 as text on cream. */
+.m-greeting em { font-style: normal; color: var(--m-gold); }
 .m-sub { color: var(--m-text-3); font-size: 13px; margin: 0 2px; line-height: 1.4; }
 .m-h2 {
   font-size: 13px;
@@ -648,7 +653,7 @@ html[data-typing] .m-dock {
   color: #fff;
 }
 .m-swipe__under--done { background: var(--m-green); justify-content: flex-start; }
-.m-swipe__under--move { background: var(--m-accent); justify-content: flex-end; }
+.m-swipe__under--move { background: var(--m-accent-fill); justify-content: flex-end; }
 .m-card {
   display: flex;
   gap: 12px;
@@ -661,6 +666,21 @@ html[data-typing] .m-dock {
 .m-card > * { position: relative; }
 .m-card__body { flex: 1; min-width: 0; }
 .m-card--done .m-card__title { color: var(--m-text-3); text-decoration: line-through; text-decoration-color: var(--m-text-3); }
+/* The title is the card's "open" button: it looks like the title, and the
+   whole card draws the focus ring (the card's tap opens it anyway). */
+.m-card__open {
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  background: none;
+  padding: 0;
+}
+.m-app .m-card__open:focus-visible { outline: none; }
+.m-card:has(.m-card__open:focus-visible) {
+  outline: 2px solid var(--m-accent);
+  outline-offset: 2px;
+}
 .m-card__title {
   font-size: 15.5px;
   font-weight: 600;
@@ -760,7 +780,7 @@ html[data-typing] .m-dock {
 }
 .m-pill[aria-pressed="true"],
 .m-pill[aria-selected="true"] {
-  background-color: var(--m-accent);
+  background-color: var(--m-accent-fill);
   color: var(--m-on-accent);
   box-shadow: 0 6px 16px color-mix(in srgb, var(--m-accent) 35%, transparent), inset 0 1px 0 0 rgba(255, 255, 255, 0.35);
 }
@@ -805,7 +825,7 @@ html[data-typing] .m-dock {
    above and every tab and segmented control on the desktop
    (styles/controls.css): navy + gold in Classic, systemBlue + white in Glass. */
 .m-seg button[aria-pressed="true"] {
-  background: var(--m-accent);
+  background: var(--m-accent-fill);
   color: var(--m-on-accent);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--m-accent) 30%, transparent), inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
 }
@@ -1014,7 +1034,7 @@ html[data-typing] .m-dock {
 }
 .m-btn:active { transform: scale(0.97); }
 .m-btn--primary {
-  background: var(--m-accent);
+  background: var(--m-accent-fill);
   color: var(--m-on-accent);
   box-shadow: 0 8px 20px color-mix(in srgb, var(--m-accent) 35%, transparent), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
 }
@@ -1044,7 +1064,7 @@ html[data-typing] .m-dock {
   box-shadow: inset 0 1px 0 0 var(--m-rim-top), inset 0 0 0 1px var(--m-rim);
 }
 .m-choice[aria-pressed="true"] {
-  background: var(--m-accent);
+  background: var(--m-accent-fill);
   color: var(--m-on-accent);
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.35);
 }
@@ -1136,7 +1156,7 @@ html[data-typing] .m-dock {
   display: grid;
   place-items: center;
 }
-.m-day[aria-pressed="true"] b { background: var(--m-accent); color: var(--m-on-accent); box-shadow: 0 4px 12px color-mix(in srgb, var(--m-accent) 40%, transparent); }
+.m-day[aria-pressed="true"] b { background: var(--m-accent-fill); color: var(--m-on-accent); box-shadow: 0 4px 12px color-mix(in srgb, var(--m-accent) 40%, transparent); }
 .m-day[data-today="true"]:not([aria-pressed="true"]) b { color: var(--m-red); }
 .m-day__dots { display: flex; gap: 2px; height: 5px; }
 .m-day__dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--m-text-3); }

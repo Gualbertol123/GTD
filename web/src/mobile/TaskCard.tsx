@@ -120,12 +120,10 @@ export function TaskCard({
       <div
         ref={card}
         className={`m-card${done ? " m-card--done" : ""}${swipe ? "" : " m-card--noswipe"}`}
-        role="button"
-        tabIndex={0}
-        aria-label={task.title || t("m.untitled")}
-        aria-describedby={task.desc ? `${metaId}-d ${metaId}` : metaId}
+        // A tap anywhere on the card opens it; for keyboards and screen
+        // readers the title is the "open" button (a role="button" card that
+        // held the done checkbox was a control inside a control).
         onClick={() => !swallowClick.current && onOpen()}
-        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen())}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={end}
@@ -147,7 +145,13 @@ export function TaskCard({
           </span>
         </button>
         <div className="m-card__body">
-          <div className="m-card__title">{task.title || t("m.untitled")}</div>
+          <button
+            type="button"
+            className="m-card__title m-card__open"
+            aria-describedby={task.desc ? `${metaId}-d ${metaId}` : metaId}
+          >
+            {task.title || t("m.untitled")}
+          </button>
           {task.desc && <div className="m-card__desc" id={`${metaId}-d`}>{task.desc}</div>}
           <div className="m-card__meta" id={metaId}>
             {showStatus && (
