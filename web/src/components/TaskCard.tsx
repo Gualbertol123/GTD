@@ -103,8 +103,8 @@ export function TaskCard({
       onDragEnd={onDragEnd}
       // The hover border says "open me"; once open it holds fields, and a
       // border that lights up under every text box read as the box highlighting.
-      className={`bg-white rounded-[12px] border transition-colors ${
-        open ? "border-[#E8E6E1]" : "border-[#E8E6E1] hover:border-[#C9A96E]"
+      className={`task-card bg-white rounded-[12px] border transition-colors ${
+        open ? "border-[#E8E6E1] is-open" : "border-[#E8E6E1] hover:border-[#C9A96E]"
       }`}
     >
       <div className="p-3 flex items-start gap-2">
@@ -128,7 +128,7 @@ export function TaskCard({
           onClick={() => setOpen(!open)}
           aria-expanded={open}
           aria-controls={open ? detailsId : undefined}
-          className="flex-1 min-w-0 text-left flex items-start gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]"
+          className="card-head flex-1 min-w-0 text-left flex items-start gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]"
         >
           <span aria-hidden="true" className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${PRIORITY_DOT[task.priority]}`} />
           <span className="sr-only">{t("ux.board.priority", { p: priorityLabel(t, task.priority) })}:</span>

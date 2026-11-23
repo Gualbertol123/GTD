@@ -659,7 +659,7 @@ html[data-skin="glass"] button {
 /* …except a button drawn as a field (.field: the assignee picker, the date
    pill): it takes the field's hover, a hairline border step, like the inputs
    beside it. */
-html[data-skin="glass"] button:not(:disabled):not(.field):not(.tab):hover {
+html[data-skin="glass"] button:not(:disabled):not(.field):not(.tab):not(.card-head):hover {
   outline-color: var(--rim-top);
 }
 /* A button with no rounding of its own (a whole task card, a row, a panel
@@ -887,6 +887,27 @@ html[data-skin="glass"]:not([data-blur="off"]) button.bg-white:not(.field)::afte
   z-index: 2;
 }
 html[data-skin="glass"]:not([data-blur="off"]) button.bg-white:not(:disabled):not(.field):hover::after {
+  opacity: 1;
+}
+
+/* A task card's title is its "open" button. Its own hover rim (section 7)
+   drew a small rounded box around the title, which read as a text field
+   lighting up. The hover belongs to the whole card, as in Classic: a rim on
+   the card's own ::after layer that only fades, so the blurred card is never
+   repainted (section 11). Not while the card is open: then it holds fields. */
+html[data-skin="glass"] .task-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px var(--ctl-hover-border);
+  opacity: 0;
+  transition: opacity 160ms ease;
+  will-change: opacity;
+  z-index: 2;
+}
+html[data-skin="glass"] .task-card:not(.is-open):hover::after {
   opacity: 1;
 }
 
