@@ -392,18 +392,39 @@ html[data-skin="glass"] .rounded-lg {
 /* ---------------------------------------------------------------------------
    4. Chrome — the layer that floats above everything.
    --------------------------------------------------------------------------- */
+/* The header does NOT live-blur the page. It was the one glass surface with
+   the whole board scrolling and repainting just below it, and on real GPUs
+   its blur was redrawn in tiles whenever a card under it was hovered or
+   opened: a bright bar flashed along its bottom edge. It paints the wallpaper
+   itself instead, fixed to the viewport so it lines up with the body's
+   exactly, under the same chrome film: the same look at rest, nothing left
+   to re-sample. (The wallpaper is soft gradients; blurring it changed
+   nothing visible.) Content scrolling up passes behind an opaque bar. */
 html[data-skin="glass"] header.bg-\[\#0A1931\] {
   position: sticky;
   top: 0;
   z-index: 30;
-  background: linear-gradient(180deg, var(--chrome-top) 0%, var(--chrome-bottom) 100%);
-  backdrop-filter: blur(var(--blur-chrome)) saturate(var(--sat));
-  -webkit-backdrop-filter: blur(var(--blur-chrome)) saturate(var(--sat));
+  background: var(--canvas);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow:
     var(--chrome-shadow),
     inset 0 1px 0 0 var(--chrome-rim),
     inset 0 -1px 0 0 var(--separator);
   border-bottom: 0;
+}
+/* The wallpaper and film on a layer of their own, so the blur's saturation
+   boost can come along as a plain filter (it only touches this layer). */
+html[data-skin="glass"] header.bg-\[\#0A1931\]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(180deg, var(--chrome-top) 0%, var(--chrome-bottom) 100%), var(--wallpaper);
+  background-attachment: scroll, fixed, fixed, fixed, fixed, fixed;
+  background-repeat: no-repeat;
+  filter: saturate(var(--sat));
 }
 /* In light the header is a bright sheet, so its text has to flip with it. */
 html[data-skin="glass"][data-appearance="light"] header.bg-\[\#0A1931\] {
@@ -764,6 +785,11 @@ html[data-skin="glass"] [class*="superdoc-"]::before {
   html[data-skin="glass"] body {
     background-image: var(--wallpaper-flat);
   }
+  html[data-skin="glass"] header.bg-\[\#0A1931\]::before {
+    background-image: linear-gradient(180deg, var(--chrome-top) 0%, var(--chrome-bottom) 100%), var(--wallpaper-flat);
+    background-attachment: scroll, fixed;
+    filter: none;
+  }
   html[data-skin="glass"] .bg-white,
   html[data-skin="glass"] .bg-\[\#FAF9F6\] {
     background-color: var(--panel-opaque) !important;
@@ -780,6 +806,11 @@ html[data-skin="glass"][data-blur="off"] * {
 }
 html[data-skin="glass"][data-blur="off"] body {
   background-image: var(--wallpaper-flat);
+}
+html[data-skin="glass"][data-blur="off"] header.bg-\[\#0A1931\]::before {
+  background-image: linear-gradient(180deg, var(--chrome-top) 0%, var(--chrome-bottom) 100%), var(--wallpaper-flat);
+  background-attachment: scroll, fixed;
+  filter: none;
 }
 html[data-skin="glass"][data-blur="off"] .bg-white,
 html[data-skin="glass"][data-blur="off"] .bg-\[\#FAF9F6\] {
