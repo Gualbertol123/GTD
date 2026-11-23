@@ -140,7 +140,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (state === "checking") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-[#0A1931]" role="status" aria-live="polite">
-        <div className="w-14 h-14 rounded-full border-2 border-[#C9A96E] flex items-center justify-center animate-pulse">
+        <div className="w-14 h-14 rounded-full border-2 border-[#C9A96E] flex items-center justify-center motion-safe:animate-pulse">
           <span className="font-trajan text-[#C9A96E] text-[20px]">G</span>
         </div>
         <p className="text-[12px] text-[#8BA1C2]">{t("auth.checking")}</p>
