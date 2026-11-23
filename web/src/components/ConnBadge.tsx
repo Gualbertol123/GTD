@@ -12,11 +12,18 @@ export function ConnBadge({ conn }: { conn: ConnState }) {
   const { t } = useT();
   const s = STYLE[conn];
   return (
+    // A live region: losing or regaining the connection is announced, since
+    // edits made while offline may not reach the others. The dot pulses while
+    // it is trying (not forever once live), and only when motion is welcome.
     <div
+      role="status"
       title={t("conn.title")}
       className="inline-flex items-center gap-2 h-8 px-3 rounded-full bg-[#0A1931] border border-[#1E335E]"
     >
-      <span className={`w-2 h-2 rounded-full ${s.dot} ${conn === "online" ? "animate-pulse" : ""}`} />
+      <span
+        aria-hidden="true"
+        className={`w-2 h-2 rounded-full ${s.dot} ${conn === "connecting" || conn === "reconnecting" ? "motion-safe:animate-pulse" : ""}`}
+      />
       <span className={`text-[11px] font-semibold ${s.text}`}>{t(s.key)}</span>
     </div>
   );
