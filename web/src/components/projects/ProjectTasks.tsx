@@ -496,7 +496,7 @@ function TaskRow({
           onClick={onUnlink}
           title={t("projects.tasks.unlink")}
           aria-label={t("projects.tasks.unlink")}
-          className="shrink-0 w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:text-[#C81E1E] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+          className="shrink-0 w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:text-[#C81E1E] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
         >
           <Icon name="x" size={13} />
         </button>
@@ -627,7 +627,7 @@ function MiniBoard({
                         }}
                         title={t("projects.tasks.unlink")}
                         aria-label={t("projects.tasks.unlink")}
-                        className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:text-[#C81E1E] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+                        className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:text-[#C81E1E] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
                       >
                         <Icon name="x" size={12} />
                       </button>
