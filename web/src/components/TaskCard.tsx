@@ -138,7 +138,7 @@ export function TaskCard({
               {t("task.collapse")}
             </span>
           ) : (
-            <span className="flex-1 min-w-0 font-semibold text-[13px] text-[#0A1931] leading-snug break-words">
+            <span className="flex-1 min-w-0 font-semibold text-[13px] text-[#0A1931] leading-snug break-words hyphens-auto [hyphenate-limit-chars:10_4_4]">
               {task.title}
             </span>
           )}
