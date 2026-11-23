@@ -101,7 +101,11 @@ export function TaskCard({
       draggable={draggable && !open}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className="bg-white rounded-[12px] border border-[#E8E6E1] hover:border-[#C9A96E] transition-colors"
+      // The hover border says "open me"; once open it holds fields, and a
+      // border that lights up under every text box read as the box highlighting.
+      className={`bg-white rounded-[12px] border transition-colors ${
+        open ? "border-[#E8E6E1]" : "border-[#E8E6E1] hover:border-[#C9A96E]"
+      }`}
     >
       <div className="p-3 flex items-start gap-2">
         <button

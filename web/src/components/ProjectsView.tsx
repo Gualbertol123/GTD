@@ -205,7 +205,7 @@ export function ProjectsView({ board, send }: Props) {
               onChange={(e) => setCreating(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && create()}
               placeholder={t("projects.newName")}
-              className="flex-1 sm:w-[260px] min-w-0 h-9 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] px-4 text-[13px] outline-none focus:border-[#C9A96E]"
+              className="flex-1 sm:w-[260px] min-w-0 h-9 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] px-4 text-[13px] field"
             />
             <button
               onClick={create}
@@ -271,14 +271,14 @@ export function ProjectsView({ board, send }: Props) {
           placeholder={t("projects.search")}
           aria-label={t("projects.search")}
           type="search"
-          className="h-8 w-full sm:w-[200px] rounded-full bg-white border border-[#E8E6E1] px-3 text-[12px] outline-none focus:border-[#C9A96E]"
+          className="h-8 w-full sm:w-[200px] rounded-full bg-white border border-[#E8E6E1] px-3 text-[12px] field"
         />
         {owners.length > 0 && (
           <select
             value={owner}
             onChange={(e) => setOwner(e.target.value)}
             aria-label={t("ux.projects.filterOwner")}
-            className="h-8 rounded-full bg-white border border-[#E8E6E1] px-2 text-[12px] text-[#0A1931] outline-none focus:border-[#C9A96E] focus-visible:border-[#C9A96E]"
+            className="h-8 rounded-full bg-white border border-[#E8E6E1] px-2 text-[12px] text-[#0A1931] outline-none field"
           >
             <option value="all">{t("projects.owner.all")}</option>
             {owners.map((o) => (
@@ -294,7 +294,7 @@ export function ProjectsView({ board, send }: Props) {
               value={sort}
               onChange={(e) => setSort(e.target.value as ProjectSort)}
               aria-label={t("ux.projects.sortBy")}
-              className="h-8 rounded-full bg-white border border-[#E8E6E1] px-2 text-[12px] text-[#0A1931] outline-none focus:border-[#C9A96E] focus-visible:border-[#C9A96E]"
+              className="h-8 rounded-full bg-white border border-[#E8E6E1] px-2 text-[12px] text-[#0A1931] outline-none field"
             >
               {(["target", "progress", "priority", "name", "updated"] as ProjectSort[]).map((s) => (
                 <option key={s} value={s}>

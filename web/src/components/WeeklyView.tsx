@@ -587,7 +587,7 @@ function WeeklyColumn({
           }}
           aria-label={t("weekly.addTo", { col: label })}
           placeholder={t(`weekly.ph.${colKey}`)}
-          className="flex-1 min-w-0 h-8 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[12px] outline-none focus:border-[#C9A96E]"
+          className="flex-1 min-w-0 h-8 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[12px] field"
         />
         <button
           type="button"
@@ -670,7 +670,7 @@ export function WeeklyItemField({
       }}
       className={
         className ??
-        "flex-1 min-w-0 text-[12px] text-[#0A1931] bg-[#F5F3EF] rounded-lg border border-[#E8E6E1] p-2 outline-none focus:border-[#C9A96E]"
+        "flex-1 min-w-0 text-[12px] text-[#0A1931] bg-[#F5F3EF] rounded-lg border border-[#E8E6E1] p-2 field"
       }
     />
   );

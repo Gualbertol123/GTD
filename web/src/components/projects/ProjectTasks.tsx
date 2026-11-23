@@ -14,7 +14,7 @@ const PRIOS: Priority[] = ["P1", "P2", "P3", "P4"];
 type View = "list" | "board";
 
 const field =
-  "h-8 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] px-2.5 text-[12px] text-[#0A1931] outline-none focus:border-[#C9A96E]";
+  "h-8 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] px-2.5 text-[12px] text-[#0A1931] field";
 
 // The project's work: every board task linked to it, as a grouped list or a
 // small kanban. Tasks are created here straight into the project, or linked
@@ -172,7 +172,7 @@ export function ProjectTasks({
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && create()}
               placeholder={t("projects.tasks.new")}
-              className="w-full h-9 rounded-full bg-white border border-[#E8E6E1] px-3.5 text-[13px] outline-none focus:border-[#C9A96E]"
+              className="w-full h-9 rounded-full bg-white border border-[#E8E6E1] px-3.5 text-[13px] field"
             />
             <div className="flex flex-wrap gap-1.5 items-center">
               <select value={status} onChange={(e) => setStatus(e.target.value as Status)} className={field} aria-label={t("quick.status")}>
@@ -219,7 +219,7 @@ export function ProjectTasks({
               value=""
               onChange={(e) => e.target.value && save({ type: "updateTask", id: e.target.value, patch: { projectId: p.id } })}
               aria-label={t("projects.tasks.link")}
-              className="w-full h-8 rounded-full bg-white border border-dashed border-[#E3DFD7] px-3 text-[12px] text-[#6B6B6B] outline-none cursor-pointer focus:border-[#C9A96E] focus:border-solid"
+              className="w-full h-8 rounded-full bg-white border border-dashed border-[#E3DFD7] px-3 text-[12px] text-[#6B6B6B] cursor-pointer field focus:border-solid"
             >
               <option value="">{t("projects.tasks.link")}</option>
               {STATUS_ORDER.map((st) => {
@@ -248,7 +248,7 @@ export function ProjectTasks({
             placeholder={t("projects.tasks.search")}
             aria-label={t("projects.tasks.search")}
             type="search"
-            className="h-8 flex-1 min-w-[140px] rounded-full bg-white border border-[#E8E6E1] px-3 text-[12px] outline-none focus:border-[#C9A96E]"
+            className="h-8 flex-1 min-w-[140px] rounded-full bg-white border border-[#E8E6E1] px-3 text-[12px] field"
           />
           {people.length > 1 && (
             <select value={person} onChange={(e) => setPerson(e.target.value)} className={field} aria-label={t("ux.projects.filterPerson")}>
@@ -482,7 +482,7 @@ function TaskRow({
         <select
           value={task.status}
           onChange={(e) => onMove(e.target.value as Status)}
-          className="h-7 max-w-[118px] shrink-0 rounded-full border border-[#E8E6E1] bg-[#F5F3EF] px-2 text-[10px] font-semibold uppercase tracking-wide text-[#0A1931] outline-none cursor-pointer focus:border-[#C9A96E]"
+          className="h-7 max-w-[118px] shrink-0 rounded-full border border-[#E8E6E1] bg-[#F5F3EF] px-2 text-[10px] font-semibold uppercase tracking-wide text-[#0A1931] cursor-pointer field"
           style={{ boxShadow: `inset 3px 0 0 ${TASK_STATUS_COLOR[task.status]}` }}
           aria-label={t("quick.status")}
         >

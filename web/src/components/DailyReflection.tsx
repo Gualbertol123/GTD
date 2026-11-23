@@ -127,7 +127,7 @@ function dayLabel(iso: string, lang: Lang, t: (k: string, v?: Record<string, str
 }
 
 const field =
-  "w-full rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] p-2 text-[12px] outline-none focus:border-[#C9A96E] resize-none";
+  "w-full rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] p-2 text-[12px] field resize-none";
 const label = "font-trajan text-[10px] uppercase tracking-wide text-[#A8A29E] mb-1 block";
 
 type Pane = "diary" | "notes";
@@ -160,7 +160,7 @@ function RememberSelect({
       <select
         value={value === null ? "" : String(value)}
         onChange={(e) => onChange(e.target.value === "never" ? "never" : Number(e.target.value))}
-        className="h-8 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[12px] text-[#0A1931] outline-none focus:border-[#C9A96E]"
+        className="h-8 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[12px] text-[#0A1931] field"
       >
         {value === null && <option value="" disabled>{t("ux.shell.rememberPick")}</option>}
         {DURATIONS.map((d) => (
@@ -319,7 +319,7 @@ function ReflectionLogin({
               setUser(e.target.value);
               setErr(null);
             }}
-            className="mt-1 w-full h-10 rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[13px] outline-none focus:border-[#C9A96E]"
+            className="mt-1 w-full h-10 rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[13px] field"
           >
             {members.map((m) => (
               <option key={m} value={m}>{m}</option>
@@ -337,9 +337,7 @@ function ReflectionLogin({
               setErr(null);
             }}
             aria-invalid={!!err}
-            className={`mt-1 w-full h-10 rounded-lg bg-[#F5F3EF] border px-3 text-[13px] outline-none ${
-              err ? "border-[#DC2626]" : "border-[#E8E6E1] focus:border-[#C9A96E]"
-            }`}
+            className={`mt-1 w-full h-10 rounded-lg bg-[#F5F3EF] border px-3 text-[13px] border-[#E8E6E1] field`}
           />
         </label>
         {err && (
@@ -409,7 +407,7 @@ function AccountSection({ me, onChanged }: { me: string; onChanged: () => void }
   };
 
   const field =
-    "w-full h-9 rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[13px] outline-none focus:border-[#C9A96E]";
+    "w-full h-9 rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[13px] field";
   const cap = "text-[10px] uppercase tracking-wide text-[#A8A29E]";
   const until =
     exp === "never"

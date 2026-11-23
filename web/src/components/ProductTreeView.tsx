@@ -625,7 +625,7 @@ export function ProductTreeView() {
               }}
               aria-label={t("ux.products.searchLabel")}
               placeholder={t("ux.products.searchPlaceholder")}
-              className="w-full h-9 rounded-full bg-white border border-[#E8E6E1] pl-3 pr-10 text-[12px] outline-none focus:border-[#C9A96E] appearance-none [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+              className="w-full h-9 rounded-full bg-white border border-[#E8E6E1] pl-3 pr-10 text-[12px] field appearance-none [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
             />
             {searching && (
               <button

@@ -266,7 +266,7 @@ export function TaskDetails({
           }}
           aria-label={t("ux.board.taskTitle")}
           aria-describedby={titleHint ? `title-hint-${task.id}` : undefined}
-          className="w-full font-semibold text-[14px] leading-snug text-[#0A1931] bg-[#F5F3EF] rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-[#C9A96E]"
+          className="w-full font-semibold text-[14px] leading-snug text-[#0A1931] bg-[#F5F3EF] rounded-lg border border-transparent px-2 py-1.5 field"
         />
         {titleHint && (
           <p id={`title-hint-${task.id}`} role="status" className="mt-1 text-[11px] text-[#92400E]">
@@ -281,7 +281,7 @@ export function TaskDetails({
           onClick={() => showNames && setAssignOpen((v) => !v)}
           aria-expanded={showNames ? assignOpen : undefined}
           title={showNames ? t("assign.edit") : undefined}
-          className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full pl-1 pr-2.5 h-8 border border-[#E8E6E1] text-[12px] text-[#0A1931]"
+          className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full pl-1 pr-2.5 h-8 border border-[#E8E6E1] text-[12px] text-[#0A1931] field"
         >
           <span className="flex -space-x-1.5">
             {(showNames ? owners.slice(0, 3) : ["•"]).map((name, i) => (
@@ -301,7 +301,7 @@ export function TaskDetails({
           )}
         </button>
 
-        <label className="inline-flex flex-wrap items-center gap-x-1.5 min-w-0 max-w-full bg-[#F5F3EF] rounded-full px-3 min-h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B]">
+        <label className="inline-flex flex-wrap items-center gap-x-1.5 min-w-0 max-w-full bg-[#F5F3EF] rounded-full px-3 min-h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B] field">
           {t("task.due")}
           <input
             type="date"
@@ -312,7 +312,7 @@ export function TaskDetails({
         </label>
 
         {projectsOn && projects.length > 0 && (
-          <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full pl-2.5 pr-1 h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B] max-w-full">
+          <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full pl-2.5 pr-1 h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B] max-w-full field">
             <span
               className="w-2.5 h-2.5 rounded-full shrink-0"
               style={{ background: linked ? projectColor(linked) : "transparent", boxShadow: linked ? undefined : "inset 0 0 0 1px #C9C5BE" }}
@@ -446,7 +446,7 @@ export function TaskDetails({
             onChange={(e) => setNewSub(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addSub()}
             placeholder={t("task.addSubtask")}
-            className="flex-1 min-w-0 h-8 rounded-full bg-white border border-[#E8E6E1] px-3 text-[12px] outline-none focus:border-[#C9A96E]"
+            className="flex-1 min-w-0 h-8 rounded-full bg-white border border-[#E8E6E1] px-3 text-[12px] field"
           />
           <button onClick={addSub} className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-[#0A1931] text-[#C9A96E] text-[14px] font-semibold">
             +
@@ -467,7 +467,7 @@ export function TaskDetails({
             if (desc.value !== task.desc) patch({ desc: desc.value });
           }}
           placeholder={t("task.descPlaceholder")}
-          className="w-full min-h-[3.2rem] rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] p-2 text-[12px] outline-none focus:border-[#C9A96E]"
+          className="w-full min-h-[3.2rem] rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] p-2 text-[12px] field"
         />
       </div>
 
@@ -484,7 +484,7 @@ export function TaskDetails({
             if (notes.value !== task.notes) patch({ notes: notes.value });
           }}
           placeholder={t("task.notesPlaceholder")}
-          className="w-full min-h-[3.2rem] rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] p-2 text-[12px] outline-none focus:border-[#C9A96E]"
+          className="w-full min-h-[3.2rem] rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] p-2 text-[12px] field"
         />
       </div>
 
@@ -493,7 +493,7 @@ export function TaskDetails({
         <div className="font-trajan text-[10px] uppercase tracking-wide text-[#A8A29E] mb-1">
           {t("task.fileDir")}
         </div>
-        <div className="flex items-center gap-2 bg-[#F5F3EF] border border-[#E8E6E1] rounded-lg pl-2 pr-1 focus-within:border-[#C9A96E]">
+        <div className="flex items-center gap-2 bg-[#F5F3EF] border border-[#E8E6E1] rounded-lg pl-2 pr-1 field">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#A8A29E] shrink-0" aria-hidden="true">
             <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           </svg>
@@ -543,7 +543,7 @@ export function TaskDetails({
             value={task.status}
             onChange={(e) => send({ type: "moveTask", id: task.id, status: e.target.value as Status })}
             title={t("quick.status")}
-            className="h-8 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] px-2 text-[12px] text-[#0A1931] outline-none focus:border-[#C9A96E] cursor-pointer"
+            className="h-8 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] px-2 text-[12px] text-[#0A1931] field cursor-pointer"
           >
             {STATUS_ORDER.map((s) => (
               <option key={s} value={s}>{statusLabel(lang, s)}</option>

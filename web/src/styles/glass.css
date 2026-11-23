@@ -107,6 +107,15 @@ html[data-skin="glass"][data-appearance="dark"] {
   --chrome-shadow: 0 14px 44px rgba(0, 0, 0, 0.4);
   --chrome-rim: rgba(255, 255, 255, 0.35);
 
+  /* Field states (index.css): hover is a hairline one step brighter than the
+     separator; focus is systemBlue with a soft ring. */
+  --field-border: var(--separator);
+  --field-border-hover: rgba(255, 255, 255, 0.26);
+  --field-border-focus: var(--ios-blue);
+  --field-ring: rgba(10, 132, 255, 0.5);
+  --field-invalid: var(--ios-red);
+  --field-invalid-ring: rgba(255, 69, 58, 0.45);
+
   --scrim: rgba(4, 8, 20, 0.5);
   --option-bg: #1c2033;
   --canvas: #0b1020;
@@ -181,6 +190,13 @@ html[data-skin="glass"][data-appearance="light"] {
   --chrome-bottom: rgba(255, 255, 255, 0.5);
   --chrome-shadow: 0 12px 36px rgba(46, 58, 110, 0.18);
   --chrome-rim: rgba(255, 255, 255, 0.95);
+
+  --field-border: var(--separator);
+  --field-border-hover: rgba(60, 60, 67, 0.3);
+  --field-border-focus: var(--ios-blue);
+  --field-ring: rgba(0, 122, 255, 0.4);
+  --field-invalid: var(--ios-red);
+  --field-invalid-ring: rgba(255, 59, 48, 0.35);
 
   --scrim: rgba(226, 232, 245, 0.55);
   --option-bg: #ffffff;
@@ -542,11 +558,14 @@ html[data-skin="glass"] textarea {
   color: var(--label);
   border-color: var(--separator);
 }
-html[data-skin="glass"] input:focus,
-html[data-skin="glass"] select:focus,
-html[data-skin="glass"] textarea:focus {
+/* Focus deepens the fill; the border and ring come from the shared .field
+   states (index.css), which read the --field-* tokens above. Only the
+   keyboard/typing focus: a select clicked with the mouse just opens. */
+html[data-skin="glass"] input:focus-visible,
+html[data-skin="glass"] select:focus-visible,
+html[data-skin="glass"] textarea:focus-visible,
+html[data-skin="glass"] .field:has(:focus-visible) {
   background-color: var(--fill-2);
-  border-color: var(--ios-blue);
 }
 html[data-skin="glass"] input.bg-transparent,
 html[data-skin="glass"] textarea.bg-transparent,
@@ -592,7 +611,10 @@ html[data-skin="glass"] button {
   outline: 1px solid transparent;
   outline-offset: -1px;
 }
-html[data-skin="glass"] button:not(:disabled):hover {
+/* …except a button drawn as a field (.field: the assignee picker, the date
+   pill): it takes the field's hover, a hairline border step, like the inputs
+   beside it. */
+html[data-skin="glass"] button:not(:disabled):not(.field):hover {
   outline-color: var(--rim-top);
 }
 /* A button with no rounding of its own (a whole task card, a row, a panel
@@ -735,17 +757,18 @@ html[data-skin="glass"][data-blur="off"] .bg-\[\#EFECE6\] {
 /* The new-task bar: every control is a field, so the assignee button (a
    button, not an input) gets the same fill as the inputs and dropdowns next
    to it instead of the raised-pill look. */
-html[data-skin="glass"] .qa-field,
-html[data-skin="glass"] .qa-field:focus {
+/* Its border colour is left to the shared .field states (index.css). */
+html[data-skin="glass"] .qa-field {
   background-color: var(--fill-3) !important;
-  border-color: var(--separator) !important;
   box-shadow: none !important;
   color: var(--label) !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+html[data-skin="glass"] .qa-field:not(:hover):not(:focus-visible):not(:has(:focus-visible)):not([aria-invalid="true"]) {
+  border-color: var(--field-border);
+}
 html[data-skin="glass"] .qa-field::before { content: none !important; }
-html[data-skin="glass"] .qa-field:focus { border-color: var(--ios-blue) !important; }
 
 /* ---------------------------------------------------------------------------
    10. One live blur per stack.
@@ -802,11 +825,11 @@ html[data-skin="glass"]:not([data-blur="off"])
 /* Glass buttons that are a blurred surface themselves (the tab pills): their
    hover rim is drawn on a separate layer that only fades in, so hovering never
    repaints the blurred button (the outline of section 7 would). */
-html[data-skin="glass"]:not([data-blur="off"]) button.bg-white:not(:disabled):hover {
+html[data-skin="glass"]:not([data-blur="off"]) button.bg-white:not(:disabled):not(.field):hover {
   outline-color: transparent;
   border-color: var(--rim); /* the app's hover border would repaint the blur too */
 }
-html[data-skin="glass"]:not([data-blur="off"]) button.bg-white::after {
+html[data-skin="glass"]:not([data-blur="off"]) button.bg-white:not(.field)::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -818,7 +841,7 @@ html[data-skin="glass"]:not([data-blur="off"]) button.bg-white::after {
   will-change: opacity;
   z-index: 2;
 }
-html[data-skin="glass"]:not([data-blur="off"]) button.bg-white:not(:disabled):hover::after {
+html[data-skin="glass"]:not([data-blur="off"]) button.bg-white:not(:disabled):not(.field):hover::after {
   opacity: 1;
 }
 

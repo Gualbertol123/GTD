@@ -101,7 +101,7 @@ export function SettingsView({ board, send }: Props) {
   const daysUnchanged = normDays === savedDays;
 
   const input =
-    "w-full h-10 rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[13px] outline-none focus:border-[#C9A96E]";
+    "w-full h-10 rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[13px] field";
   const saveBtn = "h-10 px-5 rounded-full bg-[#0A1931] text-[#C9A96E] text-[12px] font-semibold shrink-0";
   const smallBtn = "h-9 px-4 rounded-full text-[12px] font-semibold border";
 

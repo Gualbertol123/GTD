@@ -233,7 +233,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
     if (!passes(tk)) resetFilters();
     if (hidden.has(tk.status)) toggleHidden(tk.status);
   };
-  const control = "h-9 rounded-full bg-white border border-[#E8E6E1] text-[13px] outline-none focus:border-[#C9A96E]";
+  const control = "h-9 rounded-full bg-white border border-[#E8E6E1] text-[13px] field";
 
   return (
     <div className="space-y-4">
@@ -574,7 +574,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                     onChange={(e) => setDoneQuery(e.target.value)}
                     placeholder={t("doneBar.search")}
                     aria-label={t("doneBar.search")}
-                    className="w-full h-9 rounded-full bg-white border border-[#E8E6E1] pl-8 pr-4 text-[13px] outline-none focus:border-[#C9A96E]"
+                    className="w-full h-9 rounded-full bg-white border border-[#E8E6E1] pl-8 pr-4 text-[13px] field"
                   />
                 </div>
                 {doneShown.length === 0 ? (
@@ -637,7 +637,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                     onChange={(e) => setArchQuery(e.target.value)}
                     placeholder={t("archived.search")}
                     aria-label={t("archived.search")}
-                    className="w-full h-9 rounded-full bg-white border border-[#E8E6E1] pl-8 pr-4 text-[13px] outline-none focus:border-[#C9A96E]"
+                    className="w-full h-9 rounded-full bg-white border border-[#E8E6E1] pl-8 pr-4 text-[13px] field"
                   />
                 </div>
                 {archivedShown.length === 0 ? (

@@ -12,7 +12,7 @@ export function IdentityPicker({ members }: { members: string[] }) {
   return (
     <div
       title={t("reflection.me")}
-      className="inline-flex items-center gap-1.5 h-8 pl-1 pr-2 rounded-full bg-[#112040] border border-[#1E335E]"
+      className="inline-flex items-center gap-1.5 h-8 pl-1 pr-2 rounded-full bg-[#112040] border border-[#1E335E] field field--chrome"
     >
       <span className="w-6 h-6 rounded-full bg-[#C9A96E] text-[#0A1931] text-[10px] font-bold flex items-center justify-center">
         {initial}

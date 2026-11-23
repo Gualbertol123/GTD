@@ -208,9 +208,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               aria-invalid={!!err}
               aria-describedby={err ? "auth-err" : undefined}
               placeholder={t("auth.password")}
-              className={`w-full h-11 rounded-full bg-[#F5F3EF] border px-4 text-[14px] text-center outline-none ${
-                err ? "border-[#DC2626]" : "border-[#E8E6E1] focus:border-[#C9A96E]"
-              }`}
+              className={`w-full h-11 rounded-full bg-[#F5F3EF] border px-4 text-[14px] text-center border-[#E8E6E1] field`}
             />
             {err && (
               <p id="auth-err" role="alert" className="text-[11px] text-[#DC2626] mt-2">

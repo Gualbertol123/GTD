@@ -22,7 +22,7 @@ export function Filters({ filters, setFilters, members }: Props) {
     setFilters({ search: "", owner: "all", priority: "all", focusP1: false });
 
   const control =
-    "h-9 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] text-[13px] outline-none focus:border-[#C9A96E]";
+    "h-9 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] text-[13px] field";
 
   return (
     <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-3 flex flex-wrap items-center gap-2">

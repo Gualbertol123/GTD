@@ -4,6 +4,66 @@
 
 :root {
   color-scheme: light;
+
+  /* Field states (Classic). glass.css re-points these for both appearances. */
+  --field-border: #e8e6e1;
+  --field-border-hover: #d6d0c4; /* one step darker than the rest border: a hint, not a highlight */
+  --field-border-focus: #c9a96e;
+  --field-ring: rgba(201, 169, 110, 0.45);
+  --field-invalid: #dc2626;
+  --field-invalid-ring: rgba(220, 38, 38, 0.3);
+}
+
+/* -----------------------------------------------------------------------------
+   Fields — the one definition of every text box, dropdown and field-shaped
+   button (assignee picker, date pill), in both skins.
+     rest      the component's own border (Tailwind class)
+     hover     border one step darker — never a fill, ring or glow
+     focus     gold (Classic) / systemBlue (Glass) border + a 2px ring; only on
+               :focus-visible (text fields always match it, a select or button
+               only from the keyboard), or a wrapper whose control has it
+     disabled  dimmed, no hover
+     read-only no hover; focus still shows (it can be selected and copied)
+     invalid   aria-invalid="true": red border, red ring on focus
+   .field--chrome (the header's identity pill, on navy) skips the hover step.
+   The ring is an outline, not a box-shadow, so it never fights the glass
+   skin's inset rims and shadows. :root raises the weight above Tailwind's
+   one-class utilities and glass.css's tag rules without !important.
+   --------------------------------------------------------------------------- */
+.field {
+  transition: border-color 120ms ease, outline-color 120ms ease;
+}
+:root .field:not(.field--chrome):hover:not(:focus-visible):not(:has(:focus-visible)):not(:disabled):not([readonly]):not([aria-disabled="true"]) {
+  border-color: var(--field-border-hover);
+}
+:root .field:focus-visible,
+:root .field:has(:focus-visible) {
+  border-color: var(--field-border-focus);
+  outline: 2px solid var(--field-ring);
+  outline-offset: 1px;
+}
+/* A control inside a .field wrapper draws no outline of its own. */
+:root .field :is(input, select, textarea):focus-visible {
+  outline: none;
+}
+:root .field:disabled,
+:root .field[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+:root .field[readonly] {
+  cursor: default;
+}
+:root .field[aria-invalid="true"] {
+  border-color: var(--field-invalid);
+}
+:root .field[aria-invalid="true"]:focus-visible {
+  outline-color: var(--field-invalid-ring);
+}
+@media (prefers-reduced-motion: reduce) {
+  .field {
+    transition: none;
+  }
 }
 
 html,

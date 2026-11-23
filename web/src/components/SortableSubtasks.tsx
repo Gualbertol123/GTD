@@ -336,7 +336,7 @@ function SubtaskRow({
           commit();
         }}
         title={editHint}
-        className={`flex-1 min-w-0 bg-transparent text-[12px] leading-5 text-left p-0 outline-none cursor-text rounded-sm px-1 -mx-1 hover:bg-[#F5F3EF] focus:bg-[#F5F3EF] focus:ring-1 focus:ring-[#C9A96E] ${
+        className={`flex-1 min-w-0 bg-transparent text-[12px] leading-5 text-left p-0 cursor-text rounded-sm px-1 -mx-1 border border-transparent focus:bg-[#F5F3EF] field ${
           s.done ? "line-through text-[#A8A29E]" : "text-[#0A1931]"
         }`}
       />

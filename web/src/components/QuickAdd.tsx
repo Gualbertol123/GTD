@@ -106,7 +106,7 @@ export function QuickAdd({
   };
 
   const field =
-    "qa-field h-11 rounded-full bg-white border border-[#E8E6E1] text-[13px] outline-none focus:border-[#C9A96E]";
+    "qa-field h-11 rounded-full bg-white border border-[#E8E6E1] text-[13px] field";
 
   return (
     <div className="space-y-2">
@@ -123,7 +123,7 @@ export function QuickAdd({
         aria-label={t("quick.title")}
         aria-invalid={empty || undefined}
         aria-describedby={empty ? "quick-add-hint" : undefined}
-        className={`${field} flex-1 min-w-[200px] px-5 ${empty ? "!border-[#DC2626]" : ""}`}
+        className={`${field} flex-1 min-w-[200px] px-5`}
       />
       {showNames ? (
         <button
@@ -188,7 +188,7 @@ export function QuickAdd({
           <option key={s} value={s}>{statusLabel(lang, s)}</option>
         ))}
       </select>
-      <label className={`${field} pl-4 pr-3 inline-flex items-center gap-1.5 text-[#6B6B6B] focus-within:border-[#C9A96E]`}>
+      <label className={`${field} pl-4 pr-3 inline-flex items-center gap-1.5 text-[#6B6B6B]`}>
         <span className="text-[12px]">{t("quick.due")}</span>
         <input
           type="date"

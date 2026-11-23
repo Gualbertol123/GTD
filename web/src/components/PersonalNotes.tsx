@@ -89,7 +89,7 @@ export function PersonalNotes({ board, me, send }: Props) {
           onChange={(e) => setDraft(e.target.value)}
           disabled={!!unavailable}
           placeholder={t(unavailable ? "notes.placeholderOff" : "notes.placeholder")}
-          className="w-full min-h-[64px] rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] p-2.5 text-[12px] text-[#0A1931] outline-none focus:border-[#C9A96E]"
+          className="w-full min-h-[64px] rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] p-2.5 text-[12px] text-[#0A1931] field"
         />
         <div className="flex items-center gap-3 flex-wrap">
           <button

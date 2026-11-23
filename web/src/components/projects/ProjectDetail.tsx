@@ -203,7 +203,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                 nameSave.flush();
                 if (!name.value.trim()) name.setValue(p.name);
               }}
-              className="w-full font-trajan text-[22px] sm:text-[26px] leading-tight text-[#0A1931] bg-transparent outline-none border-b border-transparent focus:border-[#C9A96E] resize-none break-words [overflow-wrap:anywhere]"
+              className="w-full font-trajan text-[22px] sm:text-[26px] leading-tight text-[#0A1931] bg-transparent outline-none border-b border-transparent field resize-none break-words [overflow-wrap:anywhere]"
             />
 
             <fieldset disabled={!v2} className="space-y-3 disabled:opacity-50">
@@ -229,7 +229,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full px-3 h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B]">
+                  <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full px-3 h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B] field">
                     {t("projects.start")}
                     <input
                       type="date"
@@ -240,7 +240,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                     />
                   </label>
                   <span className="text-[#A8A29E]">→</span>
-                  <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full px-3 h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B]">
+                  <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full px-3 h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B] field">
                     {t("projects.target")}
                     <input
                       type="date"
@@ -306,7 +306,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                 }}
                 placeholder={t("projects.descriptionPlaceholder")}
                 aria-label={t("projects.description")}
-                className="w-full rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] px-2.5 py-2 text-[13px] leading-relaxed text-[#0A1931] outline-none focus:border-[#C9A96E]"
+                className="w-full rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] px-2.5 py-2 text-[13px] leading-relaxed text-[#0A1931] field"
               />
             </fieldset>
           </div>
@@ -408,7 +408,7 @@ function Notes({ project: p, v2, patch }: { project: Project; v2: boolean; patch
         }}
         placeholder={t("projects.notesPlaceholder")}
         aria-label={t("projects.notes")}
-        className="w-full min-h-[7rem] rounded-lg bg-[#FFFBF2] border border-[#E8E6E1] p-2.5 text-[12px] leading-relaxed text-[#0A1931] outline-none focus:border-[#C9A96E] disabled:opacity-50"
+        className="w-full min-h-[7rem] rounded-lg bg-[#FFFBF2] border border-[#E8E6E1] p-2.5 text-[12px] leading-relaxed text-[#0A1931] field disabled:opacity-50"
       />
     </div>
   );
