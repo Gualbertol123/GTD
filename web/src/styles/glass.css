@@ -67,6 +67,11 @@ html[data-skin="glass"][data-appearance="dark"] {
   --ios-indigo: #5e5ce6;
   --ios-purple: #bf5af2;
   --ios-gray: #8e8e93;
+  /* systemBlue as a FILL behind white text (chosen tab, primary button):
+     #0A84FF / #007AFF carry white small text at only 3.6 / 4.0:1. Apple's
+     own web button blue clears 4.5:1 and still reads as systemBlue.
+     --ios-blue stays for rings, borders, links and dots. */
+  --accent-fill: #0071e3;
 
   --label: #ffffff;
   --label-2: rgba(235, 235, 245, 0.72);
@@ -123,7 +128,7 @@ html[data-skin="glass"][data-appearance="dark"] {
   --ctl-fg: var(--label);
   --ctl-fg-2: var(--label-2);
   --ctl-hover-border: rgba(255, 255, 255, 0.6);
-  --ctl-on-bg: var(--ios-blue);
+  --ctl-on-bg: var(--accent-fill);
   --ctl-on-fg: #ffffff;
   --ctl-on-border: transparent;
   --ctl-focus: var(--ios-blue);
@@ -168,6 +173,7 @@ html[data-skin="glass"][data-appearance="light"] {
   --ios-indigo: #5856d6;
   --ios-purple: #af52de;
   --ios-gray: #8e8e93;
+  --accent-fill: #0071e3;
 
   --label: #11131a;
   --label-2: rgba(35, 38, 48, 0.76);
@@ -270,19 +276,21 @@ html[data-skin="glass"] .min-h-screen.bg-\[\#0A1931\] {
 html[data-skin="glass"] .text-\[\#0A1931\] {
   color: var(--label);
 }
-html[data-skin="glass"] .text-\[\#8A8A8A\],
 html[data-skin="glass"] .text-\[\#6B6B6B\] {
   color: var(--label-2);
 }
-html[data-skin="glass"] .text-\[\#A8A29E\],
 html[data-skin="glass"] .text-\[\#C9C5BE\] {
   color: var(--label-3);
 }
+/* Tertiary text is a token (text-ink-3): Glass points it at --label-3. */
+html[data-skin="glass"] {
+  --ink-3: var(--label-3);
+}
 html[data-skin="glass"] .text-\[\#C9A96E\],
-html[data-skin="glass"] .text-\[\#8B6F3E\] {
+html[data-skin="glass"] .text-\[\#7A5F30\] {
   color: var(--ios-orange);
 }
-html[data-skin="glass"] .text-\[\#DC2626\],
+html[data-skin="glass"] .text-\[\#C81E1E\],
 html[data-skin="glass"] .text-\[\#F87171\] {
   color: var(--ios-red);
 }
@@ -438,7 +446,7 @@ html[data-skin="glass"] header .bg-\[\#C9A96E\] {
 html[data-skin="glass"] .seg--chrome {
   --ctl-fg: var(--label);
   --ctl-fg-2: var(--label-2);
-  --ctl-on-bg: var(--ios-blue);
+  --ctl-on-bg: var(--accent-fill);
   --ctl-on-fg: #ffffff;
   --ctl-on-border: transparent;
   --ctl-track: var(--fill-3);
@@ -455,10 +463,11 @@ html[data-skin="glass"] .rounded-full.bg-white::before {
   content: none;
 }
 
-/* Primary actions take systemBlue; the app used navy for these. */
+/* Primary actions take systemBlue (its fill step, --accent-fill, so white
+   labels read); the app used navy for these. */
 html[data-skin="glass"] .bg-\[\#0A1931\]:not(header):not(.min-h-screen),
 html[data-skin="glass"] .bg-\[\#112040\] {
-  background-color: var(--ios-blue);
+  background-color: var(--accent-fill);
   color: var(--on-accent);
   border-color: var(--rim);
   box-shadow:

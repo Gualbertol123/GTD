@@ -38,7 +38,7 @@ export function ProjectTimeline({
 
   if (!rows.length) {
     return (
-      <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-8 text-center text-[13px] text-[#A8A29E]">
+      <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-8 text-center text-[13px] text-ink-3">
         {t("projects.timeline.empty")}
         {undated.length > 0 && <Undated list={undated} onOpen={onOpen} />}
       </div>
@@ -177,7 +177,7 @@ function Undated({ list, onOpen }: { list: Project[]; onOpen: (id: string) => vo
   const { t } = useT();
   return (
     <div className="mt-3 pt-3 border-t border-[#E8E6E1] flex flex-wrap items-center gap-1.5 text-left">
-      <span className="text-[11px] font-semibold text-[#8A8A8A] mr-1">{t("projects.timeline.noDates")}:</span>
+      <span className="text-[11px] font-semibold text-[#6B6B6B] mr-1">{t("projects.timeline.noDates")}:</span>
       {list.map((p) => (
         <button
           key={p.id}

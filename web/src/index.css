@@ -5,6 +5,10 @@
 :root {
   color-scheme: light;
 
+  /* Text scale (Classic), every step >= 4.5:1 on white, cream and the tray:
+     label #0A1931 · secondary #6B6B6B · tertiary --ink-3. */
+  --ink-3: #6e6a64;
+
   /* Field states (Classic). glass.css re-points these for both appearances. */
   --field-border: #e8e6e1;
   --field-border-hover: #d6d0c4; /* one step darker than the rest border: a hint, not a highlight */

@@ -102,6 +102,12 @@
   background-color: color-mix(in srgb, currentColor 14%, transparent);
 }
 
+/* On the chosen fill a lighter chip would lift the blue behind white text
+   (3.8:1); a darker one keeps the count above 4.5:1 in both skins. */
+.tab:is([aria-current="page"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) .tab__count {
+  background-color: rgba(0, 0, 0, 0.22);
+}
+
 .seg {
   display: inline-flex;
   align-items: center;

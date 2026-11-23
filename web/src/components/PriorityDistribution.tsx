@@ -36,12 +36,12 @@ export function PriorityDistribution({ tasks }: { tasks: Task[] }) {
         title={t("prio.distribution")}
       >
         <span className="flex items-center gap-2">
-          <span aria-hidden="true" className={`text-[#8A8A8A] text-[11px] transition-transform ${collapsed ? "" : "rotate-90"}`}>▶</span>
-          <span className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">
+          <span aria-hidden="true" className={`text-[#6B6B6B] text-[11px] transition-transform ${collapsed ? "" : "rotate-90"}`}>▶</span>
+          <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
             {t("prio.distribution")}
           </span>
         </span>
-        <span className="text-[11px] text-[#8A8A8A]">{total}</span>
+        <span className="text-[11px] text-[#6B6B6B]">{total}</span>
       </button>
       {collapsed && total > 0 && (
         <div className="flex items-center gap-3 mt-2">
@@ -63,7 +63,7 @@ export function PriorityDistribution({ tasks }: { tasks: Task[] }) {
               <span aria-hidden="true" className={`w-2 h-2 rounded-full ${dot}`} />
               {p}
             </span>
-            <span className="w-20 shrink-0 text-[10px] uppercase tracking-wide text-[#8A8A8A]">
+            <span className="w-20 shrink-0 text-[10px] uppercase tracking-wide text-[#6B6B6B]">
               {t(`prio.${p}short`)}
             </span>
             <div className="flex-1 h-3 rounded-full bg-[#F0EDE8] overflow-hidden">

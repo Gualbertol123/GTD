@@ -162,7 +162,7 @@ export function QuickAdd({
         </button>
       ) : (
         // Screenshot mode: the selected owner is still used on submit, just not shown.
-        <span className={`${field} px-4 inline-flex items-center text-[#A8A29E]`} title={t("quick.owner")}>
+        <span className={`${field} px-4 inline-flex items-center text-ink-3`} title={t("quick.owner")}>
           —
         </span>
       )}
@@ -210,7 +210,7 @@ export function QuickAdd({
       {/* Feedback for the last submit: an empty title, or where the task went. */}
       <div aria-live="polite" role="status" className={empty || added ? "" : "!mt-0"}>
         {empty ? (
-          <p id="quick-add-hint" className="px-2 text-[12px] font-semibold text-[#DC2626]">
+          <p id="quick-add-hint" className="px-2 text-[12px] font-semibold text-[#C81E1E]">
             {t("ux.board.titleRequired")}
           </p>
         ) : added ? (
@@ -244,10 +244,10 @@ export function QuickAdd({
       {showNames && pickOpen && (
         <div className="rounded-[12px] border border-[#E8E6E1] bg-[#F5F3EF] p-2.5 space-y-2">
           <div className="flex items-baseline justify-between gap-2 flex-wrap">
-            <span className="font-trajan text-[10px] uppercase tracking-wide text-[#A8A29E]">
+            <span className="font-trajan text-[10px] uppercase tracking-wide text-ink-3">
               {t("assign.title")}
             </span>
-            <span className="text-[10px] text-[#8A8A8A]">
+            <span className="text-[10px] text-[#6B6B6B]">
               {t(multiAssign ? "assign.hintMulti" : "assign.hintSingle")}
             </span>
           </div>
@@ -268,7 +268,7 @@ export function QuickAdd({
             })}
           </div>
           {!multiAssign && (
-            <p className="text-[10px] text-[#DC2626]">{t("assign.migrationNote")}</p>
+            <p className="text-[10px] text-[#C81E1E]">{t("assign.migrationNote")}</p>
           )}
         </div>
       )}

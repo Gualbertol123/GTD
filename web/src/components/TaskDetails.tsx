@@ -293,11 +293,11 @@ export function TaskDetails({
               </span>
             ))}
           </span>
-          <span className={showNames ? "" : "text-[#A8A29E]"}>
+          <span className={showNames ? "" : "text-ink-3"}>
             {showNames ? ownersLabel(task, memberLabel) : "—"}
           </span>
           {showNames && (
-            <span className="text-[9px] text-[#8A8A8A]">{assignOpen ? "▾" : "▸"}</span>
+            <span className="text-[9px] text-[#6B6B6B]">{assignOpen ? "▾" : "▸"}</span>
           )}
         </button>
 
@@ -346,10 +346,10 @@ export function TaskDetails({
           }}
         >
           <div className="flex items-baseline justify-between gap-2 flex-wrap">
-            <span className="font-trajan text-[10px] uppercase tracking-wide text-[#A8A29E]">
+            <span className="font-trajan text-[10px] uppercase tracking-wide text-ink-3">
               {t("assign.title")}
             </span>
-            <span className="text-[10px] text-[#8A8A8A]">
+            <span className="text-[10px] text-[#6B6B6B]">
               {t(multiAssign ? "assign.hintMulti" : "assign.hintSingle")}
             </span>
           </div>
@@ -370,7 +370,7 @@ export function TaskDetails({
             })}
           </div>
           {!multiAssign && (
-            <p className="text-[10px] text-[#DC2626]">{t("assign.migrationNote")}</p>
+            <p className="text-[10px] text-[#C81E1E]">{t("assign.migrationNote")}</p>
           )}
         </div>
       )}
@@ -390,13 +390,13 @@ export function TaskDetails({
                   : p === "P3"
                   ? "bg-[#C9C5BE] text-[#0A1931] border-[#C9C5BE]"
                   : "bg-[#0A1931] text-white border-[#0A1931]"
-                : "bg-white text-[#8A8A8A] border-[#E8E6E1] hover:border-[#C9A96E]"
+                : "bg-white text-[#6B6B6B] border-[#E8E6E1] hover:border-[#C9A96E]"
             }`}
           >
             {p}
           </button>
         ))}
-        <span className="text-[11px] text-[#8A8A8A] ml-1">{t(`prio.${task.priority}short`)}</span>
+        <span className="text-[11px] text-[#6B6B6B] ml-1">{t(`prio.${task.priority}short`)}</span>
       </div>
 
       {task.status === "WAITING" && task.waitingSince && (
@@ -408,7 +408,7 @@ export function TaskDetails({
       {/* Subtasks — styled like a small kanban column */}
       <div className="bg-[#EFECE6] rounded-[12px] border border-[#E3DFD7] p-2.5">
         <div className="flex items-center justify-between mb-2 px-1">
-          <span className="font-trajan text-[10px] uppercase tracking-wide text-[#8A8A8A]">
+          <span className="font-trajan text-[10px] uppercase tracking-wide text-[#6B6B6B]">
             {t("task.subtasks")} {total ? `${done}/${total} · ${pct}%` : ""}
           </span>
         </div>
@@ -434,7 +434,7 @@ export function TaskDetails({
           onDelete={deleteSub}
         />
         <div className="flex items-center gap-1.5 mt-2">
-          <span className="w-5 text-right text-[11px] font-semibold text-[#A8A29E] tabular-nums shrink-0">
+          <span className="w-5 text-right text-[11px] font-semibold text-ink-3 tabular-nums shrink-0">
             {total + 1}.
           </span>
           <input
@@ -451,7 +451,7 @@ export function TaskDetails({
       </div>
 
       <div>
-        <div className="font-trajan text-[10px] uppercase tracking-wide text-[#A8A29E] mb-1">
+        <div className="font-trajan text-[10px] uppercase tracking-wide text-ink-3 mb-1">
           {t("task.description")}
         </div>
         <AutoTextarea
@@ -468,7 +468,7 @@ export function TaskDetails({
       </div>
 
       <div>
-        <div className="font-trajan text-[10px] uppercase tracking-wide text-[#A8A29E] mb-1">
+        <div className="font-trajan text-[10px] uppercase tracking-wide text-ink-3 mb-1">
           {t("task.notes")}
         </div>
         <AutoTextarea
@@ -486,11 +486,11 @@ export function TaskDetails({
 
       {/* File Directory — shared network path with a copy button */}
       <div>
-        <div className="font-trajan text-[10px] uppercase tracking-wide text-[#A8A29E] mb-1">
+        <div className="font-trajan text-[10px] uppercase tracking-wide text-ink-3 mb-1">
           {t("task.fileDir")}
         </div>
         <div className="flex items-center gap-2 bg-[#F5F3EF] border border-[#E8E6E1] rounded-lg pl-2 pr-1 field">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#A8A29E] shrink-0" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink-3 shrink-0" aria-hidden="true">
             <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           </svg>
           <input
@@ -558,7 +558,7 @@ export function TaskDetails({
             }}
             className="flex flex-wrap items-center gap-2 min-w-0 max-w-full text-[13px] bg-[#FEF2F2] border border-[#FECACA] rounded-[18px] pl-3 pr-1 py-1"
           >
-            <span className="min-w-0 flex-1 text-[#DC2626] font-semibold break-words">
+            <span className="min-w-0 flex-1 text-[#C81E1E] font-semibold break-words">
               {total > 0
                 ? t("ux.board.deleteConfirmSubs", { title: task.title, n: total })
                 : t("ux.board.deleteConfirm", { title: task.title })}
@@ -586,7 +586,7 @@ export function TaskDetails({
             ref={delRef}
             type="button"
             onClick={() => setConfirmDel(true)}
-            className="h-8 px-4 rounded-full text-[12px] font-semibold text-[#8A8A8A] border border-[#E8E6E1] hover:text-[#DC2626] hover:border-[#FECACA]"
+            className="h-8 px-4 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1] hover:text-[#C81E1E] hover:border-[#FECACA]"
           >
             {t("task.delete")}
           </button>

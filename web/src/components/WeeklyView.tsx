@@ -185,13 +185,13 @@ export function WeeklyView({ board, send }: Props) {
       >
         <span className="min-w-0">
           <span className="font-medium">{tk.title}</span>
-          <span className="text-[#8A8A8A] text-[11px]">
+          <span className="text-[#6B6B6B] text-[11px]">
             {" "}
             · {ownersLabel(tk, (n) => n)}
           </span>
           {tk.desc && (
             <span
-              className="text-[#8A8A8A] text-[11px] block truncate"
+              className="text-[#6B6B6B] text-[11px] block truncate"
               title={tk.desc}
             >
               {tk.desc}
@@ -200,7 +200,7 @@ export function WeeklyView({ board, send }: Props) {
         </span>
         <span className="shrink-0 flex items-center gap-1.5">
           {total > 0 && (
-            <span className="text-[10px] text-[#8A8A8A] inline-flex items-center gap-0.5">
+            <span className="text-[10px] text-[#6B6B6B] inline-flex items-center gap-0.5">
               <IconCheck size={11} />
               {done}/{total} {t("weekly.subtasksDone")}
             </span>
@@ -209,7 +209,7 @@ export function WeeklyView({ board, send }: Props) {
             {tk.priority}
           </span>
           {day && (
-            <span className="text-[10px] text-[#8A8A8A] tabular-nums w-[44px] text-right">
+            <span className="text-[10px] text-[#6B6B6B] tabular-nums w-[44px] text-right">
               {day}
             </span>
           )}
@@ -238,7 +238,7 @@ export function WeeklyView({ board, send }: Props) {
             }}
             className="flex items-center gap-2 text-[12px]"
           >
-            <span id="weekly-clear-q" className="text-[#DC2626]">
+            <span id="weekly-clear-q" className="text-[#C81E1E]">
               {t("weekly.confirmClearN", { n: itemCount })}
             </span>
             <button
@@ -252,7 +252,7 @@ export function WeeklyView({ board, send }: Props) {
             <button
               type="button"
               onClick={clearAll}
-              className="h-8 px-3 rounded-full font-semibold text-[#DC2626] border border-[#FECACA] bg-[#FEF2F2] hover:border-[#DC2626]"
+              className="h-8 px-3 rounded-full font-semibold text-[#C81E1E] border border-[#FECACA] bg-[#FEF2F2] hover:border-[#DC2626]"
             >
               {t("task.yes")}
             </button>
@@ -264,7 +264,7 @@ export function WeeklyView({ board, send }: Props) {
             onClick={() => setConfirmClear(true)}
             disabled={itemCount === 0}
             title={itemCount === 0 ? t("weekly.clearEmpty") : undefined}
-            className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#8A8A8A] border border-[#E8E6E1] hover:border-[#DC2626] hover:text-[#DC2626] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-[#E8E6E1] disabled:hover:text-[#8A8A8A]"
+            className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1] hover:border-[#DC2626] hover:text-[#C81E1E] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-[#E8E6E1] disabled:hover:text-[#6B6B6B]"
           >
             {t("weekly.clear")}
           </button>
@@ -351,7 +351,7 @@ export function WeeklyView({ board, send }: Props) {
           )}
         </div>
         {recap.length === 0 ? (
-          <div className="text-[12px] text-[#065F46]/70">
+          <div className="text-[12px] text-[#065F46]">
             {t("weekly.noneDone")}
           </div>
         ) : grouping === "owner" ? (
@@ -391,15 +391,15 @@ export function WeeklyView({ board, send }: Props) {
           >
             <IconChevron
               size={13}
-              className={`text-[#8A8A8A] transition-transform ${archOpen ? "rotate-90" : ""}`}
+              className={`text-[#6B6B6B] transition-transform ${archOpen ? "rotate-90" : ""}`}
             />
-            <span className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">
+            <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
               {t("archived.title")}
             </span>
-            <span className="text-[11px] font-semibold text-[#8A8A8A] bg-[#F5F3EF] rounded-full px-2 py-0.5 border border-[#E8E6E1]">
+            <span className="text-[11px] font-semibold text-[#6B6B6B] bg-[#F5F3EF] rounded-full px-2 py-0.5 border border-[#E8E6E1]">
               {archivedDone.length}
             </span>
-            <span className="text-[10px] text-[#A8A29E] ml-1 hidden sm:inline">
+            <span className="text-[10px] text-ink-3 ml-1 hidden sm:inline">
               {t("weekly.archivedHint")}
             </span>
           </button>
@@ -425,7 +425,7 @@ export function WeeklyView({ board, send }: Props) {
                         <span className="font-medium text-[#0A1931]">
                           {tk.title}
                         </span>
-                        <span className="text-[#8A8A8A] text-[11px]">
+                        <span className="text-[#6B6B6B] text-[11px]">
                           {" "}
                           · {who}
                         </span>
@@ -435,7 +435,7 @@ export function WeeklyView({ board, send }: Props) {
                           {tk.priority}
                         </span>
                         {day && (
-                          <span className="text-[10px] text-[#8A8A8A] tabular-nums">
+                          <span className="text-[10px] text-[#6B6B6B] tabular-nums">
                             {day}
                           </span>
                         )}
@@ -503,7 +503,7 @@ export function WeeklyView({ board, send }: Props) {
               type="button"
               onClick={() => setUndo(null)}
               aria-label={t("weekly.dismiss")}
-              className="h-8 w-8 rounded-full flex items-center justify-center text-[#8A8A8A] hover:text-[#0A1931] shrink-0"
+              className="h-8 w-8 rounded-full flex items-center justify-center text-[#6B6B6B] hover:text-[#0A1931] shrink-0"
             >
               <IconClose size={14} />
             </button>
@@ -567,7 +567,7 @@ function WeeklyColumn({
               onClick={() => onRemove(colKey, it, true)}
               aria-label={t("weekly.deleteItem")}
               title={t("weekly.deleteItem")}
-              className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 text-[#DC2626] h-6 w-6 mt-1 rounded-full flex items-center justify-center shrink-0 hover:bg-[#FEF2F2]"
+              className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 text-[#C81E1E] h-6 w-6 mt-1 rounded-full flex items-center justify-center shrink-0 hover:bg-[#FEF2F2]"
             >
               <IconClose size={13} />
             </button>

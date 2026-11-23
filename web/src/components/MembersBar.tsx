@@ -50,7 +50,7 @@ export function MembersBar({ board, send }: Props) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="font-trajan text-[10px] uppercase tracking-widest text-[#8A8A8A] mr-1">
+      <span className="font-trajan text-[10px] uppercase tracking-widest text-[#6B6B6B] mr-1">
         {t("members.team")}
       </span>
       {board.members.map((m) => {
@@ -76,7 +76,7 @@ export function MembersBar({ board, send }: Props) {
             </span>
             {asking ? (
               <>
-                <span className="min-w-0 text-[#DC2626] font-semibold text-[11px]">
+                <span className="min-w-0 text-[#C81E1E] font-semibold text-[11px]">
                   {n > 0
                     ? t("ux.board.removeMember", { name: m, n })
                     : t("ux.board.removeMemberNone", { name: m })}
@@ -105,7 +105,7 @@ export function MembersBar({ board, send }: Props) {
                 <button
                   type="button"
                   onClick={() => setConfirm(m)}
-                  className="shrink-0 w-5 h-5 rounded-full inline-flex items-center justify-center text-[#A8A29E] hover:text-[#DC2626] outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]"
+                  className="shrink-0 w-5 h-5 rounded-full inline-flex items-center justify-center text-ink-3 hover:text-[#C81E1E] outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]"
                   title={t("ux.board.removeMemberLabel", { name: m })}
                   aria-label={t("ux.board.removeMemberLabel", { name: m })}
                 >
@@ -138,7 +138,7 @@ export function MembersBar({ board, send }: Props) {
       ) : (
         <button
           onClick={() => setAdding(true)}
-          className="h-8 px-3 rounded-full border border-dashed border-[#C9A96E] text-[#8B6F3E] text-[12px] font-semibold hover:bg-[#FFFBF2]"
+          className="h-8 px-3 rounded-full border border-dashed border-[#C9A96E] text-[#7A5F30] text-[12px] font-semibold hover:bg-[#FFFBF2]"
         >
           + {t("members.add")}
         </button>

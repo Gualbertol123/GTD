@@ -33,19 +33,19 @@ export function MenuBar() {
   return (
     <div className="bg-[#EFECE6] rounded-[14px] border border-[#E3DFD7] p-3">
       <button onClick={() => setOpen((o) => !o)} className="w-full flex items-center gap-2 text-left">
-        <span className={`text-[#8A8A8A] text-[11px] transition-transform ${open ? "rotate-90" : ""}`}>▶</span>
-        <span className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">{t("menuBar.title")}</span>
-        <span className="text-[11px] font-semibold text-[#8A8A8A] bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
+        <span className={`text-[#6B6B6B] text-[11px] transition-transform ${open ? "rotate-90" : ""}`}>▶</span>
+        <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">{t("menuBar.title")}</span>
+        <span className="text-[11px] font-semibold text-[#6B6B6B] bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
           {days.length}
         </span>
-        <span className="text-[10px] text-[#A8A29E] ml-1 hidden sm:inline truncate">
+        <span className="text-[10px] text-ink-3 ml-1 hidden sm:inline truncate">
           {todayDish ? `${t("menuBar.today")}: ${todayDish}` : t("menuBar.hint")}
         </span>
       </button>
       {open && (
         <div className="mt-3">
           {days.length === 0 ? (
-            <div className="text-[12px] text-[#A8A29E] py-2">{loaded ? t("menuBar.none") : "…"}</div>
+            <div className="text-[12px] text-ink-3 py-2">{loaded ? t("menuBar.none") : "…"}</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
               {days.map((day) => {
@@ -58,7 +58,7 @@ export function MenuBar() {
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-[13px] font-semibold text-[#0A1931]">{weekdayDate(day.date, lang)}</span>
                       {isToday && (
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-[#8B6F3E] bg-[#FBF6EC] rounded-full px-2 py-0.5">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-[#7A5F30] bg-[#FBF6EC] rounded-full px-2 py-0.5">
                           {t("menuBar.today")}
                         </span>
                       )}
@@ -66,7 +66,7 @@ export function MenuBar() {
                     <div className="space-y-2">
                       {day.courses.map((c) => (
                         <div key={c.course}>
-                          <div className="text-[9.5px] font-semibold uppercase tracking-wider text-[#8B6F3E]">
+                          <div className="text-[9.5px] font-semibold uppercase tracking-wider text-[#7A5F30]">
                             {t(`menuBar.course.${c.course}`)}
                           </div>
                           <ul className="mt-0.5 space-y-0.5">
@@ -74,7 +74,7 @@ export function MenuBar() {
                               <li key={i} className="text-[12px] leading-snug text-[#0A1931]">
                                 {dish.name}
                                 {dish.allergens.length > 0 && (
-                                  <span className="ml-1 text-[9.5px] font-semibold text-[#A8A29E]">{dish.allergens.join("-")}</span>
+                                  <span className="ml-1 text-[9.5px] font-semibold text-ink-3">{dish.allergens.join("-")}</span>
                                 )}
                               </li>
                             ))}

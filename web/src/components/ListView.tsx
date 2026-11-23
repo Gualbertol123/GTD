@@ -25,7 +25,7 @@ export function ListView({ tasks, members, send, showNames = true, multiAssign =
 
   if (tasks.length === 0) {
     return (
-      <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-8 text-center text-[13px] text-[#A8A29E]">
+      <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-8 text-center text-[13px] text-ink-3">
         {t("list.empty")}
       </div>
     );
@@ -36,7 +36,7 @@ export function ListView({ tasks, members, send, showNames = true, multiAssign =
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[680px]">
           <thead>
-            <tr className="text-[10px] uppercase tracking-wide text-[#8A8A8A] bg-[#F5F3EF]">
+            <tr className="text-[10px] uppercase tracking-wide text-[#6B6B6B] bg-[#F5F3EF]">
               <th className="font-semibold px-4 py-2.5">{t("list.task")}</th>
               <th className="font-semibold px-3 py-2.5">{t("list.owner")}</th>
               <th className="font-semibold px-3 py-2.5">{t("list.priority")}</th>

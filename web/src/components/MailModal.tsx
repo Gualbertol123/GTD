@@ -198,7 +198,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
             onClick={onClose}
             aria-label={t("ux.report.mailClose")}
             title={t("ux.report.mailClose")}
-            className={`-mr-1.5 -mt-1 h-9 w-9 shrink-0 grid place-items-center rounded-full text-[#8A8A8A] hover:text-[#0A1931] ${ring}`}
+            className={`-mr-1.5 -mt-1 h-9 w-9 shrink-0 grid place-items-center rounded-full text-[#6B6B6B] hover:text-[#0A1931] ${ring}`}
           >
             <svg {...ICON} width={16} height={16}>
               <path d="M6 6l12 12M18 6L6 18" />
@@ -207,7 +207,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
         </div>
         <div className="p-4 space-y-3">
           <label className="flex items-center gap-2">
-            <span className="text-[11px] uppercase tracking-wide text-[#8A8A8A] shrink-0">{t("ux.report.mailTo")}</span>
+            <span className="text-[11px] uppercase tracking-wide text-[#6B6B6B] shrink-0">{t("ux.report.mailTo")}</span>
             <input
               type="email"
               multiple
@@ -221,7 +221,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
           </label>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <span id="mail-body-label" className="text-[11px] uppercase tracking-wide text-[#8A8A8A]">
+              <span id="mail-body-label" className="text-[11px] uppercase tracking-wide text-[#6B6B6B]">
                 {t("ux.report.mailBody")}
               </span>
               {edited && body !== text && (

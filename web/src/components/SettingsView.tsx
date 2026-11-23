@@ -47,7 +47,7 @@ function SaveNote({ status }: { status: SaveStatus }) {
   return (
     <span role="status" aria-live="polite" className="text-[12px]">
       {status === "saved" && <span className="text-[#065F46]">{t("settings.saved")}</span>}
-      {status === "failed" && <span className="text-[#DC2626]">{t("notes.failed")}</span>}
+      {status === "failed" && <span className="text-[#C81E1E]">{t("notes.failed")}</span>}
     </span>
   );
 }
@@ -59,8 +59,8 @@ function ConfirmInline({ text, onYes, onNo }: { text: string; onYes: () => void;
   useEffect(() => yesRef.current?.focus(), []);
   return (
     <span className="inline-flex items-center gap-2 flex-wrap text-[12px]">
-      <span className="text-[#DC2626]">{text}</span>
-      <button ref={yesRef} type="button" onClick={onYes} className="h-8 px-3 rounded-full font-semibold text-[#DC2626] border border-[#FECACA] hover:bg-[#FEF2F2]">
+      <span className="text-[#C81E1E]">{text}</span>
+      <button ref={yesRef} type="button" onClick={onYes} className="h-8 px-3 rounded-full font-semibold text-[#C81E1E] border border-[#FECACA] hover:bg-[#FEF2F2]">
         {t("task.yes")}
       </button>
       <button type="button" onClick={onNo} className="h-8 px-3 rounded-full font-semibold text-[#6B6B6B] border border-[#E8E6E1]">
@@ -70,7 +70,7 @@ function ConfirmInline({ text, onYes, onNo }: { text: string; onYes: () => void;
   );
 }
 
-const capLabel = "text-[11px] uppercase tracking-wide text-[#8A8A8A]";
+const capLabel = "text-[11px] uppercase tracking-wide text-[#6B6B6B]";
 
 export function SettingsView({ board, send }: Props) {
   const { t } = useT();
@@ -111,7 +111,7 @@ export function SettingsView({ board, send }: Props) {
 
       {/* Branding */}
       <section className="bg-white rounded-[14px] border border-[#E8E6E1] p-5 space-y-4">
-        <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#C9A96E]">
+        <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#7A5F30]">
           {t("settings.branding")}
         </h3>
 
@@ -126,7 +126,7 @@ export function SettingsView({ board, send }: Props) {
           </div>
           <div className="min-w-0">
             <div className="text-[12px] font-semibold text-[#0A1931]">{t("settings.logo")}</div>
-            <div className="text-[11px] text-[#8A8A8A]">{t("settings.logoHint", { mb: INPUT_MAX_MB })}</div>
+            <div className="text-[11px] text-[#6B6B6B]">{t("settings.logoHint", { mb: INPUT_MAX_MB })}</div>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <input ref={logoInput} type="file" accept={LOGO_ACCEPT} hidden onChange={(e) => upload(e.target.files?.[0], "logo")} />
               <button onClick={() => logoInput.current?.click()} className={`${smallBtn} bg-[#0A1931] text-[#C9A96E] border-[#0A1931]`}>
@@ -142,7 +142,7 @@ export function SettingsView({ board, send }: Props) {
                   onNo={() => setConfirm(null)}
                 />
               ) : (
-                <button onClick={() => setConfirm("logo")} className={`${smallBtn} bg-white text-[#DC2626] border-[#FECACA]`}>
+                <button onClick={() => setConfirm("logo")} className={`${smallBtn} bg-white text-[#C81E1E] border-[#FECACA]`}>
                   {t("settings.remove")}
                 </button>
               ))}
@@ -157,12 +157,12 @@ export function SettingsView({ board, send }: Props) {
             {board.faviconUrl ? (
               <img src={board.faviconUrl} alt="favicon" className="w-8 h-8 object-contain" />
             ) : (
-              <span className="text-[#A8A29E] text-[10px]">—</span>
+              <span className="text-ink-3 text-[10px]">—</span>
             )}
           </div>
           <div className="min-w-0">
             <div className="text-[12px] font-semibold text-[#0A1931]">{t("settings.favicon")}</div>
-            <div className="text-[11px] text-[#8A8A8A]">{t("settings.faviconHint", { mb: INPUT_MAX_MB })}</div>
+            <div className="text-[11px] text-[#6B6B6B]">{t("settings.faviconHint", { mb: INPUT_MAX_MB })}</div>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <input ref={faviconInput} type="file" accept={FAVICON_ACCEPT} hidden onChange={(e) => upload(e.target.files?.[0], "favicon")} />
               <button onClick={() => faviconInput.current?.click()} className={`${smallBtn} bg-[#0A1931] text-[#C9A96E] border-[#0A1931]`}>
@@ -178,7 +178,7 @@ export function SettingsView({ board, send }: Props) {
                   onNo={() => setConfirm(null)}
                 />
               ) : (
-                <button onClick={() => setConfirm("favicon")} className={`${smallBtn} bg-white text-[#DC2626] border-[#FECACA]`}>
+                <button onClick={() => setConfirm("favicon")} className={`${smallBtn} bg-white text-[#C81E1E] border-[#FECACA]`}>
                   {t("settings.remove")}
                 </button>
               ))}
@@ -187,14 +187,14 @@ export function SettingsView({ board, send }: Props) {
           </div>
         </div>
 
-        {imgErr && <div role="alert" className="text-[11px] text-[#DC2626]">{imgErr}</div>}
+        {imgErr && <div role="alert" className="text-[11px] text-[#C81E1E]">{imgErr}</div>}
       </section>
 
       <SubtitleSection board={board} send={send} input={input} saveBtn={saveBtn} />
 
       {/* Access */}
       <section className="bg-white rounded-[14px] border border-[#E8E6E1] p-5 space-y-3">
-        <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#C9A96E]">{t("settings.access")}</h3>
+        <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#7A5F30]">{t("settings.access")}</h3>
         <TeamPasswordForm input={input} saveBtn={saveBtn} />
         <form
           onSubmit={(e) => {
@@ -242,14 +242,14 @@ export function SettingsView({ board, send }: Props) {
         ) : (
           <button
             onClick={() => setConfirm("logout")}
-            className="h-10 px-4 rounded-full text-[12px] font-semibold text-[#DC2626] border border-[#FECACA] hover:bg-[#FEF2F2]"
+            className="h-10 px-4 rounded-full text-[12px] font-semibold text-[#C81E1E] border border-[#FECACA] hover:bg-[#FEF2F2]"
           >
             {t("settings.logoutNow")}
           </button>
         )}
       </section>
 
-      <p className="text-[11px] text-[#8A8A8A]">{t("settings.migrationNote")}</p>
+      <p className="text-[11px] text-[#6B6B6B]">{t("settings.migrationNote")}</p>
     </div>
   );
 }
@@ -266,7 +266,7 @@ function SubtitleSection({ board, send, input, saveBtn }: { board: Board; send: 
 
   return (
     <section className="bg-white rounded-[14px] border border-[#E8E6E1] p-5">
-      <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#C9A96E] mb-3">
+      <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#7A5F30] mb-3">
         {t("settings.subtitleSection")}
       </h3>
       <form
@@ -336,7 +336,7 @@ function TeamPasswordForm({ input, saveBtn }: { input: string; saveBtn: string }
     setMsg(null);
   };
 
-  const cap = "text-[10px] uppercase tracking-wide text-[#A8A29E]";
+  const cap = "text-[10px] uppercase tracking-wide text-ink-3";
 
   return (
     <form
@@ -370,9 +370,9 @@ function TeamPasswordForm({ input, saveBtn }: { input: string; saveBtn: string }
           </div>
         </div>
       </div>
-      <p className="text-[11px] text-[#A8A29E] mt-1">{t("settings.pwdHint")}</p>
+      <p className="text-[11px] text-ink-3 mt-1">{t("settings.pwdHint")}</p>
       {msg && (
-        <p role={msg.ok ? "status" : "alert"} className={`text-[12px] mt-1 ${msg.ok ? "text-[#065F46]" : "text-[#DC2626]"}`}>
+        <p role={msg.ok ? "status" : "alert"} className={`text-[12px] mt-1 ${msg.ok ? "text-[#065F46]" : "text-[#C81E1E]"}`}>
           {t(msg.key)}
           {msg.detail && <span className="block opacity-70 mt-0.5 text-[11px]">{msg.detail}</span>}
         </p>

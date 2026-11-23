@@ -99,7 +99,7 @@ export function HealthBadge({ health, daysLeft }: { health: Health; daysLeft: nu
   return (
     <Pill color={color}>
       {t(`projects.health.${health}`)}
-      {detail && <span className="font-medium opacity-80">· {detail}</span>}
+      {detail && <span className="font-medium">· {detail}</span>}
     </Pill>
   );
 }

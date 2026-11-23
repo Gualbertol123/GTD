@@ -35,7 +35,7 @@ const WARM_TINT =
 /** Chip colours per tag. V keeps the Classic gold; its glass tint is in glass.css (.tag-v). */
 const TAG_STYLE: Record<Tag, string> = {
   V: "tag-v bg-[#FAF3E6] text-gold-dark border-[#C9A96E]/40", // glass tint: glass.css
-  NPL: "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]",
+  NPL: "bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA]",
   C: "bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]",
 };
 
@@ -123,7 +123,7 @@ function AliasNote({ node, query }: { node: TreeNode; query: string }) {
   const alias = aliasMatch(node, query);
   if (!alias) return null;
   return (
-    <span className="text-[11px] text-[#8A8A8A] italic">
+    <span className="text-[11px] text-[#6B6B6B] italic">
       {t("ux.products.byAlias", { alias })}
     </span>
   );
@@ -258,7 +258,7 @@ function MapArrow({ label }: { label: string }) {
       <span className="text-[#C9A96E] leading-none">
         <ArrowIcon className="rotate-90 md:rotate-0" />
       </span>
-      <span className="text-[10px] text-[#8A8A8A] md:text-center leading-tight">{label}</span>
+      <span className="text-[10px] text-[#6B6B6B] md:text-center leading-tight">{label}</span>
     </div>
   );
 }
@@ -492,7 +492,7 @@ export function ProductTreeView() {
                 <Highlight text={node.label} query={query} />
               </span>
               {node.note && (
-                <span className="text-[11px] text-[#8A8A8A]">
+                <span className="text-[11px] text-[#6B6B6B]">
                   <Highlight text={node.note} query={query} />
                 </span>
               )}
@@ -629,7 +629,7 @@ export function ProductTreeView() {
                 onClick={clearSearch}
                 aria-label={t("ux.products.clearSearch")}
                 title={t("ux.products.clearSearch")}
-                className={`absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-[#8A8A8A] hover:text-[#0A1931] ${focusRing}`}
+                className={`absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-[#6B6B6B] hover:text-[#0A1931] ${focusRing}`}
               >
                 <IconClose size={14} />
               </button>
@@ -726,14 +726,14 @@ export function ProductTreeView() {
         <summary
           className={`list-none [&::-webkit-details-marker]:hidden cursor-pointer select-none flex items-center gap-2 px-4 py-3 min-h-[44px] rounded-[14px] ${focusRing}`}
         >
-          <span className="text-[#8A8A8A]">
+          <span className="text-[#6B6B6B]">
             <Chevron open={howTo} />
           </span>
-          <span className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">
+          <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
             {t("tree.mapTitle")}
           </span>
           {!howTo && (
-            <span className="text-[11px] text-[#8A8A8A] truncate">
+            <span className="text-[11px] text-[#6B6B6B] truncate">
               · {t("ux.products.howToReadHint")}
             </span>
           )}
@@ -743,7 +743,7 @@ export function ProductTreeView() {
 
           {/* Tag legend — what the chips on every product mean */}
           <div>
-            <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">
+            <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
               {t("tree.tagLegend")}
             </h3>
             <dl className="mt-3 space-y-1.5">
@@ -754,7 +754,7 @@ export function ProductTreeView() {
                   </dt>
                   <dd className="text-[#6B6B6B]">
                     {t(`tree.tag${tg}Desc`)}
-                    <span className="text-[#8A8A8A]">
+                    <span className="text-[#6B6B6B]">
                       {" · "}
                       {t("tree.tagCount", { n: GLOBAL_TAG_COUNTS[tg] })}
                     </span>
@@ -810,7 +810,7 @@ export function ProductTreeView() {
                 <Highlight text={root.label} query={query} />
               </span>
               {root.note && (
-                <span className="text-[11px] text-[#8A8A8A]">
+                <span className="text-[11px] text-[#6B6B6B]">
                   <Highlight text={root.note} query={query} />
                 </span>
               )}
@@ -848,7 +848,7 @@ export function ProductTreeView() {
                     rootHit ? WARM_TINT : ""
                   } ${focusRing} focus-visible:ring-inset`}
                 >
-                  <span className="text-[#8A8A8A] w-3 flex items-center">
+                  <span className="text-[#6B6B6B] w-3 flex items-center">
                     <Chevron open={expanded} />
                   </span>
                   {header}
@@ -887,7 +887,7 @@ export function ProductTreeView() {
               <li key={i} className="flex items-baseline gap-2">
                 <span
                   className={`shrink-0 w-4 text-[12px] font-semibold ${
-                    step.op === "=" ? "text-[#065F46]" : "text-[#DC2626]"
+                    step.op === "=" ? "text-[#065F46]" : "text-[#C81E1E]"
                   }`}
                 >
                   {step.op}
@@ -900,7 +900,7 @@ export function ProductTreeView() {
                   {step.label}
                 </span>
                 {(step.noteKey || step.note) && (
-                  <span className="text-[11px] text-[#8A8A8A]">
+                  <span className="text-[11px] text-[#6B6B6B]">
                     ({step.noteKey ? t(step.noteKey) : step.note})
                   </span>
                 )}
@@ -913,7 +913,7 @@ export function ProductTreeView() {
       {/* Abbreviations + what was changed versus the raw sheets */}
       <div className="grid gap-4 md:grid-cols-2">
         <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-4">
-          <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">
+          <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
             {t("tree.glossary")}
           </h3>
           <dl className="mt-3 space-y-1.5">
@@ -926,7 +926,7 @@ export function ProductTreeView() {
           </dl>
         </div>
         <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-4">
-          <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">
+          <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
             {t("tree.changes")}
           </h3>
           <ul className="mt-3 space-y-2">

@@ -81,10 +81,10 @@ function IconClose() {
 function ErrorLine({ err }: { err: ErrLine }) {
   const { t } = useT();
   return (
-    <div role="alert" className="text-[11px] text-[#DC2626]">
+    <div role="alert" className="text-[11px] text-[#C81E1E]">
       {err.text}
       {err.details && (
-        <details className="mt-1 text-[#8A8A8A]">
+        <details className="mt-1 text-[#6B6B6B]">
           <summary className="cursor-pointer select-none">{t("ux.report.errorDetails")}</summary>
           <code className="block mt-1 whitespace-pre-wrap break-all">{err.details}</code>
         </details>
@@ -323,7 +323,7 @@ export function ReportView({ board, send }: Props) {
             )}
           </div>
           {excluded.length === 0 ? (
-            <p className="text-[12px] text-[#8A8A8A]">{t("report.excludedEmpty")}</p>
+            <p className="text-[12px] text-[#6B6B6B]">{t("report.excludedEmpty")}</p>
           ) : (
             <ul className="divide-y divide-[#F0EEE9]">
               {excluded.map((p) => {
@@ -332,7 +332,7 @@ export function ReportView({ board, send }: Props) {
                   <li key={p.id} className="flex items-center gap-3 py-2.5">
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-semibold text-[#0A1931] truncate">{p.name || "—"}</div>
-                      <div className="text-[11px] text-[#8A8A8A] tabular-nums">
+                      <div className="text-[11px] text-[#6B6B6B] tabular-nums">
                         {st.total
                           ? t("ux.report.projectTasks", { d: st.done, n: st.total })
                           : t("ux.report.projectNoTasks")}
@@ -361,16 +361,16 @@ export function ReportView({ board, send }: Props) {
       {/* Controls */}
       <div className="rounded-[14px] border border-[#C9A96E]/40 bg-[#FBF6EC] p-4 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-trajan text-[11px] uppercase tracking-widest text-[#8B6F3E] inline-flex items-center gap-1.5">
+          <span className="font-trajan text-[11px] uppercase tracking-widest text-[#7A5F30] inline-flex items-center gap-1.5">
             <IconDoc />
             {t("report.title")}
           </span>
-          <span className="text-[11px] text-[#8A8A8A]">{t("report.hint")}</span>
+          <span className="text-[11px] text-[#6B6B6B]">{t("report.hint")}</span>
         </div>
 
         <div className="flex items-end gap-2 flex-wrap">
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-[#8A8A8A]">
+            <span className="text-[10px] uppercase tracking-wide text-[#6B6B6B]">
               {t("report.period")}
             </span>
             <select
@@ -394,7 +394,7 @@ export function ReportView({ board, send }: Props) {
           {custom && (
             <>
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wide text-[#8A8A8A]">
+                <span className="text-[10px] uppercase tracking-wide text-[#6B6B6B]">
                   {t("report.from")}
                 </span>
                 <input
@@ -410,7 +410,7 @@ export function ReportView({ board, send }: Props) {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wide text-[#8A8A8A]">
+                <span className="text-[10px] uppercase tracking-wide text-[#6B6B6B]">
                   {t("report.to")}
                 </span>
                 <input
@@ -452,7 +452,7 @@ export function ReportView({ board, send }: Props) {
               type="button"
               onClick={resetReport}
               disabled={busy !== null || !hasDraft}
-              className={`${ghostBtn} text-[#DC2626] border-[#FECACA] hover:border-[#DC2626] inline-flex items-center gap-1.5`}
+              className={`${ghostBtn} text-[#C81E1E] border-[#FECACA] hover:border-[#DC2626] inline-flex items-center gap-1.5`}
               title={t("report.resetHint")}
             >
               <IconUndo />
@@ -471,7 +471,7 @@ export function ReportView({ board, send }: Props) {
         </div>
 
         {badRange && (
-          <div id="report-bad-range" role="alert" className="text-[11px] text-[#DC2626]">
+          <div id="report-bad-range" role="alert" className="text-[11px] text-[#C81E1E]">
             {t("ux.report.badRange")}
           </div>
         )}
@@ -494,7 +494,7 @@ export function ReportView({ board, send }: Props) {
 
       {stage === "editing" && !badRange && (
         <div className="space-y-2">
-          <div className="text-[11px] text-[#8A8A8A] text-center">{t("report.editHint")}</div>
+          <div className="text-[11px] text-[#6B6B6B] text-center">{t("report.editHint")}</div>
           <GlassReport
             key={`${draftKey}#${resetN}`}
             board={board}

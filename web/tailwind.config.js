@@ -16,6 +16,10 @@ export default {
         "warm-2": "#8A8A8A",
         "warm-3": "#6B6B6B",
         danger: "#DC2626",
+        // Tertiary text. A variable, so Glass re-points it (--label-3) and
+        // Classic gets a warm grey that clears 4.5:1 on every cream surface
+        // (#A8A29E, used before, was 2.1-2.5:1).
+        "ink-3": "var(--ink-3)",
       },
       fontFamily: {
         // Display / headings: Cinzel (fallback Trajan family) — used as "font-trajan" in the original

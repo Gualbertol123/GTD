@@ -199,7 +199,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
             className="bg-white rounded-[14px] border border-[#E8E6E1] p-3 outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]"
           >
             <div className="flex items-center justify-between gap-2 mb-3">
-              <div id="cal-details-title" className="font-trajan text-[11px] uppercase text-[#8A8A8A]">
+              <div id="cal-details-title" className="font-trajan text-[11px] uppercase text-[#6B6B6B]">
                 {t("cal.details")}
               </div>
               {selected && (
@@ -208,7 +208,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                   onClick={closeDetails}
                   aria-label={t("cal.closeDetails")}
                   title={t("cal.closeDetails")}
-                  className="h-7 w-7 -my-1 inline-flex items-center justify-center rounded-full text-[#8A8A8A] hover:text-[#0A1931] border border-transparent hover:border-[#E8E6E1]"
+                  className="h-7 w-7 -my-1 inline-flex items-center justify-center rounded-full text-[#6B6B6B] hover:text-[#0A1931] border border-transparent hover:border-[#E8E6E1]"
                 >
                   <IconClose size={16} />
                 </button>
@@ -223,14 +223,14 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                 onDeleted={() => setSelectedId(null)}
               />
             ) : (
-              <div className="text-[12px] text-[#A8A29E] py-4">{t("cal.selectHint")}</div>
+              <div className="text-[12px] text-ink-3 py-4">{t("cal.selectHint")}</div>
             )}
           </div>
 
           {selectedDay && (
             <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-3">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="font-trajan text-[11px] uppercase text-[#8A8A8A]">
+                <div className="font-trajan text-[11px] uppercase text-[#6B6B6B]">
                   {t("cal.dayTasks", { date: longDate(selectedDay) })}
                 </div>
                 <button
@@ -238,7 +238,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                   onClick={() => setSelectedDay(null)}
                   aria-label={t("cal.closeDay")}
                   title={t("cal.closeDay")}
-                  className="h-7 w-7 -my-1 inline-flex items-center justify-center rounded-full text-[#8A8A8A] hover:text-[#0A1931] border border-transparent hover:border-[#E8E6E1]"
+                  className="h-7 w-7 -my-1 inline-flex items-center justify-center rounded-full text-[#6B6B6B] hover:text-[#0A1931] border border-transparent hover:border-[#E8E6E1]"
                 >
                   <IconClose size={16} />
                 </button>
@@ -289,12 +289,12 @@ export function CalendarView({ board, tasks, members, send }: Props) {
               overKey === "nodue" ? "border-[#C9A96E]" : "border-[#E8E6E1]"
             }`}
           >
-            <div className="font-trajan text-[11px] uppercase text-[#8A8A8A] mb-2">{t("cal.noDue")}</div>
+            <div className="font-trajan text-[11px] uppercase text-[#6B6B6B] mb-2">{t("cal.noDue")}</div>
             {draggingDated && (
-              <div className="text-[11px] text-[#8B6F3E] mb-2">{t("cal.dropNoDue")}</div>
+              <div className="text-[11px] text-[#7A5F30] mb-2">{t("cal.dropNoDue")}</div>
             )}
             {withoutDue.length === 0 ? (
-              <div className="text-[11px] text-[#A8A29E]">{t("cal.allHaveDate")}</div>
+              <div className="text-[11px] text-ink-3">{t("cal.allHaveDate")}</div>
             ) : (
               <div className="space-y-1.5">
                 {withoutDue.map((tk) => (
@@ -360,7 +360,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
 
           <div className="grid grid-cols-7 gap-1 mb-1">
             {weekdays.map((w) => (
-              <div key={w} className="text-[10px] uppercase text-[#8A8A8A] text-center font-semibold">{w}</div>
+              <div key={w} className="text-[10px] uppercase text-[#6B6B6B] text-center font-semibold">{w}</div>
             ))}
           </div>
 
@@ -400,7 +400,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                 >
                   <div
                     className={`text-[11px] text-right px-1 ${
-                      isToday ? "font-bold text-[#8B6F3E]" : isPast ? "text-[#8A8A8A] opacity-60" : "text-[#8A8A8A]"
+                      isToday ? "font-bold text-[#7A5F30]" : isPast ? "text-ink-3" : "text-[#0A1931]"
                     }`}
                   >
                     {date.getDate()}
@@ -441,7 +441,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                         onClick={() => setSelectedDay(key)}
                         aria-label={`${t("cal.more", { n: hidden })}, ${longDate(key)}`}
                         className={`w-full text-left rounded px-1 py-0.5 text-[11px] font-semibold hover:bg-[#EFECE6] ${
-                          selectedDay === key ? "text-[#0A1931] underline" : "text-[#8B6F3E]"
+                          selectedDay === key ? "text-[#0A1931] underline" : "text-[#7A5F30]"
                         }`}
                       >
                         {t("cal.more", { n: hidden })}
@@ -490,7 +490,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
               }}
               aria-label={t("cal.dismiss")}
               title={t("cal.dismiss")}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-full text-[#8A8A8A] hover:text-[#0A1931] shrink-0"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-full text-[#6B6B6B] hover:text-[#0A1931] shrink-0"
             >
               <IconClose size={16} />
             </button>

@@ -173,9 +173,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         <h1 className="font-trajan text-[16px] uppercase tracking-widest text-[#0A1931] mt-4">
           {t("auth.title")}
         </h1>
-        <p className="text-[12px] text-[#8A8A8A] mt-2 mb-5">{t("auth.prompt")}</p>
+        <p className="text-[12px] text-[#6B6B6B] mt-2 mb-5">{t("auth.prompt")}</p>
         {!isTeamEmailConfigured ? (
-          <p className="text-[12px] text-[#DC2626]">{t("auth.noEmail")}</p>
+          <p className="text-[12px] text-[#C81E1E]">{t("auth.noEmail")}</p>
         ) : (
           <form
             onSubmit={(e) => {
@@ -211,7 +211,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               className={`w-full h-11 rounded-full bg-[#F5F3EF] border px-4 text-[14px] text-center border-[#E8E6E1] field`}
             />
             {err && (
-              <p id="auth-err" role="alert" className="text-[11px] text-[#DC2626] mt-2">
+              <p id="auth-err" role="alert" className="text-[11px] text-[#C81E1E] mt-2">
                 {t(err.key)}
                 {err.detail && <span className="block opacity-70 mt-0.5">{err.detail}</span>}
               </p>

@@ -190,7 +190,7 @@ export function ProjectsView({ board, send }: Props) {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0 max-w-[640px]">
             <h2 className="font-trajan text-[20px] tracking-wide text-[#0A1931]">{t("projects.title")}</h2>
-            <p className="text-[12px] text-[#8A8A8A] mt-0.5">{t("projects.subtitle")}</p>
+            <p className="text-[12px] text-[#6B6B6B] mt-0.5">{t("projects.subtitle")}</p>
           </div>
           <div className="flex gap-1.5 w-full sm:w-auto">
             <input
@@ -316,7 +316,7 @@ export function ProjectsView({ board, send }: Props) {
 
       {projects.length === 0 ? (
         <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-10 text-center">
-          <div className="flex justify-center text-[#8A8A8A]">
+          <div className="flex justify-center text-[#6B6B6B]">
             <Icon name="folder" size={30} strokeWidth={1.6} />
           </div>
           <div className="text-[14px] text-[#0A1931] font-semibold mt-2">{t("projects.none")}</div>
@@ -346,15 +346,15 @@ export function ProjectsView({ board, send }: Props) {
           {/* Older: a collapsible bar, like the board's Archived one. */}
           <section className="bg-white rounded-[14px] border border-[#E8E6E1]">
             <button onClick={() => setOlderOpen((v) => !v)} aria-expanded={olderOpen} className="w-full flex items-center gap-3 px-4 h-12 text-left">
-              <span className="text-[#8A8A8A]"><Icon name={olderOpen ? "down" : "arrow"} size={12} /></span>
+              <span className="text-[#6B6B6B]"><Icon name={olderOpen ? "down" : "arrow"} size={12} /></span>
               <span className="font-trajan text-[12px] uppercase tracking-widest text-[#0A1931]">{t("projects.older")}</span>
               <Count n={older.length} />
-              <span className="text-[11px] text-[#8A8A8A] truncate">{t("projects.olderHint")}</span>
+              <span className="text-[11px] text-[#6B6B6B] truncate">{t("projects.olderHint")}</span>
             </button>
             {olderOpen && (
               <div className="px-3 pb-3">
                 {older.length === 0 ? (
-                  <div className="text-[12px] text-[#A8A29E] px-1 py-2">—</div>
+                  <div className="text-[12px] text-ink-3 px-1 py-2">—</div>
                 ) : (
                   <div className="divide-y divide-[#F0EDE8]">
                     {older.map((p) => (
@@ -382,7 +382,7 @@ function Count({ n }: { n: number }) {
 
 function Empty({ text }: { text: string }) {
   return (
-    <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-8 text-center text-[13px] text-[#A8A29E]">{text}</div>
+    <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-8 text-center text-[13px] text-ink-3">{text}</div>
   );
 }
 
@@ -392,7 +392,7 @@ function SectionTitle({ title, hint, n, color }: { title: string; hint: string; 
       <span className="w-2 h-2 rounded-full" style={{ background: color }} />
       <h3 className="font-trajan text-[12px] uppercase tracking-widest text-[#0A1931]">{title}</h3>
       <Count n={n} />
-      <span className="text-[11px] text-[#8A8A8A]">{hint}</span>
+      <span className="text-[11px] text-[#6B6B6B]">{hint}</span>
     </div>
   );
 }
@@ -421,7 +421,7 @@ function Figure({
         pressed ? "border-[#C9A96E] ring-1 ring-[#C9A96E]" : "border-[#E8E6E1]"
       }`}
     >
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#8A8A8A]">
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#6B6B6B]">
         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
         <span className="truncate">{label}</span>
       </div>
@@ -504,7 +504,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
             )}
           </div>
           {!done && boardMode(p) !== "all" && (
-            <div className="text-[11px] text-[#8A8A8A] truncate">
+            <div className="text-[11px] text-[#6B6B6B] truncate">
               <Icon name={boardMode(p) === "sequential" ? "arrow" : "ban"} size={11} className="mr-1 -mt-px align-middle" />
               {t(`projects.mode.${boardMode(p)}`)}
               {boardMode(p) === "sequential" && s.current && (
@@ -517,7 +517,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
             </div>
           )}
           {!done && s.nextDue && (
-            <div className="text-[11px] text-[#8A8A8A] truncate">
+            <div className="text-[11px] text-[#6B6B6B] truncate">
               {t("projects.nextDue")}: <span className="text-[#0A1931] font-medium">{s.nextDue.title}</span> · {fmtDay(s.nextDue.dueDate, lang)}
             </div>
           )}
@@ -535,7 +535,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
           {!done && <HealthBadge health={s.health} daysLeft={s.daysLeft} />}
         </div>
         {p.reportHidden && (
-          <div className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-wide">{t("projects.notInReport")}</div>
+          <div className="text-[10px] font-semibold text-ink-3 uppercase tracking-wide">{t("projects.notInReport")}</div>
         )}
       </div>
     </button>
@@ -548,7 +548,7 @@ function OlderRow({ project: p, stats: s, onOpen }: { project: Project; stats: P
     <button onClick={onOpen} className="w-full flex items-center gap-3 px-1 py-2.5 text-left hover:bg-[#F5F3EF] rounded-lg">
       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: projectColor(p) }} />
       <span className="flex-1 min-w-0 truncate text-[13px] font-medium text-[#0A1931]">{p.name || "—"}</span>
-      <span className="hidden sm:inline text-[11px] text-[#8A8A8A] tabular-nums">{t("projects.tasksCount", { n: s.total })}</span>
+      <span className="hidden sm:inline text-[11px] text-[#6B6B6B] tabular-nums">{t("projects.tasksCount", { n: s.total })}</span>
       <Avatars names={p.owners ?? []} size={18} />
       <span className="text-[11px] text-[#065F46] font-semibold whitespace-nowrap">
         ✓ {fmtMs(s.completedAt!, lang, true)}

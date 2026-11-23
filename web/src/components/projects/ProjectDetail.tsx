@@ -36,7 +36,7 @@ interface Props {
   notify?: (text: string, undo: () => void) => void;
 }
 
-const label = "font-trajan text-[10px] uppercase tracking-widest text-[#8A8A8A]";
+const label = "font-trajan text-[10px] uppercase tracking-widest text-[#6B6B6B]";
 const card = "bg-white rounded-[14px] border border-[#E8E6E1]";
 
 export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, prevId, nextId, onOpen, onDeleted, notify }: Props) {
@@ -109,7 +109,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
           onClick={() => save({ type: "projectReportHidden", id: p.id, hidden: !p.reportHidden })}
           title={t("projects.reportHint")}
           className={`h-9 px-3 rounded-full border text-[12px] font-semibold ${
-            p.reportHidden ? "bg-white text-[#8A8A8A] border-[#E8E6E1]" : "bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]"
+            p.reportHidden ? "bg-white text-[#6B6B6B] border-[#E8E6E1]" : "bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]"
           }`}
         >
           {p.reportHidden ? `○ ${t("projects.notInReport")}` : `● ${t("projects.inReport")}`}
@@ -126,7 +126,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
             }}
             className="flex items-center gap-2 text-[12px] bg-[#FEF2F2] border border-[#FECACA] rounded-full pl-3 pr-1 h-9"
           >
-            <span className="text-[#DC2626] font-semibold">{t("projects.confirmDelete")}</span>
+            <span className="text-[#C81E1E] font-semibold">{t("projects.confirmDelete")}</span>
             <button
               onClick={() => {
                 onDeleted?.(p, board.tasks.filter((x) => x.projectId === p.id).map((x) => x.id));
@@ -145,7 +145,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
           <button
             ref={delBtn}
             onClick={() => setConfirmDel(true)}
-            className="h-9 px-3 rounded-full text-[12px] font-semibold text-[#8A8A8A] border border-[#E8E6E1] hover:text-[#DC2626] hover:border-[#FECACA]"
+            className="h-9 px-3 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1] hover:text-[#C81E1E] hover:border-[#FECACA]"
           >
             {t("projects.delete")}
           </button>
@@ -158,7 +158,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
         </div>
       )}
       {err && (
-        <div className="rounded-[12px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-2.5 text-[12px] text-[#DC2626]">
+        <div className="rounded-[12px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-2.5 text-[12px] text-[#C81E1E]">
           {t("projects.saveFailed")} {err}
         </div>
       )}
@@ -239,7 +239,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                       className="bg-transparent outline-none text-[12px] text-[#0A1931]"
                     />
                   </label>
-                  <span className="text-[#A8A29E]">→</span>
+                  <span className="text-ink-3">→</span>
                   <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full px-3 h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B] field">
                     {t("projects.target")}
                     <input
@@ -323,7 +323,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                   <span className="font-semibold tabular-nums text-[#0A1931]">{s.byStatus[st]}</span>
                 </div>
               ))}
-              {s.total === 0 && <div className="text-[#A8A29E]">{t("projects.noTasksYet")}</div>}
+              {s.total === 0 && <div className="text-ink-3">{t("projects.noTasksYet")}</div>}
               {(p.owners ?? []).length > 0 && (
                 <div className="flex items-center justify-between gap-2 pt-1.5">
                   <span>{t("projects.leads")}</span>
@@ -367,7 +367,7 @@ function Schedule({ project: p, stats: s, color }: { project: Project; stats: Pr
   const elapsed = pos(now);
   return (
     <div className="px-4 sm:px-5 pb-4">
-      <div className="flex items-center justify-between text-[10px] font-semibold text-[#8A8A8A] mb-1 gap-2">
+      <div className="flex items-center justify-between text-[10px] font-semibold text-[#6B6B6B] mb-1 gap-2">
         <span>{fmtDay(p.startDate, lang, true)}</span>
         <span className="text-center">
           {t("projects.timeUsed", { n: Math.round(elapsed) })} · {t("projects.workDone", { n: Math.round(s.share * 100) })}
@@ -454,11 +454,11 @@ function LegacyChecklist({
   };
   return (
     <div className="rounded-[14px] border border-dashed border-[#E3DFD7] bg-[#FAF9F6] p-4 space-y-2">
-      <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">{t("projects.legacy.title")}</h3>
-      <p className="text-[11px] text-[#8A8A8A]">{t("projects.legacy.hint")}</p>
+      <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">{t("projects.legacy.title")}</h3>
+      <p className="text-[11px] text-[#6B6B6B]">{t("projects.legacy.hint")}</p>
       <ul className="space-y-1">
         {p.items.map((it) => (
-          <li key={it.id} className={`text-[12px] flex gap-1.5 ${it.done ? "line-through text-[#A8A29E]" : "text-[#0A1931]"}`}>
+          <li key={it.id} className={`text-[12px] flex gap-1.5 ${it.done ? "line-through text-ink-3" : "text-[#0A1931]"}`}>
             <span>{it.done ? "☑" : "☐"}</span>
             <span className="break-words min-w-0">{it.text}</span>
           </li>

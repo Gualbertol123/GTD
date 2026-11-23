@@ -133,7 +133,7 @@ export function TaskCard({
           <span aria-hidden="true" className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${PRIORITY_DOT[task.priority]}`} />
           <span className="sr-only">{t("ux.board.priority", { p: priorityLabel(t, task.priority) })}:</span>
           {open ? (
-            <span className="flex-1 min-w-0 text-[10px] font-semibold uppercase tracking-widest text-[#A8A29E] mt-0.5">
+            <span className="flex-1 min-w-0 text-[10px] font-semibold uppercase tracking-widest text-ink-3 mt-0.5">
               <span aria-hidden="true">▾ </span>
               {t("task.collapse")}
             </span>
@@ -171,7 +171,7 @@ export function TaskCard({
             <span
               className={`text-[10px] px-2 py-0.5 rounded-full border ${
                 until !== null && until < 0
-                  ? "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]"
+                  ? "bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA]"
                   : until !== null && until <= 2
                   ? "bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]"
                   : "bg-[#F5F3EF] text-[#6B6B6B] border-[#E8E6E1]"
@@ -197,7 +197,7 @@ export function TaskCard({
               title={project.name}
             >
               ◆ <span className="truncate">{project.name}</span>
-              {step && <span className="shrink-0 opacity-80">· {t("projects.step.of", { n: step.n, total: step.total })}</span>}
+              {step && <span className="shrink-0">· {t("projects.step.of", { n: step.n, total: step.total })}</span>}
             </span>
           )}
         </div>

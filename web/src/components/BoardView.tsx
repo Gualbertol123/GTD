@@ -239,7 +239,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-3">
-        <div className="font-trajan text-[10px] uppercase tracking-widest text-[#8A8A8A] mb-2 flex items-center gap-1.5">
+        <div className="font-trajan text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-2 flex items-center gap-1.5">
           <span>⌕</span> {t("filters.section")}
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -263,7 +263,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
           </div>
 
           <div className="relative flex-1 min-w-[160px]">
-            <span aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">⌕</span>
+            <span aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-[13px]">⌕</span>
             <input
               value={filters.search}
               onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
@@ -290,7 +290,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
             aria-pressed={filters.focusP1}
             onClick={() => setFilters((f) => ({ ...f, focusP1: !f.focusP1 }))}
             className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors ${
-              filters.focusP1 ? "bg-[#DC2626] text-white border-[#DC2626]" : "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA] hover:border-[#DC2626]"
+              filters.focusP1 ? "bg-[#DC2626] text-white border-[#DC2626]" : "bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA] hover:border-[#DC2626]"
             }`}
           >
             {t("filters.focusP1")}
@@ -299,7 +299,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
             <button
               type="button"
               onClick={resetFilters}
-              className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#8A8A8A] border border-[#E8E6E1] hover:border-[#C9A96E]"
+              className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1] hover:border-[#C9A96E]"
             >
               {t("ux.board.resetFilters")}
             </button>
@@ -355,7 +355,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
 
         {editorOpen && (
           <div id="board-columns-panel" className="mt-3 pt-3 border-t border-[#E8E6E1]">
-            <div className="text-[10px] uppercase tracking-widest text-[#8A8A8A] mb-2">{t("view.columnsHint")}</div>
+            <div className="text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-2">{t("view.columnsHint")}</div>
             <div role="group" aria-label={t("ux.board.columnsPanel")} className="flex flex-wrap gap-2">
               {STATUS_ORDER.map((s) => {
                 const shown = !hidden.has(s);
@@ -366,7 +366,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                     aria-pressed={shown}
                     onClick={() => toggleHidden(s)}
                     className={`h-8 px-3 rounded-full text-[12px] font-semibold border inline-flex items-center gap-1.5 transition-colors ${
-                      shown ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]" : "bg-white text-[#A8A29E] border-[#E8E6E1] line-through"
+                      shown ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]" : "bg-white text-ink-3 border-[#E8E6E1] line-through"
                     }`}
                   >
                     <span aria-hidden="true">{shown ? "◉" : "◯"}</span>
@@ -380,8 +380,8 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
 
         {editLayout && view === "board" && (
           <div className="mt-3 pt-3 border-t border-[#E8E6E1] flex items-center justify-between gap-2 flex-wrap">
-            <span className="text-[11px] text-[#8B6F3E]">{t("view.editHint")}</span>
-            <button onClick={resetWidths} className="h-8 px-3 rounded-full text-[11px] font-semibold bg-white text-[#8A8A8A] border border-[#E8E6E1] hover:border-[#C9A96E]">
+            <span className="text-[11px] text-[#7A5F30]">{t("view.editHint")}</span>
+            <button onClick={resetWidths} className="h-8 px-3 rounded-full text-[11px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1] hover:border-[#C9A96E]">
               {t("view.resetWidths")}
             </button>
           </div>
@@ -397,7 +397,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
 
       {/* New-task row — visually distinct from the search/filter row above */}
       <div className="rounded-[14px] border border-[#E8E6E1] bg-white p-3">
-        <div className="font-trajan text-[10px] uppercase tracking-widest text-[#8B6F3E] mb-2 flex items-center gap-1.5">
+        <div className="font-trajan text-[10px] uppercase tracking-widest text-[#7A5F30] mb-2 flex items-center gap-1.5">
           <span>＋</span> {t("quick.section")}
         </div>
         <QuickAdd
@@ -482,9 +482,9 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                       <div className="font-trajan text-[12px] uppercase tracking-wide text-[#0A1931]">
                         {statusLabel(lang, status)}
                       </div>
-                      <div className="text-[10px] text-[#8A8A8A] truncate">{t(`status.${status}.help`)}</div>
+                      <div className="text-[10px] text-[#6B6B6B] truncate">{t(`status.${status}.help`)}</div>
                     </div>
-                    <span className="shrink-0 text-[11px] font-semibold text-[#8A8A8A] bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
+                    <span className="shrink-0 text-[11px] font-semibold text-[#6B6B6B] bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
                       {colTasks.length}
                     </span>
                   </div>
@@ -514,7 +514,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                       />
                     ))}
                     {colTasks.length === 0 && (
-                      <div className="text-[11px] text-[#A8A29E] text-center py-6">
+                      <div className="text-[11px] text-ink-3 text-center py-6">
                         {status === "DONE" ? t("col.emptyDone") : t("col.empty")}
                       </div>
                     )}
@@ -545,19 +545,19 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
               onClick={() => setDoneOpen((o) => !o)}
               className="w-full flex items-center gap-2 text-left"
             >
-              <span aria-hidden="true" className={`text-[#8A8A8A] text-[11px] transition-transform ${doneOpen ? "rotate-90" : ""}`}>▶</span>
-              <span className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">
+              <span aria-hidden="true" className={`text-[#6B6B6B] text-[11px] transition-transform ${doneOpen ? "rotate-90" : ""}`}>▶</span>
+              <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
                 {t("doneBar.title")}
               </span>
-              <span className="text-[11px] font-semibold text-[#8A8A8A] bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
+              <span className="text-[11px] font-semibold text-[#6B6B6B] bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
                 {doneWeekAll.length}
               </span>
-              <span className="text-[10px] text-[#A8A29E] ml-1 hidden sm:inline">{t("doneBar.hint")}</span>
+              <span className="text-[10px] text-ink-3 ml-1 hidden sm:inline">{t("doneBar.hint")}</span>
             </button>
             {doneOpen && (
               <div id="board-done-panel" className="mt-3 space-y-3">
                 <div className="relative max-w-[320px]">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">⌕</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-[13px]">⌕</span>
                   <input
                     value={doneQuery}
                     onChange={(e) => setDoneQuery(e.target.value)}
@@ -567,7 +567,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                   />
                 </div>
                 {doneShown.length === 0 ? (
-                  <div className="text-[12px] text-[#A8A29E] py-2">{t("doneBar.none")}</div>
+                  <div className="text-[12px] text-ink-3 py-2">{t("doneBar.none")}</div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                     {doneShown.map((tk) => (
@@ -608,19 +608,19 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
               onClick={() => setArchOpen((o) => !o)}
               className="w-full flex items-center gap-2 text-left"
             >
-              <span aria-hidden="true" className={`text-[#8A8A8A] text-[11px] transition-transform ${archOpen ? "rotate-90" : ""}`}>▶</span>
-              <span className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">
+              <span aria-hidden="true" className={`text-[#6B6B6B] text-[11px] transition-transform ${archOpen ? "rotate-90" : ""}`}>▶</span>
+              <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
                 {t("archived.title")}
               </span>
-              <span className="text-[11px] font-semibold text-[#8A8A8A] bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
+              <span className="text-[11px] font-semibold text-[#6B6B6B] bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
                 {archivedAll.length}
               </span>
-              <span className="text-[10px] text-[#A8A29E] ml-1 hidden sm:inline">{t("archived.hint")}</span>
+              <span className="text-[10px] text-ink-3 ml-1 hidden sm:inline">{t("archived.hint")}</span>
             </button>
             {archOpen && (
               <div id="board-archive-panel" className="mt-3 space-y-3">
                 <div className="relative max-w-[320px]">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E] text-[13px]">⌕</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-[13px]">⌕</span>
                   <input
                     value={archQuery}
                     onChange={(e) => setArchQuery(e.target.value)}
@@ -630,7 +630,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                   />
                 </div>
                 {archivedShown.length === 0 ? (
-                  <div className="text-[12px] text-[#A8A29E] py-2">{t("archived.none")}</div>
+                  <div className="text-[12px] text-ink-3 py-2">{t("archived.none")}</div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                     {archivedShown.map((tk) => (

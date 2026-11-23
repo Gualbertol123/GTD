@@ -120,7 +120,7 @@ export function ProjectTasks({
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
         <h3 className="font-trajan text-[13px] uppercase tracking-widest text-[#0A1931]">{t("projects.tasks")}</h3>
-        <span className="text-[12px] text-[#8A8A8A] tabular-nums">
+        <span className="text-[12px] text-[#6B6B6B] tabular-nums">
           {s.done}/{s.total}
         </span>
         <span className="flex-1" />
@@ -161,7 +161,7 @@ export function ProjectTasks({
       )}
 
       {!v2 ? (
-        <div className="text-[12px] text-[#A8A29E]">{t("projects.tasks.needsMigration")}</div>
+        <div className="text-[12px] text-ink-3">{t("projects.tasks.needsMigration")}</div>
       ) : (
         <>
           {/* New task */}
@@ -273,9 +273,9 @@ export function ProjectTasks({
       )}
 
       {s.total === 0 ? (
-        v2 && <div className="text-[12px] text-[#A8A29E] py-3 text-center">{t("projects.tasks.none")}</div>
+        v2 && <div className="text-[12px] text-ink-3 py-3 text-center">{t("projects.tasks.none")}</div>
       ) : filtered.length === 0 ? (
-        <div className="text-[12px] text-[#A8A29E] py-3 text-center">{t("projects.tasks.noneFiltered")}</div>
+        <div className="text-[12px] text-ink-3 py-3 text-center">{t("projects.tasks.noneFiltered")}</div>
       ) : view === "list" && sequential ? (
         <div className="space-y-1.5">
           {filtered.map((task) => {
@@ -311,7 +311,7 @@ export function ProjectTasks({
                     badge={
                       <span
                         className={`text-[10px] font-bold uppercase tracking-wide ${
-                          isNow ? "text-[#007AFF]" : done ? "text-[#34C759]" : "text-[#A8A29E]"
+                          isNow ? "text-[#007AFF]" : done ? "text-[#34C759]" : "text-ink-3"
                         }`}
                       >
                         {isNow ? t("projects.step.now") : done ? t("projects.step.done") : t("projects.step.waiting")}
@@ -354,8 +354,8 @@ export function ProjectTasks({
               <div key={st} className="space-y-1.5">
                 <div className="flex items-center gap-1.5 px-0.5">
                   <span className="w-2 h-2 rounded-full" style={{ background: TASK_STATUS_COLOR[st] }} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#8A8A8A]">{statusLabel(lang, st)}</span>
-                  <span className="text-[10px] font-bold text-[#A8A29E]">{group.length}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B]">{statusLabel(lang, st)}</span>
+                  <span className="text-[10px] font-bold text-ink-3">{group.length}</span>
                 </div>
                 {group.map((task) => (
                   <TaskRow
@@ -388,7 +388,7 @@ function DueChip({ task }: { task: Task }) {
   // due-chip--late / --soon are hooks for the skins (glass.css).
   const cls =
     open && left !== null && left < 0
-      ? "due-chip--late bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]"
+      ? "due-chip--late bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA]"
       : open && left !== null && left <= 2
         ? "due-chip--soon bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]"
         : "bg-[#F5F3EF] text-[#6B6B6B] border-[#E8E6E1]";
@@ -405,7 +405,7 @@ function TaskMeta({ task }: { task: Task }) {
   const subs = task.subtasks.length;
   const subsDone = task.subtasks.filter((x) => x.done).length;
   return (
-    <span className="flex items-center gap-1.5 flex-wrap text-[10px] text-[#8A8A8A]">
+    <span className="flex items-center gap-1.5 flex-wrap text-[10px] text-[#6B6B6B]">
       <Avatars names={taskOwners(task).filter((n) => n !== UNASSIGNED)} size={16} />
       <DueChip task={task} />
       {subs > 0 && (
@@ -471,7 +471,7 @@ function TaskRow({
           {badge && <span className="block">{badge}</span>}
           <span
             className={`block text-[13px] leading-snug break-words [overflow-wrap:anywhere] ${
-              done ? "line-through text-[#A8A29E]" : "text-[#0A1931] font-medium"
+              done ? "line-through text-ink-3" : "text-[#0A1931] font-medium"
             }`}
           >
             {task.title}
@@ -496,7 +496,7 @@ function TaskRow({
           onClick={onUnlink}
           title={t("projects.tasks.unlink")}
           aria-label={t("projects.tasks.unlink")}
-          className="shrink-0 w-7 h-7 rounded-full inline-flex items-center justify-center text-[#8A8A8A] hover:text-[#DC2626] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+          className="shrink-0 w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:text-[#C81E1E] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
         >
           <Icon name="x" size={13} />
         </button>
@@ -581,7 +581,7 @@ function MiniBoard({
                 <div className="flex items-center gap-1.5 px-0.5">
                   <span className="w-2 h-2 rounded-full" style={{ background: TASK_STATUS_COLOR[st] }} />
                   <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B] truncate">{statusLabel(lang, st)}</span>
-                  <span className="text-[10px] font-bold text-[#A8A29E]">{col.length}</span>
+                  <span className="text-[10px] font-bold text-ink-3">{col.length}</span>
                 </div>
                 {col.map((task) => (
                   <div
@@ -615,7 +615,7 @@ function MiniBoard({
                       <span className={`w-2 h-2 mt-1 shrink-0 rounded-full ${PRIORITY_DOT[task.priority]}`} />
                       <span
                         className={`flex-1 min-w-0 text-[12px] leading-snug break-words [overflow-wrap:anywhere] ${
-                          task.status === "DONE" ? "line-through text-[#A8A29E]" : "text-[#0A1931] font-medium"
+                          task.status === "DONE" ? "line-through text-ink-3" : "text-[#0A1931] font-medium"
                         }`}
                       >
                         {task.title}
@@ -627,7 +627,7 @@ function MiniBoard({
                         }}
                         title={t("projects.tasks.unlink")}
                         aria-label={t("projects.tasks.unlink")}
-                        className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-full inline-flex items-center justify-center text-[#8A8A8A] hover:text-[#DC2626] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+                        className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:text-[#C81E1E] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
                       >
                         <Icon name="x" size={12} />
                       </button>
@@ -663,7 +663,7 @@ function MiniBoard({
           className="rounded-[12px] border border-[#C9A96E] bg-white outline-none scroll-mb-4"
         >
           <div className="flex items-center gap-2 px-2.5 pt-2">
-            <span className="flex-1 text-[11px] font-bold uppercase tracking-widest text-[#8A8A8A]">{statusLabel(lang, opened.status)}</span>
+            <span className="flex-1 text-[11px] font-bold uppercase tracking-widest text-[#6B6B6B]">{statusLabel(lang, opened.status)}</span>
             <button
               onClick={() => closeEditor(opened.id)}
               aria-label={t("common.close")}
@@ -689,7 +689,7 @@ function BoardModePicker({ project: p, available, save }: { project: Project; av
   return (
     <div className="rounded-[12px] border border-[#E8E6E1] bg-[#F5F3EF] px-3 py-2 space-y-1.5">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="font-trajan text-[10px] uppercase tracking-widest text-[#8A8A8A]">{t("projects.board.label")}</span>
+        <span className="font-trajan text-[10px] uppercase tracking-widest text-[#6B6B6B]">{t("projects.board.label")}</span>
         <div className="seg" role="group" aria-label={t("projects.board.label")}>
           {MODES.map((m) => (
             <button
@@ -704,7 +704,7 @@ function BoardModePicker({ project: p, available, save }: { project: Project; av
           ))}
         </div>
       </div>
-      <div className="text-[11px] text-[#8A8A8A]">{available ? t(`projects.board.hint.${mode}`) : t("projects.board.needsMigration")}</div>
+      <div className="text-[11px] text-[#6B6B6B]">{available ? t(`projects.board.hint.${mode}`) : t("projects.board.needsMigration")}</div>
     </div>
   );
 }

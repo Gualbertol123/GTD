@@ -72,14 +72,14 @@ export function PersonalNotes({ board, me, send }: Props) {
           </svg>
           {t("notes.title")}
         </h4>
-        <span className="text-[11px] text-[#8A8A8A]">{t("notes.privacy")}</span>
+        <span className="text-[11px] text-[#6B6B6B]">{t("notes.privacy")}</span>
       </div>
 
       {unavailable && (
         <div className="rounded-[12px] border border-[#FECACA] bg-[#FEF2F2] p-3 space-y-1">
-          <p className="text-[12px] font-semibold text-[#DC2626]">{t("notes.unavailable")}</p>
+          <p className="text-[12px] font-semibold text-[#C81E1E]">{t("notes.unavailable")}</p>
           <p className="text-[11px] text-[#6B6B6B]">{t("notes.migrationNote")}</p>
-          <p className="text-[10px] text-[#A8A29E] break-words">{unavailable}</p>
+          <p className="text-[10px] text-ink-3 break-words">{unavailable}</p>
         </div>
       )}
 
@@ -99,8 +99,8 @@ export function PersonalNotes({ board, me, send }: Props) {
           >
             {t("notes.add")}
           </button>
-          {failed && <span className="text-[12px] text-[#DC2626]">{t("notes.failed")}</span>}
-          <span className="text-[11px] text-[#A8A29E] ml-auto">
+          {failed && <span className="text-[12px] text-[#C81E1E]">{t("notes.failed")}</span>}
+          <span className="text-[11px] text-ink-3 ml-auto">
             {mine.length === 1 ? t("notes.count1") : t("notes.count", { n: mine.length })}
           </span>
         </div>
@@ -108,7 +108,7 @@ export function PersonalNotes({ board, me, send }: Props) {
 
       {mine.length === 0 ? (
         !unavailable && (
-          <p className="text-[12px] text-[#A8A29E] text-center py-4">{t("notes.none")}</p>
+          <p className="text-[12px] text-ink-3 text-center py-4">{t("notes.none")}</p>
         )
       ) : (
         <div className="space-y-2">
@@ -137,7 +137,7 @@ export function PersonalNotes({ board, me, send }: Props) {
                     <button
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => setEditing(null)}
-                      className="text-[11px] text-[#8A8A8A]"
+                      className="text-[11px] text-[#6B6B6B]"
                     >
                       {t("notes.cancel")}
                     </button>
@@ -149,33 +149,33 @@ export function PersonalNotes({ board, me, send }: Props) {
                     {note.body}
                   </div>
                   <div className="mt-2 flex items-center gap-3 flex-wrap">
-                    <span className="text-[10px] text-[#A8A29E]">{stamp(note)}</span>
+                    <span className="text-[10px] text-ink-3">{stamp(note)}</span>
                     <button
                       onClick={() => {
                         setEditing(note.id);
                         setEditBody(note.body);
                       }}
-                      className="text-[11px] text-[#8A8A8A] hover:text-[#0A1931] ml-auto"
+                      className="text-[11px] text-[#6B6B6B] hover:text-[#0A1931] ml-auto"
                     >
                       {t("notes.edit")}
                     </button>
                     {confirmId === note.id ? (
                       <span className="flex items-center gap-2 text-[11px]">
-                        <span className="text-[#DC2626]">{t("notes.confirmDelete")}</span>
+                        <span className="text-[#C81E1E]">{t("notes.confirmDelete")}</span>
                         <button
                           onClick={() => remove(note.id)}
-                          className="font-semibold text-[#DC2626]"
+                          className="font-semibold text-[#C81E1E]"
                         >
                           {t("task.yes")}
                         </button>
-                        <button onClick={() => setConfirmId(null)} className="text-[#8A8A8A]">
+                        <button onClick={() => setConfirmId(null)} className="text-[#6B6B6B]">
                           {t("task.no")}
                         </button>
                       </span>
                     ) : (
                       <button
                         onClick={() => setConfirmId(note.id)}
-                        className="text-[11px] text-[#8A8A8A] hover:text-[#DC2626]"
+                        className="text-[11px] text-[#6B6B6B] hover:text-[#C81E1E]"
                       >
                         {t("notes.delete")}
                       </button>

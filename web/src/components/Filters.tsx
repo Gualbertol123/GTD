@@ -26,7 +26,7 @@ export function Filters({ filters, setFilters, members }: Props) {
 
   return (
     <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-3 flex flex-wrap items-center gap-2">
-      <span className="font-trajan text-[10px] uppercase tracking-widest text-[#8A8A8A] mr-1">
+      <span className="font-trajan text-[10px] uppercase tracking-widest text-[#6B6B6B] mr-1">
         {t("filters.title")}
       </span>
       <input
@@ -39,6 +39,7 @@ export function Filters({ filters, setFilters, members }: Props) {
       <select
         value={filters.owner}
         onChange={(e) => setFilters((f) => ({ ...f, owner: e.target.value }))}
+        aria-label={t("quick.owner")}
         className={`${control} px-3`}
       >
         <option value="all">{t("filters.allMembers")}</option>
@@ -50,6 +51,7 @@ export function Filters({ filters, setFilters, members }: Props) {
       <select
         value={filters.priority}
         onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value }))}
+        aria-label={t("quick.priority")}
         className={`${control} px-3`}
       >
         <option value="all">{t("filters.allPriorities")}</option>
@@ -64,7 +66,7 @@ export function Filters({ filters, setFilters, members }: Props) {
         className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors ${
           filters.focusP1
             ? "bg-[#DC2626] text-white border-[#DC2626]"
-            : "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA] hover:border-[#DC2626]"
+            : "bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA] hover:border-[#DC2626]"
         }`}
       >
         {t("filters.focusP1")}
@@ -72,7 +74,7 @@ export function Filters({ filters, setFilters, members }: Props) {
       <button
         type="button"
         onClick={reset}
-        className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#8A8A8A] border border-[#E8E6E1] hover:border-[#C9A96E]"
+        className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1] hover:border-[#C9A96E]"
       >
         {t("ux.board.resetFilters")}
       </button>

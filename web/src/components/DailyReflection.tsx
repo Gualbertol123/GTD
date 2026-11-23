@@ -128,7 +128,7 @@ function dayLabel(iso: string, lang: Lang, t: (k: string, v?: Record<string, str
 
 const field =
   "w-full rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] p-2 text-[12px] field resize-none";
-const label = "font-trajan text-[10px] uppercase tracking-wide text-[#A8A29E] mb-1 block";
+const label = "font-trajan text-[10px] uppercase tracking-wide text-ink-3 mb-1 block";
 
 type Pane = "diary" | "notes";
 
@@ -155,7 +155,7 @@ function RememberSelect({
 }) {
   const { t } = useT();
   return (
-    <label className="inline-flex items-center gap-2 flex-wrap text-[11px] text-[#8A8A8A]">
+    <label className="inline-flex items-center gap-2 flex-wrap text-[11px] text-[#6B6B6B]">
       {t("reflAuth.remember")}
       <select
         value={value === null ? "" : String(value)}
@@ -208,7 +208,7 @@ export function DailyReflection({ board, members, send }: Props) {
   return (
     <div className="space-y-4" data-t={tick}>
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h3 className="font-trajan text-[12px] uppercase tracking-widest text-[#C9A96E]">
+        <h3 className="font-trajan text-[12px] uppercase tracking-widest text-[#7A5F30]">
           {t("reflAuth.title")} · {me}
         </h3>
         <button
@@ -216,7 +216,7 @@ export function DailyReflection({ board, members, send }: Props) {
             forgetAuth(me);
             bump();
           }}
-          className="h-8 px-4 rounded-full text-[12px] font-semibold text-[#8A8A8A] border border-[#E8E6E1] hover:border-[#DC2626] hover:text-[#DC2626]"
+          className="h-8 px-4 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1] hover:border-[#DC2626] hover:text-[#C81E1E]"
         >
           {t("reflAuth.logout")}
         </button>
@@ -299,7 +299,7 @@ function ReflectionLogin({
       <h3 className="font-trajan text-[14px] uppercase tracking-widest text-[#0A1931] mt-4 text-center">
         {t("reflAuth.title")}
       </h3>
-      <p className="text-[12px] text-[#8A8A8A] mt-2 mb-4 text-center">{t("reflAuth.prompt")}</p>
+      <p className="text-[12px] text-[#6B6B6B] mt-2 mb-4 text-center">{t("reflAuth.prompt")}</p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -308,7 +308,7 @@ function ReflectionLogin({
       >
       <div className="space-y-2">
         <label className="block">
-          <span className="text-[11px] uppercase tracking-wide text-[#8A8A8A]">{t("reflAuth.user")}</span>
+          <span className="text-[11px] uppercase tracking-wide text-[#6B6B6B]">{t("reflAuth.user")}</span>
           <select
             value={user}
             onChange={(e) => {
@@ -323,7 +323,7 @@ function ReflectionLogin({
           </select>
         </label>
         <label className="block">
-          <span className="text-[11px] uppercase tracking-wide text-[#8A8A8A]">{t("reflAuth.password")}</span>
+          <span className="text-[11px] uppercase tracking-wide text-[#6B6B6B]">{t("reflAuth.password")}</span>
           <input
             type="password"
             value={pwd}
@@ -337,7 +337,7 @@ function ReflectionLogin({
           />
         </label>
         {err && (
-          <p role="alert" className="text-[11px] text-[#DC2626]">
+          <p role="alert" className="text-[11px] text-[#C81E1E]">
             {t(err.key)}
             {err.detail && <span className="block opacity-70 mt-0.5">{err.detail}</span>}
           </p>
@@ -354,7 +354,7 @@ function ReflectionLogin({
         {busy ? t("auth.checking") : t("reflAuth.enter")}
       </button>
       </form>
-      <p className="text-[11px] text-[#A8A29E] mt-3 text-center">{t("reflAuth.hint")}</p>
+      <p className="text-[11px] text-ink-3 mt-3 text-center">{t("reflAuth.hint")}</p>
     </div>
   );
 }
@@ -404,7 +404,7 @@ function AccountSection({ me, onChanged }: { me: string; onChanged: () => void }
 
   const field =
     "w-full h-9 rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[13px] field";
-  const cap = "text-[10px] uppercase tracking-wide text-[#A8A29E]";
+  const cap = "text-[10px] uppercase tracking-wide text-ink-3";
   const until =
     exp === "never"
       ? t("ux.shell.rememberForever")
@@ -417,11 +417,11 @@ function AccountSection({ me, onChanged }: { me: string; onChanged: () => void }
   return (
     <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-4 space-y-3">
       {initial && (
-        <div role="alert" className="rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[12px] font-semibold text-[#DC2626]">
+        <div role="alert" className="rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[12px] font-semibold text-[#C81E1E]">
           {t("ux.shell.changeInitial")}
         </div>
       )}
-      <h4 id="refl-account-title" className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">
+      <h4 id="refl-account-title" className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
         {t("reflAuth.account")}
       </h4>
       <form
@@ -468,9 +468,9 @@ function AccountSection({ me, onChanged }: { me: string; onChanged: () => void }
           {busy ? "…" : t("settings.save")}
         </button>
       </form>
-      <p className="text-[11px] text-[#A8A29E]">{t("reflAuth.newHint")}</p>
+      <p className="text-[11px] text-ink-3">{t("reflAuth.newHint")}</p>
       {msg && (
-        <div role={msg.ok ? "status" : "alert"} className={`text-[12px] ${msg.ok ? "text-[#065F46]" : "text-[#DC2626]"}`}>
+        <div role={msg.ok ? "status" : "alert"} className={`text-[12px] ${msg.ok ? "text-[#065F46]" : "text-[#C81E1E]"}`}>
           {t(msg.key)}
           {msg.detail && <span className="block opacity-70 mt-0.5 text-[11px]">{msg.detail}</span>}
         </div>
@@ -484,7 +484,7 @@ function AccountSection({ me, onChanged }: { me: string; onChanged: () => void }
             setExp(reflAuthValue(me));
           }}
         />
-        {until && <p className="text-[11px] text-[#A8A29E] mt-1">{until}</p>}
+        {until && <p className="text-[11px] text-ink-3 mt-1">{until}</p>}
       </div>
     </div>
   );
@@ -583,7 +583,7 @@ function ReflectionForm({
   return (
     <div className="bg-[#FAF9F6] rounded-[12px] border border-[#E8E6E1] p-3 space-y-3">
       {existing && (
-        <div className="text-[11px] text-[#8B6F3E]">{t("reflection.editingToday")}</div>
+        <div className="text-[11px] text-[#7A5F30]">{t("reflection.editingToday")}</div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {keys.map((k) => (
@@ -599,7 +599,7 @@ function ReflectionForm({
         </button>
         <span role="status" aria-live="polite" className="text-[12px]">
           {status === "failed" ? (
-            <span className="text-[#DC2626]">{t("notes.failed")}</span>
+            <span className="text-[#C81E1E]">{t("notes.failed")}</span>
           ) : status === "saved" ? (
             <span className="text-[#065F46]">{t("reflection.saved")}</span>
           ) : dirty ? (
@@ -663,7 +663,7 @@ function SpacedReview({
   return (
     <div className="bg-white rounded-[12px] border border-[#E8E6E1] p-3">
       <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
-        <h4 className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A]">
+        <h4 className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
           <Icon d={ICON_REVIEW} /> {t("review.title")}
         </h4>
         {pool.length > 0 && (
@@ -672,11 +672,11 @@ function SpacedReview({
           </button>
         )}
       </div>
-      <p className="text-[11px] text-[#8A8A8A] mb-2">{t("review.hint")}</p>
+      <p className="text-[11px] text-[#6B6B6B] mb-2">{t("review.hint")}</p>
 
       {randomR && (
         <div className="mb-2 rounded-lg border border-[#C9A96E]/50 bg-[#FBF6EC] p-2.5">
-          <div className="text-[10px] uppercase tracking-wide text-[#8B6F3E] mb-1">
+          <div className="text-[10px] uppercase tracking-wide text-[#7A5F30] mb-1">
             {dayLabel(randomR.date, lang, t)}
           </div>
           <div className="text-[12px] text-[#0A1931] whitespace-pre-wrap">{randomR.learning}</div>
@@ -684,13 +684,13 @@ function SpacedReview({
       )}
 
       {due.length === 0 ? (
-        <div className="text-[12px] text-[#A8A29E]">{t("review.none")}</div>
+        <div className="text-[12px] text-ink-3">{t("review.none")}</div>
       ) : (
         <div className="space-y-2">
           {due.map(({ off, r }) => (
             <div key={r.id} className="rounded-lg border border-[#E8E6E1] bg-[#FAF9F6] p-2.5">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[10px] uppercase tracking-wide text-[#8A8A8A]">{daysAgo(off)}</span>
+                <span className="text-[10px] uppercase tracking-wide text-[#6B6B6B]">{daysAgo(off)}</span>
                 <button
                   onClick={() => markReviewed(r.id)}
                   className="h-7 px-3 rounded-full text-[11px] font-semibold bg-[#0A1931] text-[#C9A96E]"
@@ -732,7 +732,7 @@ function RecentList({
   );
 
   if (recent.length === 0) {
-    return <div className="text-[12px] text-[#A8A29E]">{t("reflection.none")}</div>;
+    return <div className="text-[12px] text-ink-3">{t("reflection.none")}</div>;
   }
 
   const row = (label: string, text: string, color: string) =>
@@ -747,7 +747,7 @@ function RecentList({
 
   return (
     <div>
-      <h4 className="font-trajan text-[11px] uppercase tracking-widest text-[#8A8A8A] mb-2">
+      <h4 className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B] mb-2">
         {t("reflection.recent")}
       </h4>
       <div className="space-y-2">
@@ -758,11 +758,11 @@ function RecentList({
                 {r.member.charAt(0).toUpperCase()}
               </span>
               <span className="text-[12px] font-semibold text-[#0A1931]">{r.member}</span>
-              <span className="text-[10px] text-[#A8A29E] ml-auto">{dayLabel(r.date, lang, t)}</span>
+              <span className="text-[10px] text-ink-3 ml-auto">{dayLabel(r.date, lang, t)}</span>
             </div>
             <div className="space-y-1.5">
               {row(t("reflection.done"), r.done, "text-[#065F46]")}
-              {row(t("reflection.well"), r.well, "text-[#8B6F3E]")}
+              {row(t("reflection.well"), r.well, "text-[#7A5F30]")}
               {row(t("reflection.improve"), r.improve, "text-[#92400E]")}
               {row(t("reflection.learning"), r.learning, "text-[#3A5A8A]")}
             </div>
