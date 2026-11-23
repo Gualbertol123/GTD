@@ -3,7 +3,19 @@
 // Prints violations grouped by rule, with the first few targets.
 import { launch, openApp, COMBOS } from "./stub.mjs";
 const [mode = "desktop", only] = process.argv.slice(2);
-const AXE = process.env.AXE_PATH || "/tmp/claude-0/axe/node_modules/axe-core/axe.min.js";
+import { createRequire } from "node:module";
+// axe-core is not a project dependency: install it anywhere
+// (npm i axe-core@4.10.2) and set AXE_PATH to its axe.min.js, or install it
+// next to this repo so require.resolve finds it.
+const AXE =
+  process.env.AXE_PATH ||
+  (() => {
+    try {
+      return createRequire(import.meta.url).resolve("axe-core/axe.min.js");
+    } catch {
+      throw new Error("axe-core not found: npm i axe-core@4.10.2 and set AXE_PATH to its axe.min.js");
+    }
+  })();
 const DESK = ["#/board", "#/projects", "#/projects/p1", "#/weekly", "#/report", "#/calendario", "#/reflection", "#/products", "#/settings"];
 const PHONE = ["#/today", "#/board", "#/projects", "#/agenda", "#/more", "#/more/weekly"];
 const phone = mode === "phone";
