@@ -766,7 +766,9 @@ html[data-typing] .m-dock {
 .m-pills::-webkit-scrollbar { display: none; }
 .m-pill {
   flex-shrink: 0;
-  height: 40px;
+  height: 44px; /* a finger's 44 pt (Apple HIG); was 40 */
+  min-width: 44px;
+  justify-content: center;
   padding: 0 14px;
   border-radius: 18px;
   font-size: 14px;
@@ -809,7 +811,7 @@ html[data-typing] .m-dock {
 }
 .m-seg button {
   flex: 1;
-  min-height: 40px;
+  min-height: 44px;
   border-radius: 11px;
   font-size: 13.5px;
   font-weight: 600;
@@ -1196,6 +1198,12 @@ html[data-sheet] .m-toast { bottom: calc(12px + env(safe-area-inset-bottom) + va
 
 /* ---- Embedded desktop screens (Report, Reflection, Settings, Products) ----- */
 .m-embed { padding: 10px 12px 24px; }
+/* Desktop screens shown on a phone (Reflection, Settings, Report…) keep their
+   32-40 px desktop controls; a finger needs 44 (Apple HIG). Height only, so
+   nothing reflows sideways. */
+.m-embed :is(button, select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), [role="tab"]) {
+  min-height: 44px;
+}
 .m-embed__bar { display: flex; align-items: center; gap: 10px; padding: 2px 4px 12px; }
 .m-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
@@ -1329,3 +1337,27 @@ html[data-layout="mobile"] textarea:not(.m-title-input) {
    screen can scroll its last card out from under it. */
 html[data-music="mini"] .m-app { padding-bottom: calc(96px + 76px + env(safe-area-inset-bottom)); }
 html[data-music="mini-video"] .m-app { padding-bottom: calc(96px + 300px + env(safe-area-inset-bottom)); }
+
+/* ---- Phone on its side -------------------------------------------------------
+   At 390 px tall the header, the floating bar and the page's own controls left
+   about 70 px for cards. On a short landscape screen the header slims down and
+   the bar drops its labels (still read by screen readers) to 48 px. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .m-header {
+    padding-top: calc(env(safe-area-inset-top) + 4px);
+    padding-bottom: 4px;
+  }
+  .m-tabbar { height: 48px; border-radius: 24px; }
+  .m-tab { height: 44px; gap: 0; border-radius: 22px; }
+  .m-tab__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .m-tab__plus { width: 40px; height: 40px; }
+  .m-dock { max-width: 420px; bottom: calc(4px + env(safe-area-inset-bottom)); }
+  .m-app { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+}
