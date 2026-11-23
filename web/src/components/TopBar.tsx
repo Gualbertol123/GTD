@@ -61,7 +61,7 @@ export function TopBar({ board, onRename, onOpenMail, send, rightSlot }: Props) 
         <div className="flex items-center gap-4 min-w-0">
           <div className="w-10 h-10 rounded-full border-2 border-[#C9A96E] flex items-center justify-center shrink-0 overflow-hidden bg-[#0A1931]">
             {board.logoUrl ? (
-              <img src={board.logoUrl} alt="logo" className="w-full h-full object-contain" />
+              <img src={board.logoUrl} alt="" className="w-full h-full object-contain" />
             ) : (
               <span className="font-trajan text-[#C9A96E] text-[15px]">G</span>
             )}

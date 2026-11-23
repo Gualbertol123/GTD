@@ -119,7 +119,7 @@ export function SettingsView({ board, send }: Props) {
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-full border-2 border-[#C9A96E] flex items-center justify-center overflow-hidden bg-[#0A1931] shrink-0">
             {board.logoUrl ? (
-              <img src={board.logoUrl} alt="logo" className="w-full h-full object-contain" />
+              <img src={board.logoUrl} alt={t("settings.logo")} className="w-full h-full object-contain" />
             ) : (
               <span className="font-trajan text-[#C9A96E] text-[18px]">G</span>
             )}
@@ -155,7 +155,7 @@ export function SettingsView({ board, send }: Props) {
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-lg border border-[#E8E6E1] flex items-center justify-center overflow-hidden bg-[#F5F3EF] shrink-0">
             {board.faviconUrl ? (
-              <img src={board.faviconUrl} alt="favicon" className="w-8 h-8 object-contain" />
+              <img src={board.faviconUrl} alt={t("settings.favicon")} className="w-8 h-8 object-contain" />
             ) : (
               <span className="text-ink-3 text-[10px]">—</span>
             )}
