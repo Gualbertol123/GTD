@@ -7,6 +7,7 @@ import { taskOwners } from "../lib/owners";
 import { useT } from "../lib/i18n";
 import { useMe } from "../lib/identity";
 import { readAppearanceChoice, readBlur, readSkin, writeAppearance, writeBlur, writeSkin, type AppearanceChoice } from "../lib/skin";
+import { COLOR_DEFAULT, COLOR_MAX, COLOR_MIN, readColor, writeColor } from "../lib/skin";
 import { WeeklyItemField } from "../components/WeeklyView";
 import { DailyReflection } from "../components/DailyReflection";
 import { SettingsView } from "../components/SettingsView";
@@ -114,6 +115,7 @@ export function MoreScreen({
       </div>
       <AppearanceControl />
       <BlurControl />
+      <ColorAmountControl />
 
       <div className="m-panel m-list" style={{ marginTop: 18 }}>
         {rows.map((r) => (
@@ -377,6 +379,7 @@ export function MeSheet({
         <span className="m-label">{t("skin.appearance")}</span>
         <AppearanceControl />
       <BlurControl />
+      <ColorAmountControl />
       </div>
 
       <InstallRow />
@@ -473,6 +476,39 @@ function AppearanceControl() {
       </button>
     </div>
     </>
+  );
+}
+
+/** Colour intensity for the whole app, 0-150 % (same as the desktop's). */
+function ColorAmountControl() {
+  const { t } = useT();
+  const [pct, setPct] = useState<number>(() => readColor());
+  const set = (n: number) => {
+    setPct(n);
+    writeColor(n);
+  };
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div className="m-row__hint" style={{ margin: "0 4px 6px", display: "flex", justifyContent: "space-between" }}>
+        <label htmlFor="m-color-amount">{t("color.amount")}</label>
+        <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{pct}%</span>
+      </div>
+      <div className="m-color">
+        <input
+          id="m-color-amount"
+          type="range"
+          min={COLOR_MIN}
+          max={COLOR_MAX}
+          step={5}
+          value={pct}
+          onChange={(e) => set(Number(e.target.value))}
+          aria-valuetext={`${pct}%`}
+        />
+        <button type="button" className="m-pill" disabled={pct === COLOR_DEFAULT} onClick={() => set(COLOR_DEFAULT)}>
+          100%
+        </button>
+      </div>
+    </div>
   );
 }
 

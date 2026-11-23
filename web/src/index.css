@@ -18,6 +18,18 @@
   --field-invalid-ring: rgba(220, 38, 38, 0.3);
 }
 
+/* Colour intensity (Settings in the header, Altro → Aspetto on the phone):
+   lib/skin.ts sets data-color and --color-amount on <html> only when it is
+   not 100 %. Never on paper. */
+html[data-color] {
+  filter: saturate(var(--color-amount, 1));
+}
+@media print {
+  html[data-color] {
+    filter: none;
+  }
+}
+
 /* Reduce motion, everywhere (Glass, the phone and Music also have their own
    rules): chevrons turn, switches slide and spinners spin without travelling. */
 @media (prefers-reduced-motion: reduce) {

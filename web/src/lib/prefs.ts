@@ -16,6 +16,7 @@ const KEYS = {
   skin: "gtd-skin",
   appearance: "gtd-appearance",
   blur: "gtd-blur",
+  color: "gtd-color",
   projView: "gtd-projects-view",
   projTasksView: "gtd-project-tasks-view",
   layout: "gtd-layout",

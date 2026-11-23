@@ -169,6 +169,17 @@ html[data-skin="glass"] .seg {
   border-color: transparent;
 }
 
+/* The colour-intensity slider (components/ColorControl.tsx): the accent. */
+.color-range {
+  accent-color: var(--ctl-focus);
+}
+/* Its panel opens inside the header, where glass.css §10 turns nested blur
+   off: a translucent film there would be unreadable over the board, so it
+   takes the opaque panel colour. */
+html[data-skin="glass"] .color-pop {
+  background-color: var(--panel-opaque) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tab,
   .tab::after {

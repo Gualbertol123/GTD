@@ -70,6 +70,10 @@ or `desktop`). The mobile app wears the same **Liquid Glass** as the desktop
 sheen, Apple's system colours, label steps — so it follows light / dark with
 it. The tab bar floats as a glass capsule with the + beside it, as on iOS 26.
 With the classic skin it falls back to the cream / navy / gold look.
+**Intensità colori** (the ◐ button in the desktop header, or Altro → Aspetto
+on a phone) turns the colour of the whole GTD down to grey (0%) or up to more
+vivid (150%); 100% is the design as drawn. It is per device (`gtd-color`) and
+never affects printing or the PDF report.
 **Aspetto** (Altro, right under your name) is Scuro, Chiaro or **Auto**:
 Auto follows the phone's or computer's own light / dark setting, live, which
 suits the installed app. The desktop header has the same choice (☀ ☾ A).

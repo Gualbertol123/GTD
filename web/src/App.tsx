@@ -18,6 +18,7 @@ import { ConnBadge } from "./components/ConnBadge";
 import { LangToggle } from "./components/LangToggle";
 import { IdentityPicker } from "./components/IdentityPicker";
 import { GlassToggle } from "./components/GlassToggle";
+import { ColorControl } from "./components/ColorControl";
 import { ProjectsProvider } from "./lib/projectsContext";
 import { PHONE_QUERY, useLayout } from "./mobile/useLayout";
 import { MusicButton, MusicPlayer } from "./components/MusicPlayer";
@@ -159,6 +160,7 @@ export default function App() {
             <ConnBadge conn={conn} />
             <LangToggle />
             <GlassToggle />
+            <ColorControl />
           </>
         }
       />

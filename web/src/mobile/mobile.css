@@ -1361,3 +1361,9 @@ html[data-music="mini-video"] .m-app { padding-bottom: calc(96px + 300px + env(s
   .m-dock { max-width: 420px; bottom: calc(4px + env(safe-area-inset-bottom)); }
   .m-app { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
 }
+
+/* Colour intensity slider (Altro → Aspetto): a full-width track, 44 px tall
+   for a thumb, and the reset pill beside it. */
+.m-color { display: flex; align-items: center; gap: 10px; }
+.m-color input[type="range"] { flex: 1; min-height: 44px; accent-color: var(--m-accent-fill); }
+.m-color .m-pill:disabled { opacity: 0.45; }

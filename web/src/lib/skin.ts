@@ -117,6 +117,41 @@ function applyBlur(on: boolean): void {
   else document.documentElement.dataset.blur = "off";
 }
 
+/**
+ * Colour intensity for the whole app, in percent: 0 is greyscale, 100 the
+ * design as drawn (the default), up to 150 more vivid. Per device, like the
+ * skin. Applied as one saturate() filter on <html>: on the root element a
+ * filter neither becomes the containing block of fixed elements nor a new
+ * backdrop root, so pop-ups, toasts and the glass blur work as before. At
+ * 100 nothing is applied at all.
+ */
+export const COLOR_MIN = 0;
+export const COLOR_MAX = 150;
+export const COLOR_DEFAULT = 100;
+
+export function readColor(): number {
+  const n = Number(readPref("color"));
+  if (!Number.isFinite(n) || readPref("color") === null) return COLOR_DEFAULT;
+  return Math.min(COLOR_MAX, Math.max(COLOR_MIN, Math.round(n)));
+}
+
+export function writeColor(pct: number): void {
+  const n = Math.min(COLOR_MAX, Math.max(COLOR_MIN, Math.round(pct)));
+  writePref("color", String(n));
+  applyColor(n);
+}
+
+function applyColor(pct: number): void {
+  const root = document.documentElement;
+  if (pct === COLOR_DEFAULT) {
+    delete root.dataset.color;
+    root.style.removeProperty("--color-amount");
+  } else {
+    root.dataset.color = "custom";
+    root.style.setProperty("--color-amount", String(pct / 100));
+  }
+}
+
 export function writeAppearance(choice: AppearanceChoice): void {
   writeCookie(APPEARANCE_COOKIE, choice);
   writePref("appearance", choice);
@@ -133,6 +168,7 @@ export function initSkin(): { skin: Skin; appearance: Appearance } {
   const appearance = readAppearance();
   applySkin(skin, appearance);
   applyBlur(readBlur());
+  applyColor(readColor());
   writeCookie(SKIN_COOKIE, skin);
   writeCookie(APPEARANCE_COOKIE, readAppearanceChoice());
   // "Auto" follows the device live: switch the phone or computer to light or
