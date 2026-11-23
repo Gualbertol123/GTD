@@ -32,8 +32,14 @@ export function MenuBar() {
 
   return (
     <div className="bg-[#EFECE6] rounded-[14px] border border-[#E3DFD7] p-3">
-      <button onClick={() => setOpen((o) => !o)} className="w-full flex items-center gap-2 text-left">
-        <span className={`text-[#6B6B6B] text-[11px] transition-transform ${open ? "rotate-90" : ""}`}>▶</span>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={open ? "menu-bar-body" : undefined}
+        className="w-full flex items-center gap-2 text-left"
+      >
+        <span aria-hidden="true" className={`text-[#6B6B6B] text-[11px] transition-transform ${open ? "rotate-90" : ""}`}>▶</span>
         <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">{t("menuBar.title")}</span>
         <span className="text-[11px] font-semibold text-[#6B6B6B] bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
           {days.length}
@@ -43,7 +49,7 @@ export function MenuBar() {
         </span>
       </button>
       {open && (
-        <div className="mt-3">
+        <div id="menu-bar-body" className="mt-3">
           {days.length === 0 ? (
             <div className="text-[12px] text-ink-3 py-2">{loaded ? t("menuBar.none") : "…"}</div>
           ) : (
