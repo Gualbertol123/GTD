@@ -167,9 +167,6 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
     }
   };
 
-  const ring =
-    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#007AFF]";
-
   return (
     <div
       className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
@@ -198,7 +195,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
             onClick={onClose}
             aria-label={t("ux.report.mailClose")}
             title={t("ux.report.mailClose")}
-            className={`-mr-1.5 -mt-1 h-9 w-9 shrink-0 grid place-items-center rounded-full text-[#6B6B6B] hover:text-[#0A1931] ${ring}`}
+            className={`-mr-1.5 -mt-1 h-9 w-9 shrink-0 grid place-items-center rounded-full text-[#6B6B6B] hover:text-[#0A1931]`}
           >
             <svg {...ICON} width={16} height={16}>
               <path d="M6 6l12 12M18 6L6 18" />
@@ -216,7 +213,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
               onBlur={() => writeTo(to)}
               placeholder={t("ux.report.mailToPh")}
               autoComplete="email"
-              className="flex-1 min-w-0 h-9 rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[13px] text-[#0A1931] outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#007AFF]"
+              className="flex-1 min-w-0 h-9 rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[13px] text-[#0A1931] field"
             />
           </label>
           <div>
@@ -233,7 +230,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
                     areaRef.current?.focus();
                   }}
                   title={t("ux.report.mailRegenerateHint")}
-                  className={`h-7 px-2 rounded-full text-[12px] font-semibold text-[#007AFF] hover:underline ${ring}`}
+                  className={`h-7 px-2 rounded-full text-[12px] font-semibold text-[#007AFF] hover:underline`}
                 >
                   {t("ux.report.mailRegenerate")}
                 </button>
@@ -249,7 +246,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
                 setCopyFailed(false);
               }}
               rows={12}
-              className="w-full rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] p-3 text-[13px] font-mono text-[#0A1931] outline-none resize-y focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#007AFF]"
+              className="w-full rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] p-3 text-[13px] font-mono text-[#0A1931] resize-y field"
             />
           </div>
           <div role="status" aria-live="polite" className="text-[11px] empty:hidden">
@@ -263,7 +260,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
         <div className="p-4 border-t border-[#E8E6E1] flex justify-end gap-2 flex-wrap">
           <a
             href={href}
-            className={`h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#0A1931] border border-[#E8E6E1] hover:border-[#C9A96E] flex items-center ${ring}`}
+            className={`h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#0A1931] border border-[#E8E6E1] hover:border-[#C9A96E] flex items-center`}
           >
             {t("mail.openClient")}
           </a>
@@ -271,7 +268,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
             ref={copyRef}
             type="button"
             onClick={copy}
-            className={`h-9 px-5 rounded-full text-[12px] font-semibold bg-[#C9A96E] text-[#0A1931] hover:bg-[#D8BC8A] inline-flex items-center gap-1.5 ${ring}`}
+            className={`h-9 px-5 rounded-full text-[12px] font-semibold bg-[#C9A96E] text-[#0A1931] hover:bg-[#D8BC8A] inline-flex items-center gap-1.5`}
           >
             {copied ? (
               <>
