@@ -52,7 +52,7 @@ const focusRing =
 function TagChip({ tag }: { tag: Tag }) {
   return (
     <span
-      className={`tag-chip shrink-0 text-[9px] font-semibold tracking-wide px-1.5 py-px rounded-full border ${TAG_STYLE[tag]}`}
+      className={`tag-chip shrink-0 text-[10px] font-semibold tracking-wide px-1.5 py-px rounded-full border ${TAG_STYLE[tag]}`}
     >
       {TAG_LABEL[tag]}
     </span>

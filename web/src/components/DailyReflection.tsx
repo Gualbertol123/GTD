@@ -738,7 +738,7 @@ function RecentList({
   const row = (label: string, text: string, color: string) =>
     text.trim() ? (
       <div className="flex gap-2">
-        <span className={`w-[104px] shrink-0 text-[9px] font-semibold uppercase tracking-wide pt-0.5 ${color}`}>
+        <span className={`w-[104px] shrink-0 text-[10px] font-semibold uppercase tracking-wide pt-0.5 ${color}`}>
           {label}
         </span>
         <span className="flex-1 min-w-0 text-[12px] text-[#0A1931] whitespace-pre-wrap break-words">{text}</span>

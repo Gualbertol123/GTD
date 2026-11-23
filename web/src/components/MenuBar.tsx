@@ -72,7 +72,7 @@ export function MenuBar() {
                     <div className="space-y-2">
                       {day.courses.map((c) => (
                         <div key={c.course}>
-                          <div className="text-[9.5px] font-semibold uppercase tracking-wider text-[#7A5F30]">
+                          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#7A5F30]">
                             {t(`menuBar.course.${c.course}`)}
                           </div>
                           <ul className="mt-0.5 space-y-0.5">
@@ -80,7 +80,7 @@ export function MenuBar() {
                               <li key={i} className="text-[12px] leading-snug text-[#0A1931]">
                                 {dish.name}
                                 {dish.allergens.length > 0 && (
-                                  <span className="ml-1 text-[9.5px] font-semibold text-ink-3">{dish.allergens.join("-")}</span>
+                                  <span className="ml-1 text-[10px] font-semibold text-ink-3">{dish.allergens.join("-")}</span>
                                 )}
                               </li>
                             ))}

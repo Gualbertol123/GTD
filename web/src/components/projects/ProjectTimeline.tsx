@@ -103,7 +103,7 @@ export function ProjectTimeline({
                   />
                 ))}
                 <span className="absolute top-0 bottom-0 w-0.5 rounded-full" style={{ left: `${pos(today)}%`, background: "#FF3B30" }}>
-                  <span className="absolute -top-0.5 left-1 text-[9px] font-bold uppercase text-[#FF3B30] whitespace-nowrap">
+                  <span className="absolute -top-0.5 left-1 text-[10px] font-bold uppercase text-[#C81E1E] whitespace-nowrap">
                     {t("projects.timeline.today")}
                   </span>
                 </span>
