@@ -18,6 +18,15 @@
   --field-invalid-ring: rgba(220, 38, 38, 0.3);
 }
 
+/* Keyboard focus, the default for every control: the accent ring (gold in
+   Classic, systemBlue in Glass via --ctl-focus) instead of the browser's
+   black one. Inside :where() it weighs nothing, so any control with its own
+   focus style (fields, tabs, the phone's) keeps it. */
+:where(button, a[href], summary, select, [role="button"], [role="tab"], [role="checkbox"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--ctl-focus, #c9a96e);
+  outline-offset: 2px;
+}
+
 /* -----------------------------------------------------------------------------
    Fields — the one definition of every text box, dropdown and field-shaped
    button (assignee picker, date pill), in both skins.

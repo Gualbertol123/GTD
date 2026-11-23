@@ -89,11 +89,11 @@ export default function App() {
           <div className="font-trajan text-[22px] tracking-widest text-[#0A1931]">
             {t("app.loadingTitle")}
           </div>
-          <div className="mt-3 text-[13px] text-[#8A8A8A]">
+          <div className="mt-3 text-[13px] text-[#6B6B6B]">
             {conn === "offline" ? t("app.connectFailed") : t("app.connecting")}
           </div>
           {error && (
-            <div className="mt-2 text-[11px] text-[#DC2626] max-w-[420px]">{error}</div>
+            <div className="mt-2 text-[11px] text-[#C81E1E] max-w-[420px]">{error}</div>
           )}
         </div>
       </div>

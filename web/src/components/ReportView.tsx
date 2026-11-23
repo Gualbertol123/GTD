@@ -268,11 +268,9 @@ export function ReportView({ board, send }: Props) {
   };
 
   // One visible keyboard focus for every control, in both skins and themes.
-  const focusRing =
-    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#007AFF]";
   const control = "h-9 rounded-full bg-white border border-[#E8E6E1] text-[13px] field px-3";
-  const primaryBtn = `h-9 px-5 rounded-full bg-[#0A1931] text-[#C9A96E] text-[12px] font-semibold disabled:opacity-40 ${focusRing}`;
-  const ghostBtn = `h-9 px-4 rounded-full bg-white text-[#0A1931] border border-[#E8E6E1] text-[12px] font-semibold hover:border-[#C9A96E] disabled:opacity-40 ${focusRing}`;
+  const primaryBtn = `h-9 px-5 rounded-full bg-[#0A1931] text-[#C9A96E] text-[12px] font-semibold disabled:opacity-40`;
+  const ghostBtn = `h-9 px-4 rounded-full bg-white text-[#0A1931] border border-[#E8E6E1] text-[12px] font-semibold hover:border-[#C9A96E] disabled:opacity-40`;
   const views = ["report", "excluded"] as const;
 
   return (
@@ -344,7 +342,7 @@ export function ReportView({ board, send }: Props) {
                         setProjectInReport(p.id, false);
                         setIncluded(p.name || "—");
                       }}
-                      className={`h-8 px-4 rounded-full bg-[#0A1931] text-[#C9A96E] text-[12px] font-semibold shrink-0 inline-flex items-center gap-1.5 ${focusRing}`}
+                      className={`h-8 px-4 rounded-full bg-[#0A1931] text-[#C9A96E] text-[12px] font-semibold shrink-0 inline-flex items-center gap-1.5`}
                     >
                       <IconPlus />
                       {t("report.includeAgain")}
@@ -463,7 +461,7 @@ export function ReportView({ board, send }: Props) {
             <button
               type="button"
               onClick={() => actionsRef.current?.showHidden()}
-              className={`h-9 px-2 rounded-full text-[12px] font-semibold text-[#007AFF] hover:underline ${focusRing}`}
+              className={`h-9 px-2 rounded-full text-[12px] font-semibold text-[#007AFF] hover:underline`}
             >
               {t("ux.report.showHidden", { n: hiddenCount })}
             </button>
