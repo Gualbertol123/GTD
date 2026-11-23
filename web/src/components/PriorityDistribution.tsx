@@ -26,35 +26,37 @@ export function PriorityDistribution({ tasks }: { tasks: Task[] }) {
   };
 
   return (
-    <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-4">
+    // Collapsed it is one compact row (title, the counts, the total): it sat
+    // as a full panel above the columns for one line of legend.
+    <div className={`bg-white rounded-[14px] border border-[#E8E6E1] ${collapsed ? "px-4 py-2.5" : "p-4"}`}>
       <button
         type="button"
         onClick={toggle}
         aria-expanded={!collapsed}
         aria-controls={collapsed ? undefined : "prio-distribution-body"}
-        className="w-full flex items-center justify-between"
+        className="w-full flex items-center justify-between gap-4"
         title={t("prio.distribution")}
       >
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-2 flex-wrap min-w-0">
           <span aria-hidden="true" className={`text-[#6B6B6B] text-[11px] transition-transform ${collapsed ? "" : "rotate-90"}`}>▶</span>
           <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
             {t("prio.distribution")}
           </span>
+          {collapsed && total > 0 && (
+            <span className="flex items-center gap-3 ml-2">
+              {PRIOS.map(({ p, dot }, i) =>
+                counts[i] > 0 ? (
+                  <span key={p} className="inline-flex items-center gap-1 text-[11px] text-[#6B6B6B]">
+                    <span aria-hidden="true" className={`w-2 h-2 rounded-full ${dot}`} />
+                    {p} <span className="font-semibold text-[#0A1931]">{counts[i]}</span>
+                  </span>
+                ) : null
+              )}
+            </span>
+          )}
         </span>
         <span className="text-[11px] text-[#6B6B6B]">{total}</span>
       </button>
-      {collapsed && total > 0 && (
-        <div className="flex items-center gap-3 mt-2">
-          {PRIOS.map(({ p, dot }, i) =>
-            counts[i] > 0 ? (
-              <span key={p} className="inline-flex items-center gap-1 text-[11px] text-[#6B6B6B]">
-                <span aria-hidden="true" className={`w-2 h-2 rounded-full ${dot}`} />
-                {p} <span className="font-semibold text-[#0A1931]">{counts[i]}</span>
-              </span>
-            ) : null
-          )}
-        </div>
-      )}
       {!collapsed && (
       <div id="prio-distribution-body" className="space-y-2.5 mt-3">
         {PRIOS.map(({ p, bar, dot }, i) => (

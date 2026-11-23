@@ -118,7 +118,7 @@ const IT: Dict = {
   "cal.details": "Dettagli attività",
   "cal.more": "+{n} altre",
 
-  "board.help": "Trascina le card tra le colonne o apri una card per modificarla. Nessun popup: tutto si espande qui.",
+  "board.help": "Trascina le card tra le colonne; clicca una card per modificarla.",
   "quick.title": "Nuova attività…",
   "quick.add": "Aggiungi",
   "quick.owner": "Assegnatario",
@@ -658,7 +658,7 @@ const EN: Dict = {
   "cal.details": "Task details",
   "cal.more": "+{n} more",
 
-  "board.help": "Drag cards between columns or open a card to edit it. No popups: everything expands right here.",
+  "board.help": "Drag cards between columns; click a card to edit it.",
   "quick.title": "New task…",
   "quick.add": "Add",
   "quick.owner": "Owner",
