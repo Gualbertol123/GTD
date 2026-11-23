@@ -1,0 +1,20 @@
+// Weekly: delete an item, check the shared Undo toast appears and restores it.
+import { launch, openApp } from "./stub.mjs";
+const browser = await launch();
+const { page } = await openApp(browser, { skin: "classic", path: "#/weekly" });
+await page.waitForTimeout(600);
+const count = () => page.evaluate(() => [...document.querySelectorAll("textarea,input")].some((e) => e.value === "Consegna dashboard in anticipo"));
+console.log("before:", await count());
+const item = page.locator("textarea").filter({ hasText: "" }).first();
+await item.hover();
+const del = page.locator("button[aria-label*='Elimina'], button[aria-label*='elimina'], button[aria-label*='Rimuovi']").first();
+await del.click({ force: true });
+await page.waitForTimeout(400);
+console.log("after delete:", await count());
+const toast = await page.locator("[role=status] >> text=Annulla").count();
+console.log("toast with Annulla:", toast);
+await page.screenshot({ path: process.argv[2] ?? "/tmp/claude-0/weekly-undo.png" });
+await page.locator("[role=status] button", { hasText: "Annulla" }).click();
+await page.waitForTimeout(500);
+console.log("after undo:", await count());
+await browser.close();

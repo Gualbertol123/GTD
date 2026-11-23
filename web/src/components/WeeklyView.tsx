@@ -7,6 +7,7 @@ import { periodBounds, taskCompletedAt, weekPeriod } from "../lib/reportData";
 import { useSyncedField } from "../lib/useSyncedField";
 import { IconCheck, IconChevron, IconClose } from "../mobile/icons";
 import { AutoTextarea } from "./AutoTextarea";
+import { showUndo } from "./TaskDetails";
 
 interface Props {
   board: Board;
@@ -15,7 +16,6 @@ interface Props {
 
 type ColKey = keyof Weekly;
 type Removed = { column: ColKey; item: WeeklyItem };
-type Undo = { id: number; msg: string; items: Removed[]; focus: boolean };
 type Grouping = "day" | "owner";
 
 const UNDO_MS = 6000;
@@ -59,11 +59,8 @@ export function WeeklyView({ board, send }: Props) {
   const [confirmClear, setConfirmClear] = useState(false);
   const [archOpen, setArchOpen] = useState(false);
   const [archAll, setArchAll] = useState(false);
-  const [undo, setUndo] = useState<Undo | null>(null);
-  const [undoHold, setUndoHold] = useState(false);
   const clearBtnRef = useRef<HTMLButtonElement>(null);
   const refocusClear = useRef(false);
-  const undoBtnRef = useRef<HTMLButtonElement>(null);
 
   // The Recap follows the Monday–Sunday week, like the Report tab. Everything
   // done before the week shown sits in Archiviate, so nothing falls in between.
@@ -110,15 +107,6 @@ export function WeeklyView({ board, send }: Props) {
     0,
   );
 
-  // Undo bar: disappears after 6 s, but not while the pointer or focus is on it.
-  useEffect(() => {
-    if (!undo || undoHold) return;
-    const h = window.setTimeout(() => setUndo(null), UNDO_MS);
-    return () => window.clearTimeout(h);
-  }, [undo, undoHold]);
-  useEffect(() => {
-    if (undo?.focus) undoBtnRef.current?.focus();
-  }, [undo]);
 
   // The Clear button remounts when the confirmation closes: give it focus back.
   useEffect(() => {
@@ -135,13 +123,8 @@ export function WeeklyView({ board, send }: Props) {
 
   const removeItem = (column: ColKey, item: WeeklyItem, focus: boolean) => {
     send({ type: "weeklyDelete", column, id: item.id });
-    setUndoHold(false);
-    setUndo({
-      id: Date.now(),
-      msg: t("weekly.itemDeleted"),
-      items: [{ column, item }],
-      focus,
-    });
+    // The app's one Undo toast (TaskDetails), like every other delete.
+    showUndo(t("weekly.itemDeleted"), () => restore([{ column, item }]), UNDO_MS, { focus });
   };
 
   const clearAll = () => {
@@ -151,22 +134,14 @@ export function WeeklyView({ board, send }: Props) {
         snapshot.push({ column: c.key, item });
     send({ type: "weeklyClear" });
     setConfirmClear(false);
-    setUndoHold(false);
-    setUndo({
-      id: Date.now(),
-      msg: t("weekly.cleared", { n: snapshot.length }),
-      items: snapshot,
-      focus: true,
-    });
+    showUndo(t("weekly.cleared", { n: snapshot.length }), () => restore(snapshot), UNDO_MS, { focus: true });
   };
 
   // Restored items go back with the same id and text; the server stamps a new
   // created_at (increasing, one per add), so a single restored item moves to
   // the end of its column and a cleared weekly comes back in its order.
-  const restore = () => {
-    if (!undo) return;
-    for (const r of undo.items) send({ type: "weeklyAdd", column: r.column, item: { ...r.item } });
-    setUndo(null);
+  const restore = (items: Removed[]) => {
+    for (const r of items) send({ type: "weeklyAdd", column: r.column, item: { ...r.item } });
   };
 
   const setGroup = (g: Grouping) => {
@@ -474,42 +449,6 @@ export function WeeklyView({ board, send }: Props) {
         ))}
       </div>
 
-      {/* The wrapper holds the position: the glass skin makes every .bg-white
-          panel position:relative, which would undo "fixed" on the bar itself. */}
-      {undo && (
-        <div className="fixed bottom-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
-          <div
-            role="status"
-            aria-live="polite"
-            onMouseEnter={() => setUndoHold(true)}
-            onMouseLeave={() => setUndoHold(false)}
-            onFocus={() => setUndoHold(true)}
-            onBlur={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node | null))
-                setUndoHold(false);
-            }}
-            className="pointer-events-auto flex items-center gap-3 rounded-full bg-white border border-[#E8E6E1] shadow-lg pl-4 pr-1.5 py-1.5 text-[13px] text-[#0A1931] max-w-full"
-          >
-            <span className="min-w-0 truncate">{undo.msg}</span>
-            <button
-              ref={undoBtnRef}
-              type="button"
-              onClick={restore}
-              className="h-8 px-4 rounded-full bg-[#0A1931] text-[#C9A96E] text-[12px] font-semibold shrink-0"
-            >
-              {t("weekly.undo")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setUndo(null)}
-              aria-label={t("weekly.dismiss")}
-              className="h-8 w-8 rounded-full flex items-center justify-center text-[#6B6B6B] hover:text-[#0A1931] shrink-0"
-            >
-              <IconClose size={14} />
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

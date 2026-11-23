@@ -25,8 +25,8 @@ interface Props {
 }
 
 // ---- Undo toast -------------------------------------------------------------
-// One small store shared by every board surface (task delete, subtask delete,
-// mark done, member removal, a deleted project). It lives outside any card, so
+// One small store shared by every surface (task delete, subtask delete, mark
+// done, member removal, a deleted project, Weekly items and Clear). It lives outside any card, so
 // the toast survives the card that raised it unmounting. The host is mounted
 // once, at the App root; an extra host would stay silent.
 interface UndoToast {
@@ -34,6 +34,8 @@ interface UndoToast {
   text: string;
   onUndo: () => void;
   ms: number;
+  /** Move keyboard focus to Annulla (the delete was done from the keyboard). */
+  focus?: boolean;
 }
 let toastNow: UndoToast | null = null;
 let toastSeq = 0;
@@ -47,9 +49,10 @@ const subscribeToast = (l: () => void) => {
   };
 };
 
-/** Shows "text · Annulla" for a few seconds; Annulla runs onUndo. */
-export function showUndo(text: string, onUndo: () => void, ms = 6000) {
-  toastNow = { id: ++toastSeq, text, onUndo, ms };
+/** Shows "text · Annulla" for a few seconds (longer while the pointer or
+ *  focus is on it); Annulla runs onUndo. */
+export function showUndo(text: string, onUndo: () => void, ms = 6000, opts: { focus?: boolean } = {}) {
+  toastNow = { id: ++toastSeq, text, onUndo, ms, focus: opts.focus };
   emitToast();
 }
 function clearToast(id: number) {
@@ -75,10 +78,18 @@ export function UndoToastHost() {
   }, [hostId]);
   const toast = useSyncExternalStore(subscribeToast, () => toastNow);
   useEffect(() => subscribeToast(() => force((n) => n + 1)), []);
+  // It stays while the pointer or keyboard focus is on it (time to read and
+  // reach Annulla), then its time starts again.
+  const [hold, setHold] = useState(false);
+  const undoRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (!toast) return;
+    if (!toast || hold) return;
     const h = window.setTimeout(() => clearToast(toast.id), toast.ms);
     return () => window.clearTimeout(h);
+  }, [toast, hold]);
+  useEffect(() => {
+    if (toast?.focus) undoRef.current?.focus();
+    if (!toast) setHold(false);
   }, [toast]);
   if (toastHosts[0] !== hostId || typeof document === "undefined") return null;
   return createPortal(
@@ -88,9 +99,18 @@ export function UndoToastHost() {
       className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] pointer-events-none max-w-[calc(100vw-32px)]"
     >
       {toast && (
-        <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-[#1C1C1E] text-white shadow-xl pl-4 pr-1.5 py-1.5 text-[13px]">
+        <div
+          onMouseEnter={() => setHold(true)}
+          onMouseLeave={() => setHold(false)}
+          onFocus={() => setHold(true)}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHold(false);
+          }}
+          className="pointer-events-auto flex items-center gap-3 rounded-full bg-[#1C1C1E] text-white shadow-xl pl-4 pr-1.5 py-1.5 text-[13px]"
+        >
           <span className="min-w-0 truncate">{toast.text}</span>
           <button
+            ref={undoRef}
             type="button"
             onClick={() => {
               toast.onUndo();
