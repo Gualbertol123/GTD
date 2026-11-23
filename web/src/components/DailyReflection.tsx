@@ -232,14 +232,10 @@ export function DailyReflection({ board, members, send }: Props) {
               key={key}
               onClick={() => pickPane(key)}
               aria-pressed={on}
-              className={`h-9 px-4 rounded-full text-[11px] font-semibold uppercase tracking-wide border ${
-                on
-                  ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]"
-                  : "bg-white text-[#0A1931] border-[#E8E6E1]"
-              }`}
+              className="tab h-9 px-4 text-[11px] font-semibold uppercase tracking-wide"
             >
               {t(key === "diary" ? "reflection.paneDiary" : "reflection.paneNotes")}
-              {count > 0 && <span className="ml-1.5 opacity-60 tabular-nums">{count}</span>}
+              {count > 0 && <span className="tab__count">{count}</span>}
             </button>
           );
         })}

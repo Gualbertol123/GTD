@@ -124,13 +124,13 @@ export function ProjectTasks({
           {s.done}/{s.total}
         </span>
         <span className="flex-1" />
-        <div className="flex rounded-full border border-[#E8E6E1] bg-white p-0.5" role="group" aria-label={t("ux.projects.tasksView")}>
+        <div className="seg" role="group" aria-label={t("ux.projects.tasksView")}>
           {(["list", "board"] as View[]).map((v) => (
             <button
               key={v}
               aria-pressed={view === v}
               onClick={() => setView(v)}
-              className={`h-7 px-3 rounded-full text-[12px] font-semibold ${view === v ? "bg-[#0A1931] text-[#C9A96E]" : "text-[#6B6B6B]"}`}
+              className="tab h-7 px-3 text-[12px] font-semibold"
             >
               {t(`projects.tasks.${v}`)}
             </button>
@@ -264,7 +264,7 @@ export function ProjectTasks({
             <button
               onClick={() => setShowDone((v) => !v)}
               aria-pressed={showDone}
-              className="h-8 px-3 rounded-full border border-[#E8E6E1] bg-white text-[12px] text-[#6B6B6B] hover:border-[#C9A96E]"
+              className="tab h-8 px-3 text-[12px]"
             >
               {showDone ? t("projects.tasks.hideDone") : t("projects.tasks.showDone", { n: doneCount })}
             </button>
@@ -690,16 +690,14 @@ function BoardModePicker({ project: p, available, save }: { project: Project; av
     <div className="rounded-[12px] border border-[#E8E6E1] bg-[#F5F3EF] px-3 py-2 space-y-1.5">
       <div className="flex items-center gap-2 flex-wrap">
         <span className="font-trajan text-[10px] uppercase tracking-widest text-[#8A8A8A]">{t("projects.board.label")}</span>
-        <div className="flex rounded-full border border-[#E8E6E1] bg-white p-0.5">
+        <div className="seg" role="group" aria-label={t("projects.board.label")}>
           {MODES.map((m) => (
             <button
               key={m}
               aria-pressed={mode === m}
               disabled={!available}
               onClick={() => m !== mode && save({ type: "projectUpdate", id: p.id, patch: { boardMode: m } })}
-              className={`h-7 px-3 rounded-full text-[12px] font-semibold disabled:opacity-50 ${
-                mode === m ? "bg-[#0A1931] text-[#C9A96E]" : "text-[#6B6B6B]"
-              }`}
+              className="tab h-7 px-3 text-[12px] font-semibold"
             >
               {t(`projects.board.${m}`)}
             </button>

@@ -283,13 +283,9 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                       key={m}
                       aria-pressed={on}
                       onClick={() => toggleOwner(m)}
-                      className={`h-7 px-2.5 rounded-full text-[12px] border ${
-                        on
-                          ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931] font-semibold"
-                          : "bg-white text-[#6B6B6B] border-[#E8E6E1] hover:border-[#C9A96E]"
-                      }`}
+                      className="tab h-7 px-2.5 text-[12px] gap-1"
                     >
-                      {on && <Icon name="check" size={11} strokeWidth={2.6} className="mr-1 -mt-px align-middle" />}
+                      {on && <Icon name="check" size={11} strokeWidth={2.6} />}
                       {m}
                     </button>
                   );

@@ -247,7 +247,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
           <div
             role="group"
             aria-label={t("ux.board.viewToggle")}
-            className="inline-flex items-center rounded-full border border-[#E8E6E1] bg-[#F5F3EF] p-0.5"
+            className="seg"
           >
             {(["board", "list"] as ViewMode[]).map((v) => (
               <button
@@ -255,9 +255,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                 type="button"
                 aria-pressed={view === v}
                 onClick={() => setViewPref(v)}
-                className={`h-8 px-3 rounded-full text-[11px] font-semibold ${
-                  view === v ? "bg-[#0A1931] text-[#C9A96E]" : "text-[#6B6B6B]"
-                }`}
+                className="tab h-8 px-3 text-[11px] font-semibold"
               >
                 {t(`view.${v}`)}
               </button>
@@ -313,50 +311,41 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
               aria-expanded={teamOpen}
               aria-controls={teamOpen ? "board-team-panel" : undefined}
               onClick={() => setTeamOpen((o) => !o)}
-              className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors inline-flex items-center gap-1.5 ${
-                teamOpen ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]" : "bg-white text-[#0A1931] border-[#E8E6E1] hover:border-[#C9A96E]"
-              }`}
+              className="tab h-9 px-4 text-[12px] font-semibold gap-1.5"
             >
               <IconUsers /> {t("team.button")}
-              <span className="text-[10px] bg-[#C9A96E] text-[#0A1931] rounded-full px-1.5 py-0.5">{board.members.length}</span>
+              <span className="tab__count">{board.members.length}</span>
             </button>
             {view === "board" && (
               <button
                 type="button"
                 aria-pressed={editLayout}
                 onClick={() => setEditLayout((e) => !e)}
-                className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors ${
-                  editLayout ? "bg-[#C9A96E] text-[#0A1931] border-[#C9A96E]" : "bg-white text-[#0A1931] border-[#E8E6E1] hover:border-[#C9A96E]"
-                }`}
+                className="tab h-9 px-4 text-[12px] font-semibold"
               >
                 {editLayout ? t("view.editLayoutOn") : t("view.editLayout")}
               </button>
             )}
             <button
               type="button"
-              aria-pressed={showNames}
+              // Pressed = names hidden: the button's job is to hide them.
+              aria-pressed={!showNames}
               onClick={() => setShowNames((v) => !v)}
               title={t("view.namesHint")}
-              className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors inline-flex items-center gap-1.5 ${
-                showNames
-                  ? "bg-white text-[#0A1931] border-[#E8E6E1] hover:border-[#C9A96E]"
-                  : "bg-[#C9A96E] text-[#0A1931] border-[#C9A96E]"
-              }`}
+              className="tab h-9 px-4 text-[12px] font-semibold gap-1.5"
             >
-              <IconEye off={!showNames} /> {t("view.names")}
+              <IconEye off={!showNames} /> {t(showNames ? "view.names" : "view.namesHidden")}
             </button>
             <button
               type="button"
               aria-expanded={editorOpen}
               aria-controls={editorOpen ? "board-columns-panel" : undefined}
               onClick={() => setEditorOpen((o) => !o)}
-              className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors inline-flex items-center gap-1.5 ${
-                editorOpen ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]" : "bg-white text-[#0A1931] border-[#E8E6E1] hover:border-[#C9A96E]"
-              }`}
+              className="tab h-9 px-4 text-[12px] font-semibold gap-1.5"
             >
               <IconColumns /> {t("view.columns")}
               {hidden.size > 0 && (
-                <span className="text-[10px] bg-[#C9A96E] text-[#0A1931] rounded-full px-1.5 py-0.5">
+                <span className="tab__count">
                   {visibleCols.length}/{STATUS_ORDER.length}
                 </span>
               )}

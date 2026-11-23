@@ -178,12 +178,7 @@ export function ProjectsView({ board, send }: Props) {
   }
 
   const owners = Array.from(new Set(projects.flatMap((p) => p.owners ?? []))).sort();
-  const tab = (active: boolean) =>
-    `h-9 px-4 rounded-full text-[13px] font-semibold border transition-colors whitespace-nowrap inline-flex items-center gap-2 ${
-      active
-        ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]"
-        : "bg-white text-[#0A1931] border-[#E8E6E1] hover:border-[#C9A96E]"
-    }`;
+  const tab = "tab h-9 px-4 text-[13px] font-semibold";
 
   return (
     <>
@@ -244,11 +239,11 @@ export function ProjectsView({ board, send }: Props) {
       {projects.length > 0 && (
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-1.5">
-          <button onClick={() => showFilter("ongoing")} aria-pressed={filter === "ongoing"} className={tab(filter === "ongoing")}>
+          <button onClick={() => showFilter("ongoing")} aria-pressed={filter === "ongoing"} className={tab}>
             {t("projects.filter.ongoing")}
             <Count n={counts.ongoing} />
           </button>
-          <button onClick={() => showFilter("done")} aria-pressed={filter === "done"} className={tab(filter === "done")}>
+          <button onClick={() => showFilter("done")} aria-pressed={filter === "done"} className={tab}>
             {t("projects.filter.done")}
             <Count n={counts.done} />
           </button>
@@ -302,15 +297,13 @@ export function ProjectsView({ board, send }: Props) {
                 </option>
               ))}
             </select>
-            <div className="flex rounded-full border border-[#E8E6E1] bg-white p-0.5" role="group" aria-label={t("ux.projects.viewMode")}>
+            <div className="seg" role="group" aria-label={t("ux.projects.viewMode")}>
               {(["cards", "timeline"] as ViewMode[]).map((m) => (
                 <button
                   key={m}
                   aria-pressed={view === m}
                   onClick={() => setViewMode(m)}
-                  className={`h-7 px-3 rounded-full text-[12px] font-semibold ${
-                    view === m ? "bg-[#0A1931] text-[#C9A96E]" : "text-[#6B6B6B]"
-                  }`}
+                  className="tab h-7 px-3 text-[12px] font-semibold"
                 >
                   {t(`projects.view.${m}`)}
                 </button>
@@ -381,7 +374,7 @@ export function ProjectsView({ board, send }: Props) {
 
 function Count({ n }: { n: number }) {
   return (
-    <span className="min-w-[22px] h-[22px] px-1.5 rounded-full bg-[#EFECE6] text-[#6B6B6B] text-[11px] font-bold inline-flex items-center justify-center tabular-nums">
+    <span className="tab__count">
       {n}
     </span>
   );

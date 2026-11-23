@@ -339,12 +339,10 @@ export function CalendarView({ board, tasks, members, send }: Props) {
               <button
                 type="button"
                 onClick={() => setMonth(currentMonth())}
-                aria-pressed={showingThisMonth}
-                className={`h-8 px-3 rounded-full text-[12px] font-semibold border shrink-0 ${
-                  showingThisMonth
-                    ? "bg-white text-[#8A8A8A] border-[#E8E6E1] cursor-default"
-                    : "bg-white text-[#0A1931] border-[#E8E6E1] hover:border-[#C9A96E]"
-                }`}
+                // An action ("go to this month"), not a toggle: a no-op while
+                // this month is already shown.
+                disabled={showingThisMonth}
+                className="tab h-8 px-3 text-[12px] font-semibold shrink-0"
               >
                 {t("cal.today")}
               </button>

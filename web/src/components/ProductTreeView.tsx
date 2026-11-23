@@ -557,8 +557,6 @@ export function ProductTreeView() {
   const visibleRoots = active ? section.roots.filter((r) => keep.has(r.id)) : section.roots;
   const nothingAnywhere = searching && Object.values(hitsBySection).every((n) => n === 0);
 
-  const pill = (on: boolean) =>
-    on ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]" : "bg-white text-[#0A1931] border-[#E8E6E1]";
 
   return (
     <div className="max-w-[900px] mx-auto space-y-4">
@@ -594,12 +592,10 @@ export function ProductTreeView() {
                 aria-pressed={isActive}
                 aria-label={t("ux.products.sectionCount", { name: t(s.labelKey), count: countText })}
                 title={searching ? countText : undefined}
-                className={`h-9 px-4 rounded-full text-[11px] font-semibold uppercase tracking-wide border ${pill(
-                  isActive
-                )} ${empty && !isActive ? "opacity-40" : ""} ${focusRing}`}
+                className={`tab h-9 px-4 text-[11px] font-semibold uppercase tracking-wide ${empty && !isActive ? "opacity-40" : ""}`}
               >
                 {t(s.labelKey)}
-                <span className={`ml-1.5 tabular-nums ${isActive ? "" : "opacity-60"}`}>
+                <span className="tab__count">
                   {searching ? found : total}
                 </span>
               </button>
@@ -667,7 +663,7 @@ export function ProductTreeView() {
               type="button"
               onClick={() => setTag(null)}
               aria-pressed={tag === null}
-              className={`h-7 px-3 rounded-full text-[11px] border ${pill(tag === null)} ${focusRing}`}
+              className="tab h-7 px-3 text-[11px]"
             >
               {t("tree.tagAll")}
             </button>
@@ -678,10 +674,10 @@ export function ProductTreeView() {
                 onClick={() => setTag(tag === tg ? null : tg)}
                 aria-pressed={tag === tg}
                 aria-label={t("ux.products.tagFilterCount", { tag: TAG_LABEL[tg], n: tagCounts[tg] })}
-                className={`h-7 px-3 rounded-full text-[11px] border ${pill(tag === tg)} ${focusRing}`}
+                className="tab h-7 px-3 text-[11px]"
               >
                 {TAG_LABEL[tg]}
-                <span className={`ml-1.5 tabular-nums ${tag === tg ? "" : "opacity-60"}`}>
+                <span className="tab__count">
                   {tagCounts[tg]}
                 </span>
               </button>

@@ -1,0 +1,171 @@
+/* =============================================================================
+   Tabs, segmented controls and toggle pills — one definition for the app.
+   -----------------------------------------------------------------------------
+   Every control that says "this one is chosen" uses the same two parts:
+
+     .tab          a pill that can be chosen: the main tabs, Ongoing/Completed,
+                   Diary/Notes, the board's Team/Columns/Names toggles, people
+                   and tag chips. Standalone it is a bordered capsule.
+     .seg > .tab   the same pill inside a track: Board/List, Cards/Timeline,
+                   List/Board, the Report switch, Weekly grouping, the header's
+                   language and appearance switches.
+
+   The state comes from ARIA, so the look can never disagree with what a
+   screen reader is told: [aria-current="page"], [aria-pressed="true"] or
+   [aria-selected="true"] is the chosen one; [aria-expanded="true"] too, for a
+   pill that opens a panel (Team, Columns) — it reads as "on" while open.
+
+     rest      surface + hairline (standalone) / transparent (in a track)
+     hover     standalone: gold border (Classic) or a brighter rim (Glass);
+               in a track: the label darkens. Nothing moves or resizes.
+     chosen    the brand accent fill: navy + gold (Classic),
+               systemBlue + white (Glass). One look everywhere.
+     focus     :focus-visible ring in the accent, 2px, offset 2px
+     disabled  45% and no hover
+
+   Colours are --ctl-* tokens: Classic here, Glass in glass.css (both
+   appearances). Sizes stay on the element as Tailwind classes.
+   ========================================================================== */
+
+:root {
+  --ctl-bg: #ffffff;
+  --ctl-border: #e8e6e1;
+  --ctl-fg: #0a1931;
+  --ctl-fg-2: #6b6b6b;
+  --ctl-hover-border: #c9a96e;
+  --ctl-on-bg: #0a1931;
+  --ctl-on-fg: #c9a96e;
+  --ctl-on-border: #0a1931;
+  --ctl-focus: #c9a96e;
+  --ctl-track: #f5f3ef;
+  --ctl-track-border: #e8e6e1;
+}
+
+/* On the navy header (Classic) the track is dark, so the chosen segment is the
+   inverse brand pair: gold with navy text. Glass resets these in glass.css. */
+.seg--chrome {
+  --ctl-fg: #e6edf8;
+  --ctl-fg-2: #8ba1c2;
+  --ctl-on-bg: #c9a96e;
+  --ctl-on-fg: #0a1931;
+  --ctl-on-border: #c9a96e;
+  --ctl-track: #112040;
+  --ctl-track-border: #1e335e;
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--ctl-border);
+  border-radius: 9999px;
+  background-color: var(--ctl-bg);
+  color: var(--ctl-fg);
+  white-space: nowrap;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+.tab:hover:not(:disabled):not([aria-current="page"]):not([aria-pressed="true"]):not([aria-selected="true"]):not([aria-expanded="true"]) {
+  border-color: var(--ctl-hover-border);
+}
+.tab:is([aria-current="page"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) {
+  background-color: var(--ctl-on-bg);
+  color: var(--ctl-on-fg);
+  border-color: var(--ctl-on-border);
+}
+.tab:focus-visible {
+  outline: 2px solid var(--ctl-focus);
+  outline-offset: 2px;
+}
+.tab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* A count inside a tab (Ongoing 4, Team 4, Notes 2): a tint of the tab's own
+   text colour, so it reads on the rest and the chosen fill alike. */
+.tab__count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  background-color: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9999px;
+  background-color: var(--ctl-track);
+  border: 1px solid var(--ctl-track-border);
+}
+.seg > .tab {
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--ctl-fg-2);
+}
+.seg > .tab:hover:not(:disabled):not([aria-current="page"]):not([aria-pressed="true"]):not([aria-selected="true"]):not([aria-expanded="true"]) {
+  border-color: transparent;
+  color: var(--ctl-fg);
+}
+.seg > .tab:is([aria-current="page"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) {
+  background-color: var(--ctl-on-bg);
+  color: var(--ctl-on-fg);
+  border-color: var(--ctl-on-border);
+}
+
+/* ---------------------------------------------------------------------------
+   Glass material. A standalone tab is a thin glass capsule floating on the
+   wallpaper; a track is an inset well (no blur of its own: one live blur per
+   stack, glass.css §10).
+   Hover never repaints the blurred capsule (glass.css §7, §11): the rim is a
+   separate ::after layer that only fades in, and the border stays put.
+   --------------------------------------------------------------------------- */
+html[data-skin="glass"] .tab:not(.seg > .tab) {
+  box-shadow: var(--lift-sm), inset 0 1px 0 0 var(--rim-top);
+  backdrop-filter: blur(var(--blur-tile)) saturate(var(--sat));
+  -webkit-backdrop-filter: blur(var(--blur-tile)) saturate(var(--sat));
+}
+html[data-skin="glass"] .tab:is([aria-current="page"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) {
+  box-shadow: var(--lift-sm), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+}
+html[data-skin="glass"] .tab:not(.seg > .tab):hover:not(:disabled) {
+  border-color: var(--ctl-border);
+}
+html[data-skin="glass"] .tab:not(.seg > .tab)::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px var(--ctl-hover-border);
+  opacity: 0;
+  transition: opacity 160ms ease;
+  will-change: opacity;
+}
+html[data-skin="glass"] .tab:not(.seg > .tab):hover:not(:disabled):not([aria-current="page"]):not([aria-pressed="true"]):not([aria-selected="true"]):not([aria-expanded="true"])::after {
+  opacity: 1;
+}
+html[data-skin="glass"] .seg {
+  box-shadow: inset 0 0 0 1px var(--separator);
+  border-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab,
+  .tab::after {
+    transition: none !important;
+  }
+}

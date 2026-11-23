@@ -332,7 +332,7 @@ export function WeeklyView({ board, send }: Props) {
             <div
               role="group"
               aria-label={t("weekly.groupBy")}
-              className="ml-auto inline-flex rounded-full bg-white border border-[#A7F3D0] p-0.5"
+              className="seg ml-auto"
             >
               {(["day", "owner"] as Grouping[]).map((g) => (
                 <button
@@ -340,11 +340,7 @@ export function WeeklyView({ board, send }: Props) {
                   type="button"
                   aria-pressed={grouping === g}
                   onClick={() => setGroup(g)}
-                  className={`h-6 px-3 rounded-full text-[11px] font-semibold ${
-                    grouping === g
-                      ? "bg-[#0A1931] text-[#C9A96E]"
-                      : "text-[#6B6B6B] hover:text-[#065F46]"
-                  }`}
+                  className="tab h-7 px-3 text-[11px] font-semibold"
                 >
                   {g === "day"
                     ? t("weekly.groupList")

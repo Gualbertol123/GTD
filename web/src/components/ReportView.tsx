@@ -282,7 +282,7 @@ export function ReportView({ board, send }: Props) {
       <div
         role="tablist"
         aria-label={t("ux.report.views")}
-        className="inline-flex items-center gap-0.5 h-8 p-0.5 rounded-full border border-[#E8E6E1]"
+        className="seg h-8"
       >
         {views.map((v, i) => (
           <button
@@ -300,13 +300,11 @@ export function ReportView({ board, send }: Props) {
               setView(next);
               document.getElementById(`report-view-${next}`)?.focus();
             }}
-            className={`h-full px-3 rounded-full text-[11px] font-semibold ${focusRing} ${
-              view === v ? "bg-[#0A1931] text-[#C9A96E]" : "text-[#6B6B6B] hover:text-[#0A1931]"
-            }`}
+            className="tab h-full px-3 text-[11px] font-semibold"
           >
             {v === "report" ? t("report.viewReport") : t("report.viewExcluded")}
             {v === "excluded" && excluded.length > 0 && (
-              <span className="ml-1.5 opacity-70 tabular-nums">{excluded.length}</span>
+              <span className="tab__count">{excluded.length}</span>
             )}
           </button>
         ))}

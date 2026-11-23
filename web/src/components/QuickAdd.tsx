@@ -260,11 +260,7 @@ export function QuickAdd({
                   type="button"
                   onClick={() => toggleOwner(m)}
                   aria-pressed={on}
-                  className={`h-7 px-3 rounded-full text-[11px] border ${
-                    on
-                      ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]"
-                      : "bg-white text-[#0A1931] border-[#E8E6E1]"
-                  }`}
+                  className="tab h-7 px-3 text-[11px]"
                 >
                   {memberLabel(m)}
                 </button>

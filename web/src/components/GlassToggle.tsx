@@ -64,7 +64,7 @@ export function GlassToggle() {
         <div
           role="group"
           aria-label={t("skin.appearance")}
-          className="glass-appearance inline-flex items-center h-9 p-0.5 rounded-full border border-white/30 bg-white/10"
+          className="seg seg--chrome h-9"
         >
           {(["light", "dark", "auto"] as AppearanceChoice[]).map((mode) => {
             const active = appearance === mode;
@@ -75,9 +75,7 @@ export function GlassToggle() {
                 aria-pressed={active}
                 title={t(`skin.${mode}`)}
                 aria-label={t(`skin.${mode}`)}
-                className={`h-8 w-8 rounded-full text-[13px] leading-none flex items-center justify-center transition-colors ${
-                  active ? "bg-white/85 text-[#1c1c1e]" : "text-white/70 hover:text-white"
-                }`}
+                className="tab h-8 w-8 text-[13px] leading-none"
               >
                 {mode === "light" ? (
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}

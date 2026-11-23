@@ -48,7 +48,7 @@ html[data-layout="mobile"] {
   --m-text-2: #4a5568;
   --m-text-3: #7b8190;
   --m-accent: #0a1931;
-  --m-on-accent: #f5f3ef;
+  --m-on-accent: #c9a96e; /* navy + gold: the brand pair, as on the desktop */
   --m-warm: #c9a96e;
   --m-on-warm: #0a1931;
   --m-gold: #9a7a3f;
@@ -110,10 +110,8 @@ html[data-layout="mobile"][data-skin="glass"] {
   --m-grey: var(--ios-gray);
 }
 
-/* The selected segment: white in light, a lighter film in dark (as on iOS). */
-html[data-layout="mobile"] { --m-seg-on: #ffffff; --m-chrome-solid: #f5f3ef; }
+html[data-layout="mobile"] { --m-chrome-solid: #f5f3ef; }
 html[data-layout="mobile"][data-skin="glass"] { --m-chrome-solid: var(--canvas); }
-html[data-layout="mobile"][data-skin="glass"]:not([data-appearance="light"]) { --m-seg-on: rgba(255, 255, 255, 0.22); }
 
 /* Names the components use inline, kept as aliases. */
 html[data-layout="mobile"] {
@@ -803,10 +801,13 @@ html[data-typing] .m-dock {
   justify-content: center;
   gap: 6px;
 }
+/* The chosen segment is the accent fill, the same "chosen" as the pills
+   above and every tab and segmented control on the desktop
+   (styles/controls.css): navy + gold in Classic, systemBlue + white in Glass. */
 .m-seg button[aria-pressed="true"] {
-  background: var(--m-seg-on);
-  color: var(--m-text);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18), inset 0 1px 0 0 var(--m-rim-top), inset 0 0 0 1px var(--m-rim);
+  background: var(--m-accent);
+  color: var(--m-on-accent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--m-accent) 30%, transparent), inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
 }
 
 /* ---- Board pager ----------------------------------------------------------- */

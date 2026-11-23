@@ -8,6 +8,7 @@ import { initSkin } from "./lib/skin";
 import { initPwa } from "./lib/pwa";
 import { handleSpotifyCallback } from "./lib/spotifyAuth";
 import "./index.css";
+import "./styles/controls.css";
 import "./styles/glass.css";
 
 // Set the skin on <html> before React paints, so the first frame is correct.

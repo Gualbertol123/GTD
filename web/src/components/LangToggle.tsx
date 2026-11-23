@@ -1,20 +1,19 @@
 import { useT, type Lang } from "../lib/i18n";
 
 export function LangToggle() {
-  const { lang, setLang } = useT();
+  const { lang, setLang, t } = useT();
   const opt = (l: Lang, label: string) => (
     <button
       onClick={() => setLang(l)}
       aria-pressed={lang === l}
-      className={`px-2.5 h-7 text-[11px] font-semibold rounded-full transition-colors ${
-        lang === l ? "bg-[#C9A96E] text-[#0A1931]" : "text-[#8BA1C2] hover:text-white"
-      }`}
+      lang={l}
+      className="tab px-2.5 h-7 text-[11px] font-semibold"
     >
       {label}
     </button>
   );
   return (
-    <div className="inline-flex items-center rounded-full border border-[#1E335E] bg-[#0A1931] p-0.5">
+    <div role="group" aria-label={t("m.language")} className="seg seg--chrome">
       {opt("it", "IT")}
       {opt("en", "EN")}
     </div>

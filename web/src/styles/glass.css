@@ -116,6 +116,20 @@ html[data-skin="glass"][data-appearance="dark"] {
   --field-invalid: var(--ios-red);
   --field-invalid-ring: rgba(255, 69, 58, 0.45);
 
+  /* Tabs & segmented controls (styles/controls.css): thin glass capsules,
+     chosen = systemBlue, hover = a brighter rim. */
+  --ctl-bg: var(--mat-thin);
+  --ctl-border: var(--rim);
+  --ctl-fg: var(--label);
+  --ctl-fg-2: var(--label-2);
+  --ctl-hover-border: rgba(255, 255, 255, 0.6);
+  --ctl-on-bg: var(--ios-blue);
+  --ctl-on-fg: #ffffff;
+  --ctl-on-border: transparent;
+  --ctl-focus: var(--ios-blue);
+  --ctl-track: var(--fill-3);
+  --ctl-track-border: transparent;
+
   --scrim: rgba(4, 8, 20, 0.5);
   --option-bg: #1c2033;
   --canvas: #0b1020;
@@ -197,6 +211,9 @@ html[data-skin="glass"][data-appearance="light"] {
   --field-ring: rgba(0, 122, 255, 0.4);
   --field-invalid: var(--ios-red);
   --field-invalid-ring: rgba(255, 59, 48, 0.35);
+
+  /* A white rim is invisible on white glass: hover darkens the rim instead. */
+  --ctl-hover-border: rgba(60, 60, 67, 0.35);
 
   --scrim: rgba(226, 232, 245, 0.55);
   --option-bg: #ffffff;
@@ -383,18 +400,10 @@ html[data-skin="glass"][data-appearance="light"] header .text-\[\#C9A96E\] {
 html[data-skin="glass"][data-appearance="light"] header .text-\[\#8BA1C2\] {
   color: var(--label-2);
 }
-html[data-skin="glass"][data-appearance="light"] .glass-switch,
-html[data-skin="glass"][data-appearance="light"] .glass-appearance {
+html[data-skin="glass"][data-appearance="light"] .glass-switch {
   background-color: rgba(120, 120, 128, 0.12) !important;
   border-color: rgba(60, 60, 67, 0.2) !important;
   color: var(--label) !important;
-}
-html[data-skin="glass"][data-appearance="light"] .glass-appearance button {
-  color: var(--label-2);
-}
-html[data-skin="glass"][data-appearance="light"] .glass-appearance button[aria-pressed="true"] {
-  background-color: #fff;
-  color: var(--label);
 }
 
 /* The header's own pills — identity picker, connection badge, language
@@ -416,7 +425,20 @@ html[data-skin="glass"] header .bg-\[\#C9A96E\] {
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 
-/* Tab pills: unselected are thin glass capsules, selected is systemBlue. */
+/* The header's switches (language, appearance) use the shared segmented
+   control (styles/controls.css); in Glass they read the same tokens as every
+   other track instead of Classic's navy-header variant. */
+html[data-skin="glass"] .seg--chrome {
+  --ctl-fg: var(--label);
+  --ctl-fg-2: var(--label-2);
+  --ctl-on-bg: var(--ios-blue);
+  --ctl-on-fg: #ffffff;
+  --ctl-on-border: transparent;
+  --ctl-track: var(--fill-3);
+  --ctl-track-border: transparent;
+}
+
+/* Other white capsules (toolbar buttons): thin glass, like the tabs. */
 html[data-skin="glass"] .rounded-full.bg-white {
   background-color: var(--mat-thin);
   border-color: var(--rim);
@@ -614,7 +636,7 @@ html[data-skin="glass"] button {
 /* …except a button drawn as a field (.field: the assignee picker, the date
    pill): it takes the field's hover, a hairline border step, like the inputs
    beside it. */
-html[data-skin="glass"] button:not(:disabled):not(.field):hover {
+html[data-skin="glass"] button:not(:disabled):not(.field):not(.tab):hover {
   outline-color: var(--rim-top);
 }
 /* A button with no rounding of its own (a whole task card, a row, a panel

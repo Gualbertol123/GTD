@@ -179,11 +179,7 @@ export default function App() {
                   if (e.detail === 0) requestAnimationFrame(() => mainRef.current?.focus({ preventScroll: true }));
                 }}
                 onPointerDown={tb.id === "music" ? music.warm : undefined}
-                className={`px-4 h-9 rounded-full text-[12px] font-semibold tracking-wide transition-colors border ${
-                  active
-                    ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]"
-                    : "bg-white text-[#0A1931] border-[#E8E6E1] hover:border-[#C9A96E]"
-                }`}
+                className="tab px-4 h-9 text-[12px] font-semibold tracking-wide"
               >
                 {t(`tabs.${tb.id}`)}
               </button>
