@@ -1,13 +1,34 @@
-# Prompt: full usability and design audit of TEAM GTD FINALE
+# Prompt: usability and design audit + fixes for TEAM GTD FINALE
 
 Copy everything below the line into an AI coding agent that has this repository
 checked out (Claude Code or similar), with permission to run the app and edit files.
 
 ---
 
-You are a senior product designer and front-end engineer. Audit the usability,
-interaction design and visual design of this app, then fix what you find. Work
-from the code and from the running app, not from guesses.
+You are a senior product designer and front-end engineer. Your job has two
+parts, and **both are required**: audit the usability, interaction design and
+visual design of this app, **and fix what you find in the code**. A report on its
+own is not a finished job. Work from the code and from the running app, not
+from guesses.
+
+## How to work
+
+Work in a loop, one problem at a time:
+
+1. **Reproduce** the problem in the running app and take a "before" screenshot.
+2. **Find the cause** in the code (`file:line`), at the source, not just where it shows.
+3. **Fix it** with the smallest change that solves it properly.
+4. **Verify** it in the browser in every skin/appearance it affects (see below),
+   on desktop and phone, and take an "after" screenshot. Check you broke nothing
+   next to it.
+5. Run `npm run typecheck` and `npm test` in `web/`.
+6. **Commit** that fix on its own, then log it in `UX_AUDIT.md` and move on.
+
+Fix every blocker, major and minor you find. Fix polish items when they are
+cheap and safe. Only leave something unfixed when fixing it would break a
+constraint below or needs a decision from the team; then write down why and
+what the options are. Don't stop after the audit to ask whether to start fixing:
+start fixing.
 
 ## The app
 
@@ -97,9 +118,10 @@ active and gold hover, or a navy active tab on light glass), or different from t
 other tab sets. Then make a **single tab/segmented-control style**, defined
 once, and use it everywhere.
 
-## Then do the full audit
+## Then audit and fix everything else
 
 Go through every tab, desktop and phone, and judge it against the points below.
+Fix each problem as you find it, using the loop in "How to work".
 Use Playwright (Chromium is pre-installed: `require('playwright')`, no install
 needed). Run the dev server (`cd web && npm run dev`). Take screenshots at
 1440×900, 1024×768, 390×844 (phone) and 844×390 (phone landscape). If Supabase
@@ -163,7 +185,14 @@ isn't configured locally, use whatever offline or seed mode the app has
      field states, tab/segmented-control states)
    - before and after screenshots for the two known bugs and every major finding
    - anything you chose **not** to fix and why
-2. The code fixes, starting with the two known bugs, then blockers, then majors,
-   then minors.
-3. A short summary: what changed, what to check by hand, and any open
-   questions for the team.
+2. **The code fixes themselves**, committed one concern per commit: first the two
+   known bugs, then blockers, then majors, then minors, then cheap polish. Each
+   row in the findings table says whether it is fixed (with the commit) or not
+   (with the reason).
+3. A short summary: what you fixed, what is still open and why, what to check
+   by hand, and any questions for the team.
+
+You're done when the two known bugs are fixed and verified in all four
+skin/appearance combinations, every blocker, major and minor is fixed or
+explained, typecheck and tests pass, and the commits are pushed to the working
+branch.
