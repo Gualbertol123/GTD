@@ -546,6 +546,13 @@ html[data-skin="glass"] .bg-\[\#FEF3C7\] {
   background-color: color-mix(in srgb, var(--ios-orange) 16%, transparent);
   border-color: color-mix(in srgb, var(--ios-orange) 36%, transparent);
 }
+/* A blue information tint (the Weekly "Learnings" label). */
+html[data-skin="glass"] .bg-\[\#EEF3FA\] {
+  background-color: color-mix(in srgb, var(--ios-cyan) 16%, transparent);
+}
+html[data-skin="glass"] .border-\[\#C9D6EA\] {
+  border-color: color-mix(in srgb, var(--ios-cyan) 38%, transparent);
+}
 html[data-skin="glass"] .border-\[\#A7F3D0\] {
   border-color: color-mix(in srgb, var(--ios-green) 38%, transparent);
 }

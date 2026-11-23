@@ -71,7 +71,7 @@ export const WEEKLY_COLUMNS: {
   color: string;
 }[] = [
   { key: "well", label: "WINS", color: "bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]" },
-  { key: "learnings", label: "LEARNINGS", color: "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]" },
+  { key: "learnings", label: "LEARNINGS", color: "bg-[#EEF3FA] text-[#3A5A8A] border-[#C9D6EA]" },
   { key: "improve", label: "TO IMPROVE", color: "bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]" },
   { key: "blockers", label: "BLOCKERS", color: "bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA]" },
   { key: "focus", label: "FOCUS NEXT WEEK", color: "bg-white text-[#0A1931] border-[#E8E6E1]" },
