@@ -1152,8 +1152,20 @@ Two judgement calls worth knowing:
 
 Everything lives in `web/src/styles/glass.css`, scoped to
 `html[data-skin="glass"]`, targeting the utility classes the components already
-carry. No component renders differently and nothing in logic reads the skin, so
-`classic` restores the original stylesheet exactly. `initSkin()` runs before
+carry, so `classic` restores the original stylesheet exactly. Measured with
+`web/scripts/ux/skindiff.mjs` (every element's box and position, Classic vs
+Glass), the only differences beyond paint are deliberate:
+
+- the header is `position: sticky` in Glass (it scrolls away in Classic), and
+  the Products tree's own sticky bar reads that to sit below it;
+- the header shows two Glass-only controls, **Aspetto** (☀ ☾ A) and the blur
+  button (`GlassToggle.tsx`), and the phone's theme colour follows the skin;
+- panels and their children are positioned boxes (for the sheen), at zero
+  specificity so anything `absolute` / `fixed` keeps its place.
+
+Because glass.css restyles Classic's literal classes (`.bg-white`,
+`.text-[#6B6B6B]`, `.border-[#E8E6E1]`, …), renaming one of those classes in a
+component silently drops its Glass look: change both sides together. `initSkin()` runs before
 React mounts so the first frame is already the right skin.
 
 ### Hover, focus and motion: one rule for both skins

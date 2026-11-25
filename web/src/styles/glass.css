@@ -313,7 +313,6 @@ html[data-skin="glass"] .bg-\[\#FAF9F6\],
 html[data-skin="glass"] .bg-\[\#FBF6EC\],
 html[data-skin="glass"] .bg-\[\#FFFBF2\],
 html[data-skin="glass"] .bg-\[\#F0EDE8\] {
-  position: relative;
   background-color: var(--mat-regular);
   border-color: var(--rim);
   box-shadow:
@@ -339,7 +338,6 @@ html[data-skin="glass"] .bg-\[\#FFFBF2\] {
    the wallpaper darkens instead of a film brightening, and the bright rim
    moves to the bottom edge. */
 html[data-skin="glass"] .bg-\[\#EFECE6\] {
-  position: relative;
   background-color: var(--mat-recessed);
   border-color: transparent;
   box-shadow: var(--tray-shadow);
@@ -365,8 +363,19 @@ html[data-skin="glass"] .bg-\[\#FBF6EC\]::before {
 html[data-skin="glass"] .bg-white > *,
 html[data-skin="glass"] .bg-\[\#FAF9F6\] > *,
 html[data-skin="glass"] .bg-\[\#FBF6EC\] > * {
-  position: relative;
   z-index: 1;
+}
+/* Panels and their children need a positioned box (for the sheen above and
+   the stacking of content over it), but at ZERO specificity: an element that
+   is itself absolute, fixed or sticky (the colour pop-over, the Vetro switch
+   knob, a project's colour stripe) keeps its own position. Forcing relative
+   at the skin's weight put the pop-over into the header's flow (the header
+   grew by 138 px while it was open) and collapsed the knob and stripes to
+   0 px in Glass only. */
+:where(html[data-skin="glass"])
+  :where(.bg-white, .bg-\[\#FAF9F6\], .bg-\[\#FBF6EC\], .bg-\[\#FFFBF2\], .bg-\[\#F0EDE8\], .bg-\[\#EFECE6\]),
+:where(html[data-skin="glass"]) :where(.bg-white, .bg-\[\#FAF9F6\], .bg-\[\#FBF6EC\]) > :where(*) {
+  position: relative;
 }
 
 /* Control Center tile scale: larger continuous curves on the panels. */
