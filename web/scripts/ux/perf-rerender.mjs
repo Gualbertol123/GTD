@@ -5,7 +5,11 @@
 // present React puts the root in ProfileMode, so every fiber records
 // actualStartTime / actualDuration / selfBaseDuration. On each commit we walk
 // the tree and count the components whose actualStartTime is after the
-// previous commit (they rendered in this one).
+// previous commit. React also stamps that time on a fiber it only visits and
+// then bails out of (a React.memo whose props did not change), so a fiber
+// counts as rendered only if it also carries the PerformedWork flag (1),
+// which React sets when it actually calls the component. Visits are printed
+// alongside.
 //
 // Scenarios on a board of N (default 300) extra tasks:
 //   realtime  one task's title changes on the server; a postgres_changes event
@@ -40,6 +44,7 @@ await context.addInitScript(() => {
     onPostCommitFiberRoot() {},
     onCommitFiberRoot(_id, root) {
       const counts = {};
+      const visits = {};
       const self = {};
       let n = 0;
       const stack = [root.current];
@@ -47,7 +52,8 @@ await context.addInitScript(() => {
         const f = stack.pop();
         if (f.actualStartTime !== undefined && f.actualStartTime >= lastT) {
           const nm = nameOf(f);
-          if (nm) {
+          if (nm) visits[nm] = (visits[nm] ?? 0) + 1;
+          if (nm && (f.flags & 1)) {
             counts[nm] = (counts[nm] ?? 0) + 1;
             self[nm] = (self[nm] ?? 0) + (f.selfBaseDuration ?? 0);
             n++;
@@ -56,7 +62,7 @@ await context.addInitScript(() => {
         if (f.sibling) stack.push(f.sibling);
         if (f.child) stack.push(f.child);
       }
-      commits.push({ at: performance.now(), duration: root.current.actualDuration, components: n, counts, self });
+      commits.push({ at: performance.now(), duration: root.current.actualDuration, components: n, counts, visits, self });
       lastT = performance.now();
     },
   };
@@ -87,15 +93,17 @@ async function measure(label, act, settle = 1500) {
   await page.waitForTimeout(settle);
   const cs = await page.evaluate(() => window.__commits.splice(0));
   const sum = {};
+  const visits = {};
   const self = {};
   for (const c of cs) {
+    for (const [k, v] of Object.entries(c.visits)) visits[k] = (visits[k] ?? 0) + v;
     for (const [k, v] of Object.entries(c.counts)) sum[k] = (sum[k] ?? 0) + v;
     for (const [k, v] of Object.entries(c.self)) self[k] = (self[k] ?? 0) + v;
   }
   const top = Object.entries(sum).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, v]) => `${k}×${v} (${self[k].toFixed(1)} ms self)`);
   console.log(`\n## ${label}`);
   console.log(`   commits: ${cs.length}; render durations (ms): ${cs.map((c) => c.duration.toFixed(1)).join(", ")}; components rendered: ${cs.map((c) => c.components).join(", ")}`);
-  console.log(`   TaskCard renders: ${sum.TaskCard ?? 0} (of ${cards} cards on screen)`);
+  console.log(`   TaskCard renders: ${sum.TaskCard ?? 0} (of ${cards} cards on screen; ${visits.TaskCard ?? 0} visited incl. memo bail-outs)`);
   console.log(`   top: ${top.join(" · ")}`);
   return { cs, sum };
 }
