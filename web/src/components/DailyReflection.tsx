@@ -156,7 +156,7 @@ function RememberSelect({
 }) {
   const { t } = useT();
   return (
-    <label className="inline-flex items-center gap-2 flex-wrap text-[11px] text-[#6B6B6B]">
+    <label className="inline-flex items-center gap-2 flex-wrap text-[11px] text-ink-2">
       {t("reflAuth.remember")}
       <select
         value={value === null ? "" : String(value)}
@@ -217,7 +217,7 @@ export function DailyReflection({ board, members, send }: Props) {
             forgetAuth(me);
             bump();
           }}
-          className="h-8 px-4 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1]"
+          className="h-8 px-4 rounded-full text-[12px] font-semibold text-ink-2 border border-[#E8E6E1]"
         >
           {t("reflAuth.logout")}
         </button>
@@ -300,7 +300,7 @@ function ReflectionLogin({
       <h3 className="font-trajan text-[14px] uppercase tracking-widest text-[#0A1931] mt-4 text-center">
         {t("reflAuth.title")}
       </h3>
-      <p className="text-[12px] text-[#6B6B6B] mt-2 mb-4 text-center">{t("reflAuth.prompt")}</p>
+      <p className="text-[12px] text-ink-2 mt-2 mb-4 text-center">{t("reflAuth.prompt")}</p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -309,7 +309,7 @@ function ReflectionLogin({
       >
       <div className="space-y-2">
         <label className="block">
-          <span className="text-[11px] uppercase tracking-wide text-[#6B6B6B]">{t("reflAuth.user")}</span>
+          <span className="text-[11px] uppercase tracking-wide text-ink-2">{t("reflAuth.user")}</span>
           <select
             value={user}
             onChange={(e) => {
@@ -324,7 +324,7 @@ function ReflectionLogin({
           </select>
         </label>
         <label className="block">
-          <span className="text-[11px] uppercase tracking-wide text-[#6B6B6B]">{t("reflAuth.password")}</span>
+          <span className="text-[11px] uppercase tracking-wide text-ink-2">{t("reflAuth.password")}</span>
           <input
             type="password"
             value={pwd}
@@ -422,7 +422,7 @@ function AccountSection({ me, onChanged }: { me: string; onChanged: () => void }
           {t("ux.shell.changeInitial")}
         </div>
       )}
-      <h4 id="refl-account-title" className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
+      <h4 id="refl-account-title" className="font-trajan text-[11px] uppercase tracking-widest text-ink-2">
         {t("reflAuth.account")}
       </h4>
       <form
@@ -664,16 +664,16 @@ function SpacedReview({
   return (
     <div className="bg-white rounded-[12px] border border-[#E8E6E1] p-3">
       <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
-        <h4 className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
+        <h4 className="font-trajan text-[11px] uppercase tracking-widest text-ink-2">
           <Icon d={ICON_REVIEW} /> {t("review.title")}
         </h4>
         {pool.length > 0 && (
-          <button onClick={rollRandom} className="h-7 px-3 rounded-full text-[11px] font-semibold bg-[#F5F3EF] border border-[#E8E6E1] text-[#6B6B6B]">
+          <button onClick={rollRandom} className="h-7 px-3 rounded-full text-[11px] font-semibold bg-[#F5F3EF] border border-[#E8E6E1] text-ink-2">
             <span className="inline-flex items-center gap-1.5"><Icon d={ICON_SHUFFLE} size={12} />{t("review.random")}</span>
           </button>
         )}
       </div>
-      <p className="text-[11px] text-[#6B6B6B] mb-2">{t("review.hint")}</p>
+      <p className="text-[11px] text-ink-2 mb-2">{t("review.hint")}</p>
 
       {randomR && (
         <div className="mb-2 rounded-lg border border-[#C9A96E]/50 bg-[#FBF6EC] p-2.5">
@@ -691,7 +691,7 @@ function SpacedReview({
           {due.map(({ off, r }) => (
             <div key={r.id} className="rounded-lg border border-[#E8E6E1] bg-[#FAF9F6] p-2.5">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[10px] uppercase tracking-wide text-[#6B6B6B]">{daysAgo(off)}</span>
+                <span className="text-[10px] uppercase tracking-wide text-ink-2">{daysAgo(off)}</span>
                 <button
                   onClick={() => markReviewed(r.id)}
                   className="h-7 px-3 rounded-full text-[11px] font-semibold bg-[#0A1931] text-[#C9A96E]"
@@ -750,7 +750,7 @@ function RecentList({
 
   return (
     <div>
-      <h4 className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B] mb-2">
+      <h4 className="font-trajan text-[11px] uppercase tracking-widest text-ink-2 mb-2">
         {t("reflection.recent")}
       </h4>
       <div className="space-y-2">
@@ -776,7 +776,7 @@ function RecentList({
                   );
                 }}
                 aria-label={t("reflection.deleteLabel", { date: dayLabel(r.date, lang, t) })}
-                className="h-6 px-2 rounded-full text-[11px] text-[#6B6B6B]"
+                className="h-6 px-2 rounded-full text-[11px] text-ink-2"
               >
                 {t("notes.delete")}
               </button>

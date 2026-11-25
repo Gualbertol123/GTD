@@ -20,6 +20,11 @@ export default {
         // Classic gets a warm grey that clears 4.5:1 on every cream surface
         // (#A8A29E, used before, was 2.1-2.5:1).
         "ink-3": "var(--ink-3)",
+        // Secondary text, the step between the label and ink-3. Classic
+        // #55524D (7.6:1 on white): the old #6B6B6B had the same lightness as
+        // ink-3, so there was no third step (owner's decision, 2026-11-25).
+        // Glass points it at --label-2.
+        "ink-2": "var(--ink-2)",
       },
       fontFamily: {
         // Display / headings: Cinzel (fallback Trajan family) — used as "font-trajan" in the original

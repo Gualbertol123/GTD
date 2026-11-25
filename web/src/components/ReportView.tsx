@@ -104,7 +104,7 @@ function ErrorLine({ err }: { err: ErrLine }) {
     <div role="alert" className="text-[11px] text-[#C81E1E]">
       {err.text}
       {err.details && (
-        <details className="mt-1 text-[#6B6B6B]">
+        <details className="mt-1 text-ink-2">
           <summary className="cursor-pointer select-none">{t("ux.report.errorDetails")}</summary>
           <code className="block mt-1 whitespace-pre-wrap break-all">{err.details}</code>
         </details>
@@ -402,7 +402,7 @@ export function ReportView({ board, send }: Props) {
 
       {view === "excluded" && (
         <div className="rounded-[14px] border border-[#E8E6E1] bg-white p-4 space-y-3">
-          <p className="text-[12px] text-[#6B6B6B]">{t("report.excludedHint")}</p>
+          <p className="text-[12px] text-ink-2">{t("report.excludedHint")}</p>
           <div role="status" aria-live="polite" className="text-[11px] text-[#065F46] empty:hidden">
             {included && (
               <span className="inline-flex items-center gap-1.5">
@@ -412,7 +412,7 @@ export function ReportView({ board, send }: Props) {
             )}
           </div>
           {excluded.length === 0 ? (
-            <p className="text-[12px] text-[#6B6B6B]">{t("report.excludedEmpty")}</p>
+            <p className="text-[12px] text-ink-2">{t("report.excludedEmpty")}</p>
           ) : (
             <ul className="divide-y divide-[#F0EEE9]">
               {excluded.map((p) => {
@@ -421,7 +421,7 @@ export function ReportView({ board, send }: Props) {
                   <li key={p.id} className="flex items-center gap-3 py-2.5">
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-semibold text-[#0A1931] truncate">{p.name || "—"}</div>
-                      <div className="text-[11px] text-[#6B6B6B] tabular-nums">
+                      <div className="text-[11px] text-ink-2 tabular-nums">
                         {st.total
                           ? t("ux.report.projectTasks", { d: st.done, n: st.total })
                           : t("ux.report.projectNoTasks")}
@@ -451,12 +451,12 @@ export function ReportView({ board, send }: Props) {
             <IconDoc />
             {t("report.title")}
           </span>
-          <span className="text-[11px] text-[#6B6B6B]">{t("report.hint")}</span>
+          <span className="text-[11px] text-ink-2">{t("report.hint")}</span>
         </div>
 
         <div ref={actionsRowRef} className="flex items-end gap-2 flex-wrap">
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-[#6B6B6B]">
+            <span className="text-[10px] uppercase tracking-wide text-ink-2">
               {t("report.period")}
             </span>
             <select
@@ -480,7 +480,7 @@ export function ReportView({ board, send }: Props) {
           {custom && (
             <>
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wide text-[#6B6B6B]">
+                <span className="text-[10px] uppercase tracking-wide text-ink-2">
                   {t("report.from")}
                 </span>
                 <input
@@ -496,7 +496,7 @@ export function ReportView({ board, send }: Props) {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wide text-[#6B6B6B]">
+                <span className="text-[10px] uppercase tracking-wide text-ink-2">
                   {t("report.to")}
                 </span>
                 <input
@@ -582,7 +582,7 @@ export function ReportView({ board, send }: Props) {
           </div>
         )}
 
-        <div className="text-[12px] text-[#6B6B6B]">
+        <div className="text-[12px] text-ink-2">
           {data.totalTasks === 0 && data.totalSubtasks === 0
             ? t("report.empty")
             : t("report.preview", { t: data.totalTasks, s: data.totalSubtasks })}
@@ -593,7 +593,7 @@ export function ReportView({ board, send }: Props) {
 
       {stage === "editing" && !badRange && (
         <div className="space-y-2">
-          <div className="text-[11px] text-[#6B6B6B] text-center">{t("report.editHint")}</div>
+          <div className="text-[11px] text-ink-2 text-center">{t("report.editHint")}</div>
           <GlassReport
             key={`${draftKey}#${resetN}`}
             board={board}

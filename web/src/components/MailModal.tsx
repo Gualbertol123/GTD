@@ -137,7 +137,7 @@ export function MailComposer({ board, onClose, titleId = "mail-title", headingLe
             <Heading id={titleId} className="font-trajan text-[14px] uppercase tracking-widest text-[#0A1931]">
               {t("mail.title")}
             </Heading>
-            <p id={`${titleId}-period`} className="mt-1 text-[11px] text-[#6B6B6B]">
+            <p id={`${titleId}-period`} className="mt-1 text-[11px] text-ink-2">
               {periodText}
             </p>
           </div>
@@ -147,7 +147,7 @@ export function MailComposer({ board, onClose, titleId = "mail-title", headingLe
             onClick={onClose}
             aria-label={t("ux.report.mailClose")}
             title={t("ux.report.mailClose")}
-            className={`-mr-1.5 -mt-1 h-9 w-9 shrink-0 grid place-items-center rounded-full text-[#6B6B6B]`}
+            className={`-mr-1.5 -mt-1 h-9 w-9 shrink-0 grid place-items-center rounded-full text-ink-2`}
           >
             <svg {...ICON} width={16} height={16}>
               <path d="M6 6l12 12M18 6L6 18" />
@@ -157,7 +157,7 @@ export function MailComposer({ board, onClose, titleId = "mail-title", headingLe
         </div>
         <div className="p-4 space-y-3">
           <label className="flex items-center gap-2">
-            <span className="text-[11px] uppercase tracking-wide text-[#6B6B6B] shrink-0">{t("ux.report.mailTo")}</span>
+            <span className="text-[11px] uppercase tracking-wide text-ink-2 shrink-0">{t("ux.report.mailTo")}</span>
             <input
               type="email"
               multiple
@@ -171,7 +171,7 @@ export function MailComposer({ board, onClose, titleId = "mail-title", headingLe
           </label>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <span id="mail-body-label" className="text-[11px] uppercase tracking-wide text-[#6B6B6B]">
+              <span id="mail-body-label" className="text-[11px] uppercase tracking-wide text-ink-2">
                 {t("ux.report.mailBody")}
               </span>
               {edited && body !== text && (

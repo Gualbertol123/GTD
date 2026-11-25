@@ -6,7 +6,9 @@
   color-scheme: light;
 
   /* Text scale (Classic), every step >= 4.5:1 on white, cream and the tray:
-     label #0A1931 · secondary #6B6B6B · tertiary --ink-3. */
+     label #0A1931 (16:1) · secondary --ink-2 (7.6:1) · tertiary --ink-3
+     (5.3:1). The secondary used to be #6B6B6B, as light as the tertiary. */
+  --ink-2: #55524d;
   --ink-3: #6e6a64;
 
   /* Field states (Classic). glass.css re-points these for both appearances. */

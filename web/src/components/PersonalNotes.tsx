@@ -74,13 +74,13 @@ export function PersonalNotes({ board, me, send }: Props) {
           </svg>
           {t("notes.title")}
         </h4>
-        <span className="text-[11px] text-[#6B6B6B]">{t("notes.privacy")}</span>
+        <span className="text-[11px] text-ink-2">{t("notes.privacy")}</span>
       </div>
 
       {unavailable && (
         <div className="rounded-[12px] border border-[#FECACA] bg-[#FEF2F2] p-3 space-y-1">
           <p className="text-[12px] font-semibold text-[#C81E1E]">{t("notes.unavailable")}</p>
-          <p className="text-[11px] text-[#6B6B6B]">{t("notes.migrationNote")}</p>
+          <p className="text-[11px] text-ink-2">{t("notes.migrationNote")}</p>
           <p className="text-[10px] text-ink-3 break-words">{unavailable}</p>
         </div>
       )}
@@ -139,7 +139,7 @@ export function PersonalNotes({ board, me, send }: Props) {
                     <button
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => setEditing(null)}
-                      className="text-[11px] text-[#6B6B6B]"
+                      className="text-[11px] text-ink-2"
                     >
                       {t("notes.cancel")}
                     </button>
@@ -157,11 +157,11 @@ export function PersonalNotes({ board, me, send }: Props) {
                         setEditing(note.id);
                         setEditBody(note.body);
                       }}
-                      className="text-[11px] text-[#6B6B6B] ml-auto"
+                      className="text-[11px] text-ink-2 ml-auto"
                     >
                       {t("notes.edit")}
                     </button>
-                    <button onClick={(e) => remove(note, e.detail === 0)} className="text-[11px] text-[#6B6B6B]">
+                    <button onClick={(e) => remove(note, e.detail === 0)} className="text-[11px] text-ink-2">
                       {t("notes.delete")}
                     </button>
                   </div>

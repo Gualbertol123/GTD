@@ -352,11 +352,11 @@ export function TaskDetails({
             {showNames ? ownersLabel(task, memberLabel) : "—"}
           </span>
           {showNames && (
-            <span className="text-[9px] text-[#6B6B6B]">{assignOpen ? "▾" : "▸"}</span>
+            <span className="text-[9px] text-ink-2">{assignOpen ? "▾" : "▸"}</span>
           )}
         </button>
 
-        <label className="inline-flex flex-wrap items-center gap-x-1.5 min-w-0 max-w-full bg-[#F5F3EF] rounded-full px-3 min-h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B] field">
+        <label className="inline-flex flex-wrap items-center gap-x-1.5 min-w-0 max-w-full bg-[#F5F3EF] rounded-full px-3 min-h-8 border border-[#E8E6E1] text-[12px] text-ink-2 field">
           {t("task.due")}
           <input
             type="date"
@@ -367,7 +367,7 @@ export function TaskDetails({
         </label>
 
         {projectsOn && projects.length > 0 && (
-          <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full pl-2.5 pr-1 h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B] max-w-full field">
+          <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full pl-2.5 pr-1 h-8 border border-[#E8E6E1] text-[12px] text-ink-2 max-w-full field">
             <span
               className="w-2.5 h-2.5 rounded-full shrink-0"
               style={{ background: linked ? projectColor(linked) : "transparent", boxShadow: linked ? undefined : "inset 0 0 0 1px #C9C5BE" }}
@@ -405,7 +405,7 @@ export function TaskDetails({
             <span className="font-trajan text-[10px] uppercase tracking-wide text-ink-3">
               {t("assign.title")}
             </span>
-            <span className="text-[10px] text-[#6B6B6B]">
+            <span className="text-[10px] text-ink-2">
               {t(multiAssign ? "assign.hintMulti" : "assign.hintSingle")}
             </span>
           </div>
@@ -447,13 +447,13 @@ export function TaskDetails({
                   : p === "P3"
                   ? "bg-[#C9C5BE] text-[#0A1931] border-[#C9C5BE]"
                   : "bg-[#0A1931] text-white border-[#0A1931]"
-                : "bg-white text-[#6B6B6B] border-[#E8E6E1]"
+                : "bg-white text-ink-2 border-[#E8E6E1]"
             }`}
           >
             {p}
           </button>
         ))}
-        <span className="text-[11px] text-[#6B6B6B] ml-1">{t(`prio.${task.priority}short`)}</span>
+        <span className="text-[11px] text-ink-2 ml-1">{t(`prio.${task.priority}short`)}</span>
       </div>
 
       <RecurrenceControls task={task} send={send} available={!!recurringOn} />
@@ -467,7 +467,7 @@ export function TaskDetails({
       {/* Subtasks — styled like a small kanban column */}
       <div className="bg-[#EFECE6] rounded-[12px] border border-transparent p-2.5">
         <div className="flex items-center justify-between mb-2 px-1">
-          <span className="font-trajan text-[10px] uppercase tracking-wide text-[#6B6B6B]">
+          <span className="font-trajan text-[10px] uppercase tracking-wide text-ink-2">
             {t("task.subtasks")} {total ? `${done}/${total} · ${pct}%` : ""}
           </span>
         </div>
@@ -613,7 +613,7 @@ export function TaskDetails({
         <button
           type="button"
           onClick={(e) => deleteTask(e.detail === 0)}
-          className="h-8 px-4 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1]"
+          className="h-8 px-4 rounded-full text-[12px] font-semibold text-ink-2 border border-[#E8E6E1]"
         >
           {t("task.delete")}
         </button>

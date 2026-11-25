@@ -186,7 +186,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
 
   return (
     <div className="space-y-4" onKeyDown={onRootKeyDown}>
-      <div className="text-[12px] text-[#6B6B6B]">{t("cal.help")}</div>
+      <div className="text-[12px] text-ink-2">{t("cal.help")}</div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] xl:grid-cols-[320px_1fr] gap-4 items-start">
         {/* Left panel: selected task details, day list, unscheduled list.
@@ -199,7 +199,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
             className="bg-white rounded-[14px] border border-[#E8E6E1] p-3 outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ctl-focus)]"
           >
             <div className="flex items-center justify-between gap-2 mb-3">
-              <div id="cal-details-title" className="font-trajan text-[11px] uppercase text-[#6B6B6B]">
+              <div id="cal-details-title" className="font-trajan text-[11px] uppercase text-ink-2">
                 {t("cal.details")}
               </div>
               {selected && (
@@ -208,7 +208,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                   onClick={closeDetails}
                   aria-label={t("cal.closeDetails")}
                   title={t("cal.closeDetails")}
-                  className="h-7 w-7 -my-1 inline-flex items-center justify-center rounded-full text-[#6B6B6B] border border-transparent"
+                  className="h-7 w-7 -my-1 inline-flex items-center justify-center rounded-full text-ink-2 border border-transparent"
                 >
                   <IconClose size={16} />
                 </button>
@@ -230,7 +230,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
           {selectedDay && (
             <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-3">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="font-trajan text-[11px] uppercase text-[#6B6B6B]">
+                <div className="font-trajan text-[11px] uppercase text-ink-2">
                   {t("cal.dayTasks", { date: longDate(selectedDay) })}
                 </div>
                 <button
@@ -238,7 +238,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                   onClick={() => setSelectedDay(null)}
                   aria-label={t("cal.closeDay")}
                   title={t("cal.closeDay")}
-                  className="h-7 w-7 -my-1 inline-flex items-center justify-center rounded-full text-[#6B6B6B] border border-transparent"
+                  className="h-7 w-7 -my-1 inline-flex items-center justify-center rounded-full text-ink-2 border border-transparent"
                 >
                   <IconClose size={16} />
                 </button>
@@ -289,7 +289,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
               overKey === "nodue" ? "border-[#C9A96E]" : "border-[#E8E6E1]"
             }`}
           >
-            <div className="font-trajan text-[11px] uppercase text-[#6B6B6B] mb-2">{t("cal.noDue")}</div>
+            <div className="font-trajan text-[11px] uppercase text-ink-2 mb-2">{t("cal.noDue")}</div>
             {draggingDated && (
               <div className="text-[11px] text-[#7A5F30] mb-2">{t("cal.dropNoDue")}</div>
             )}
@@ -360,7 +360,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
 
           <div className="grid grid-cols-7 gap-1 mb-1">
             {weekdays.map((w) => (
-              <div key={w} className="text-[10px] uppercase text-[#6B6B6B] text-center font-semibold">{w}</div>
+              <div key={w} className="text-[10px] uppercase text-ink-2 text-center font-semibold">{w}</div>
             ))}
           </div>
 
@@ -490,7 +490,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
               }}
               aria-label={t("cal.dismiss")}
               title={t("cal.dismiss")}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-full text-[#6B6B6B] shrink-0"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-full text-ink-2 shrink-0"
             >
               <IconClose size={16} />
             </button>

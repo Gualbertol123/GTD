@@ -36,7 +36,7 @@ export function ListView({ tasks, members, send, showNames = true, multiAssign =
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[680px]">
           <thead>
-            <tr className="text-[10px] uppercase tracking-wide text-[#6B6B6B] bg-[#F5F3EF]">
+            <tr className="text-[10px] uppercase tracking-wide text-ink-2 bg-[#F5F3EF]">
               <th className="font-semibold px-4 py-2.5">{t("list.task")}</th>
               <th className="font-semibold px-3 py-2.5">{t("list.owner")}</th>
               <th className="font-semibold px-3 py-2.5">{t("list.priority")}</th>
@@ -80,7 +80,7 @@ export function ListView({ tasks, members, send, showNames = true, multiAssign =
                         </span>
                       </button>
                     </td>
-                    <td className="px-3 py-2.5 text-[12px] text-[#6B6B6B]">
+                    <td className="px-3 py-2.5 text-[12px] text-ink-2">
                       {showNames ? ownersLabel(tk, (name) => ownerLabel(t, name)) : "—"}
                     </td>
                     <td className="px-3 py-2.5 text-[12px] font-semibold text-[#0A1931]">{tk.priority}</td>
@@ -89,8 +89,8 @@ export function ListView({ tasks, members, send, showNames = true, multiAssign =
                         {statusLabel(lang, tk.status)}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-[12px] text-[#6B6B6B]">{dueFmt}</td>
-                    <td className="px-3 py-2.5 text-[12px] text-[#6B6B6B] text-center">
+                    <td className="px-3 py-2.5 text-[12px] text-ink-2">{dueFmt}</td>
+                    <td className="px-3 py-2.5 text-[12px] text-ink-2 text-center">
                       {total ? `${done}/${total}` : "—"}
                     </td>
                   </tr>

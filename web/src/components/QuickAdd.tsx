@@ -207,7 +207,7 @@ export function QuickAdd({
           <option key={s} value={s}>{statusLabel(lang, s)}</option>
         ))}
       </select>
-      <label className={`${field} pl-4 pr-3 inline-flex items-center gap-1.5 text-[#6B6B6B]`}>
+      <label className={`${field} pl-4 pr-3 inline-flex items-center gap-1.5 text-ink-2`}>
         <span className="text-[12px]">{t("quick.due")}</span>
         <input
           type="date"
@@ -219,7 +219,7 @@ export function QuickAdd({
       </label>
       {recurringOn && (
         <>
-          <label className={`${field} pl-4 pr-3 inline-flex items-center gap-1.5 text-[#6B6B6B]`} title={t("rec.repeat")}>
+          <label className={`${field} pl-4 pr-3 inline-flex items-center gap-1.5 text-ink-2`} title={t("rec.repeat")}>
             <RepeatIcon />
             <select
               value={repeat}
@@ -239,7 +239,7 @@ export function QuickAdd({
             onClick={() => setPin((v) => !v)}
             title={t(pin ? "pin.remove" : "pin.add")}
             aria-label={t("pin.add")}
-            className={`${field} w-11 inline-flex items-center justify-center ${pin ? "text-[#C9A96E] !border-[#C9A96E]" : "text-[#6B6B6B]"}`}
+            className={`${field} w-11 inline-flex items-center justify-center ${pin ? "text-[#C9A96E] !border-[#C9A96E]" : "text-ink-2"}`}
           >
             <StarIcon on={pin} size={16} />
           </button>
@@ -261,7 +261,7 @@ export function QuickAdd({
             {t("ux.board.titleRequired")}
           </p>
         ) : added ? (
-          <p className="px-2 text-[12px] text-[#6B6B6B] flex flex-wrap items-center gap-x-1.5 gap-y-1">
+          <p className="px-2 text-[12px] text-ink-2 flex flex-wrap items-center gap-x-1.5 gap-y-1">
             <span>{t("ux.board.added", { status: statusLabel(lang, added.task.status) })}</span>
             {(added.filtered || added.column) && (
               <>
@@ -294,7 +294,7 @@ export function QuickAdd({
             <span className="font-trajan text-[10px] uppercase tracking-wide text-ink-3">
               {t("assign.title")}
             </span>
-            <span className="text-[10px] text-[#6B6B6B]">
+            <span className="text-[10px] text-ink-2">
               {t(multiAssign ? "assign.hintMulti" : "assign.hintSingle")}
             </span>
           </div>

@@ -145,13 +145,13 @@ export function WeeklyView({ board, send }: Props) {
       >
         <span className="min-w-0">
           <span className="font-medium">{tk.title}</span>
-          <span className="text-[#6B6B6B] text-[11px]">
+          <span className="text-ink-2 text-[11px]">
             {" "}
             · {ownersLabel(tk, (n) => n)}
           </span>
           {tk.desc && (
             <span
-              className="text-[#6B6B6B] text-[11px] block truncate"
+              className="text-ink-2 text-[11px] block truncate"
               title={tk.desc}
             >
               {tk.desc}
@@ -160,7 +160,7 @@ export function WeeklyView({ board, send }: Props) {
         </span>
         <span className="shrink-0 flex items-center gap-1.5">
           {total > 0 && (
-            <span className="text-[10px] text-[#6B6B6B] inline-flex items-center gap-0.5">
+            <span className="text-[10px] text-ink-2 inline-flex items-center gap-0.5">
               <IconCheck size={11} />
               {done}/{total} {t("weekly.subtasksDone")}
             </span>
@@ -169,7 +169,7 @@ export function WeeklyView({ board, send }: Props) {
             {tk.priority}
           </span>
           {day && (
-            <span className="text-[10px] text-[#6B6B6B] tabular-nums w-[44px] text-right">
+            <span className="text-[10px] text-ink-2 tabular-nums w-[44px] text-right">
               {day}
             </span>
           )}
@@ -183,7 +183,7 @@ export function WeeklyView({ board, send }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="text-[12px] text-[#6B6B6B] max-w-[760px]">
+        <div className="text-[12px] text-ink-2 max-w-[760px]">
           {t("weekly.helpV2")}
         </div>
         <button
@@ -191,7 +191,7 @@ export function WeeklyView({ board, send }: Props) {
           onClick={clearAll}
           disabled={itemCount === 0}
           title={itemCount === 0 ? t("weekly.clearEmpty") : undefined}
-          className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-ink-2 border border-[#E8E6E1] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {t("weekly.clear")}
         </button>
@@ -317,12 +317,12 @@ export function WeeklyView({ board, send }: Props) {
           >
             <IconChevron
               size={13}
-              className={`text-[#6B6B6B] transition-transform ${archOpen ? "rotate-90" : ""}`}
+              className={`text-ink-2 transition-transform ${archOpen ? "rotate-90" : ""}`}
             />
-            <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
+            <span className="font-trajan text-[11px] uppercase tracking-widest text-ink-2">
               {t("archived.title")}
             </span>
-            <span className="text-[11px] font-semibold text-[#6B6B6B] bg-[#F5F3EF] rounded-full px-2 py-0.5 border border-[#E8E6E1]">
+            <span className="text-[11px] font-semibold text-ink-2 bg-[#F5F3EF] rounded-full px-2 py-0.5 border border-[#E8E6E1]">
               {archivedDone.length}
             </span>
             <span className="text-[10px] text-ink-3 ml-1 hidden sm:inline">
@@ -345,13 +345,13 @@ export function WeeklyView({ board, send }: Props) {
                     <div
                       key={tk.id}
                       title={`${tk.title} · ${who}`}
-                      className="text-[13px] text-[#6B6B6B] bg-[#FAF9F6] rounded-lg border border-[#E8E6E1] px-3 py-1.5 flex items-center justify-between gap-2"
+                      className="text-[13px] text-ink-2 bg-[#FAF9F6] rounded-lg border border-[#E8E6E1] px-3 py-1.5 flex items-center justify-between gap-2"
                     >
                       <span className="min-w-0 truncate">
                         <span className="font-medium text-[#0A1931]">
                           {tk.title}
                         </span>
-                        <span className="text-[#6B6B6B] text-[11px]">
+                        <span className="text-ink-2 text-[11px]">
                           {" "}
                           · {who}
                         </span>
@@ -361,7 +361,7 @@ export function WeeklyView({ board, send }: Props) {
                           {tk.priority}
                         </span>
                         {day && (
-                          <span className="text-[10px] text-[#6B6B6B] tabular-nums">
+                          <span className="text-[10px] text-ink-2 tabular-nums">
                             {day}
                           </span>
                         )}
@@ -374,7 +374,7 @@ export function WeeklyView({ board, send }: Props) {
                 <button
                   type="button"
                   onClick={() => setArchAll((a) => !a)}
-                  className="mt-2 text-[12px] font-semibold text-[#6B6B6B] underline-offset-2"
+                  className="mt-2 text-[12px] font-semibold text-ink-2 underline-offset-2"
                 >
                   {archAll
                     ? t("weekly.showLess")

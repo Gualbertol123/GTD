@@ -120,7 +120,7 @@ export function ProjectTasks({
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
         <h3 className="font-trajan text-[13px] uppercase tracking-widest text-[#0A1931]">{t("projects.tasks")}</h3>
-        <span className="text-[12px] text-[#6B6B6B] tabular-nums">
+        <span className="text-[12px] text-ink-2 tabular-nums">
           {s.done}/{s.total}
         </span>
         <span className="flex-1" />
@@ -143,7 +143,7 @@ export function ProjectTasks({
       {s.total > 0 && (
         <div className="space-y-1.5">
           <StatusStack byStatus={s.byStatus} total={s.total} height={8} />
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-[#6B6B6B]">
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ink-2">
             {STATUS_ORDER.filter((st) => s.byStatus[st]).map((st) => (
               <span key={st} className="inline-flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full" style={{ background: TASK_STATUS_COLOR[st] }} />
@@ -219,7 +219,7 @@ export function ProjectTasks({
               value=""
               onChange={(e) => e.target.value && save({ type: "updateTask", id: e.target.value, patch: { projectId: p.id } })}
               aria-label={t("projects.tasks.link")}
-              className="w-full h-8 rounded-full bg-white border border-dashed border-[#E3DFD7] px-3 text-[12px] text-[#6B6B6B] cursor-pointer field focus:border-solid"
+              className="w-full h-8 rounded-full bg-white border border-dashed border-[#E3DFD7] px-3 text-[12px] text-ink-2 cursor-pointer field focus:border-solid"
             >
               <option value="">{t("projects.tasks.link")}</option>
               {STATUS_ORDER.map((st) => {
@@ -324,7 +324,7 @@ export function ProjectTasks({
                           disabled={n === 0}
                           title={t("projects.step.up")}
                           aria-label={t("projects.step.up")}
-                          className="w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] disabled:opacity-25"
+                          className="w-7 h-7 rounded-full inline-flex items-center justify-center text-ink-2 disabled:opacity-25"
                         >
                           <Icon name="up" size={14} />
                         </button>
@@ -333,7 +333,7 @@ export function ProjectTasks({
                           disabled={n === s.tasks.length - 1}
                           title={t("projects.step.down")}
                           aria-label={t("projects.step.down")}
-                          className="w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] disabled:opacity-25"
+                          className="w-7 h-7 rounded-full inline-flex items-center justify-center text-ink-2 disabled:opacity-25"
                         >
                           <Icon name="down" size={14} />
                         </button>
@@ -354,7 +354,7 @@ export function ProjectTasks({
               <div key={st} className="space-y-1.5">
                 <div className="flex items-center gap-1.5 px-0.5">
                   <span className="w-2 h-2 rounded-full" style={{ background: TASK_STATUS_COLOR[st] }} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B]">{statusLabel(lang, st)}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-ink-2">{statusLabel(lang, st)}</span>
                   <span className="text-[10px] font-bold text-ink-3">{group.length}</span>
                 </div>
                 {group.map((task) => (
@@ -391,7 +391,7 @@ function DueChip({ task }: { task: Task }) {
       ? "due-chip--late bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA]"
       : open && left !== null && left <= 2
         ? "due-chip--soon bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]"
-        : "bg-[#F5F3EF] text-[#6B6B6B] border-[#E8E6E1]";
+        : "bg-[#F5F3EF] text-ink-2 border-[#E8E6E1]";
   return (
     <span className={`due-chip text-[10px] px-1.5 py-px rounded-full border whitespace-nowrap inline-flex items-center gap-0.5 ${cls}`}>
       <Icon name="clock" size={10} />
@@ -405,7 +405,7 @@ function TaskMeta({ task }: { task: Task }) {
   const subs = task.subtasks.length;
   const subsDone = task.subtasks.filter((x) => x.done).length;
   return (
-    <span className="flex items-center gap-1.5 flex-wrap text-[10px] text-[#6B6B6B]">
+    <span className="flex items-center gap-1.5 flex-wrap text-[10px] text-ink-2">
       <Avatars names={taskOwners(task).filter((n) => n !== UNASSIGNED)} size={16} />
       <DueChip task={task} />
       {subs > 0 && (
@@ -564,7 +564,7 @@ function MiniBoard({
   };
   return (
     <div className="space-y-3">
-      <div className="text-[11px] text-[#6B6B6B]">{t("ux.projects.dragHint")}</div>
+      <div className="text-[11px] text-ink-2">{t("ux.projects.dragHint")}</div>
       <div className="overflow-x-auto -mx-1 px-1 pb-1">
         <div className="grid grid-flow-col auto-cols-[minmax(170px,1fr)] gap-2">
           {STATUS_ORDER.map((st) => {
@@ -589,7 +589,7 @@ function MiniBoard({
               >
                 <div className="flex items-center gap-1.5 px-0.5">
                   <span className="w-2 h-2 rounded-full" style={{ background: TASK_STATUS_COLOR[st] }} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#6B6B6B] truncate">{statusLabel(lang, st)}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-ink-2 truncate">{statusLabel(lang, st)}</span>
                   <span className="text-[10px] font-bold text-ink-3">{col.length}</span>
                 </div>
                 {col.map((task) => (
@@ -672,12 +672,12 @@ function MiniBoard({
           className="rounded-[12px] border border-[#C9A96E] bg-white outline-none scroll-mb-4"
         >
           <div className="flex items-center gap-2 px-2.5 pt-2">
-            <span className="flex-1 text-[11px] font-bold uppercase tracking-widest text-[#6B6B6B]">{statusLabel(lang, opened.status)}</span>
+            <span className="flex-1 text-[11px] font-bold uppercase tracking-widest text-ink-2">{statusLabel(lang, opened.status)}</span>
             <button
               onClick={() => closeEditor(opened.id)}
               aria-label={t("common.close")}
               title={t("common.close")}
-              className="w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B]"
+              className="w-7 h-7 rounded-full inline-flex items-center justify-center text-ink-2"
             >
               <Icon name="x" size={14} />
             </button>
@@ -698,7 +698,7 @@ function BoardModePicker({ project: p, available, save }: { project: Project; av
   return (
     <div className="rounded-[12px] border border-[#E8E6E1] bg-[#F5F3EF] px-3 py-2 space-y-1.5">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="font-trajan text-[10px] uppercase tracking-widest text-[#6B6B6B]">{t("projects.board.label")}</span>
+        <span className="font-trajan text-[10px] uppercase tracking-widest text-ink-2">{t("projects.board.label")}</span>
         <div className="seg" role="group" aria-label={t("projects.board.label")}>
           {MODES.map((m) => (
             <button
@@ -713,7 +713,7 @@ function BoardModePicker({ project: p, available, save }: { project: Project; av
           ))}
         </div>
       </div>
-      <div className="text-[11px] text-[#6B6B6B]">{available ? t(`projects.board.hint.${mode}`) : t("projects.board.needsMigration")}</div>
+      <div className="text-[11px] text-ink-2">{available ? t(`projects.board.hint.${mode}`) : t("projects.board.needsMigration")}</div>
     </div>
   );
 }

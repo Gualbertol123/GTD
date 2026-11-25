@@ -36,7 +36,7 @@ interface Props {
   notify?: (text: string, undo: () => void) => void;
 }
 
-const label = "font-trajan text-[10px] uppercase tracking-widest text-[#6B6B6B]";
+const label = "font-trajan text-[10px] uppercase tracking-widest text-ink-2";
 const card = "bg-white rounded-[14px] border border-[#E8E6E1]";
 
 export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, prevId, nextId, onOpen, onDeleted, notify }: Props) {
@@ -105,7 +105,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
           onClick={() => save({ type: "projectReportHidden", id: p.id, hidden: !p.reportHidden })}
           title={t("projects.reportHint")}
           className={`h-9 px-3 rounded-full border text-[12px] font-semibold ${
-            p.reportHidden ? "bg-white text-[#6B6B6B] border-[#E8E6E1]" : "bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]"
+            p.reportHidden ? "bg-white text-ink-2 border-[#E8E6E1]" : "bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]"
           }`}
         >
           {p.reportHidden ? `○ ${t("projects.notInReport")}` : `● ${t("projects.inReport")}`}
@@ -118,7 +118,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
             save({ type: "projectDelete", id: p.id });
             onBack();
           }}
-          className="h-9 px-3 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1]"
+          className="h-9 px-3 rounded-full text-[12px] font-semibold text-ink-2 border border-[#E8E6E1]"
         >
           {t("projects.delete")}
         </button>
@@ -148,7 +148,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                   {t("projects.status.ongoing")}
                 </Pill>
               )}
-              <span className="text-[11px] text-[#6B6B6B]">{t("projects.autoStatus")}</span>
+              <span className="text-[11px] text-ink-2">{t("projects.autoStatus")}</span>
             </div>
 
             <AutoTextarea
@@ -191,7 +191,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                         className={`h-7 px-2.5 rounded-full text-[11px] font-semibold border inline-flex items-center gap-1 ${
                           projectPriority(p) === pr
                             ? "bg-[#0A1931] text-[#C9A96E] border-[#0A1931]"
-                            : "bg-white text-[#6B6B6B] border-[#E8E6E1]"
+                            : "bg-white text-ink-2 border-[#E8E6E1]"
                         }`}
                       >
                         <span className={`w-2 h-2 rounded-full ${PRIORITY_DOT[pr]}`} />
@@ -201,7 +201,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full px-3 h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B] field">
+                  <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full px-3 h-8 border border-[#E8E6E1] text-[12px] text-ink-2 field">
                     {t("projects.start")}
                     <input
                       type="date"
@@ -212,7 +212,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                     />
                   </label>
                   <span className="text-ink-3">→</span>
-                  <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full px-3 h-8 border border-[#E8E6E1] text-[12px] text-[#6B6B6B] field">
+                  <label className="inline-flex items-center gap-1.5 bg-[#F5F3EF] rounded-full px-3 h-8 border border-[#E8E6E1] text-[12px] text-ink-2 field">
                     {t("projects.target")}
                     <input
                       type="date"
@@ -285,7 +285,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
               <ProgressRing value={s.share} color={done ? PROJECT_STATUS_COLOR.done : color} size={112} stroke={10} label={s.total ? undefined : "—"} />
               {!done && <HealthBadge health={s.health} daysLeft={s.daysLeft} />}
             </div>
-            <div className="flex-1 space-y-1 text-[12px] text-[#6B6B6B]">
+            <div className="flex-1 space-y-1 text-[12px] text-ink-2">
               {STATUS_ORDER.filter((st) => s.byStatus[st]).map((st) => (
                 <div key={st} className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-1.5">
@@ -339,7 +339,7 @@ function Schedule({ project: p, stats: s, color }: { project: Project; stats: Pr
   const elapsed = pos(now);
   return (
     <div className="px-4 sm:px-5 pb-4">
-      <div className="flex items-center justify-between text-[10px] font-semibold text-[#6B6B6B] mb-1 gap-2">
+      <div className="flex items-center justify-between text-[10px] font-semibold text-ink-2 mb-1 gap-2">
         <span>{fmtDay(p.startDate, lang, true)}</span>
         <span className="text-center">
           {t("projects.timeUsed", { n: Math.round(elapsed) })} · {t("projects.workDone", { n: Math.round(s.share * 100) })}
@@ -426,8 +426,8 @@ function LegacyChecklist({
   };
   return (
     <div className="rounded-[14px] border border-dashed border-[#E3DFD7] bg-[#FAF9F6] p-4 space-y-2">
-      <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">{t("projects.legacy.title")}</h3>
-      <p className="text-[11px] text-[#6B6B6B]">{t("projects.legacy.hint")}</p>
+      <h3 className="font-trajan text-[11px] uppercase tracking-widest text-ink-2">{t("projects.legacy.title")}</h3>
+      <p className="text-[11px] text-ink-2">{t("projects.legacy.hint")}</p>
       <ul className="space-y-1">
         {p.items.map((it) => (
           <li key={it.id} className={`text-[12px] flex gap-1.5 ${it.done ? "line-through text-ink-3" : "text-[#0A1931]"}`}>

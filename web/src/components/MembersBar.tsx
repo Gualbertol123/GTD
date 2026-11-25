@@ -53,7 +53,7 @@ export function MembersBar({ board, send }: Props) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="font-trajan text-[10px] uppercase tracking-widest text-[#6B6B6B] mr-1">
+      <span className="font-trajan text-[10px] uppercase tracking-widest text-ink-2 mr-1">
         {t("members.team")}
       </span>
       {board.members.map((m) => (

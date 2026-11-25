@@ -123,7 +123,7 @@ function AliasNote({ node, query }: { node: TreeNode; query: string }) {
   const alias = aliasMatch(node, query);
   if (!alias) return null;
   return (
-    <span className="text-[11px] text-[#6B6B6B] italic">
+    <span className="text-[11px] text-ink-2 italic">
       {t("ux.products.byAlias", { alias })}
     </span>
   );
@@ -245,9 +245,9 @@ function MapCard({
           {title}
         </span>
       </div>
-      <p className="text-[11px] text-[#6B6B6B] mt-2">{sub}</p>
+      <p className="text-[11px] text-ink-2 mt-2">{sub}</p>
       <div className="flex flex-wrap gap-1 mt-2">{chips}</div>
-      <p className="text-[10px] text-[#6B6B6B] mt-auto pt-2">{foot}</p>
+      <p className="text-[10px] text-ink-2 mt-auto pt-2">{foot}</p>
     </div>
   );
 }
@@ -258,7 +258,7 @@ function MapArrow({ label }: { label: string }) {
       <span className="text-[#C9A96E] leading-none">
         <ArrowIcon className="rotate-90 md:rotate-0" />
       </span>
-      <span className="text-[10px] text-[#6B6B6B] md:text-center leading-tight">{label}</span>
+      <span className="text-[10px] text-ink-2 md:text-center leading-tight">{label}</span>
     </div>
   );
 }
@@ -268,7 +268,7 @@ function OverviewMap() {
   const productSection = sections.find((s) => s.id === PRODUCTS_SECTION)!;
   const productCount = productSection.roots.reduce((n, r) => n + countLeaves(r), 0);
 
-  const chip = "text-[10px] px-2 py-0.5 rounded-full bg-[#EFECE6] text-[#6B6B6B]";
+  const chip = "text-[10px] px-2 py-0.5 rounded-full bg-[#EFECE6] text-ink-2";
   const feedArrow = (
     <span className="inline-block align-middle mx-1 text-[#C9A96E]">
       <ArrowIcon className="w-3 h-3" />
@@ -322,7 +322,7 @@ function OverviewMap() {
 
       {/* What each template feeds */}
       <div className={`mt-3 rounded-[12px] border border-[#C9A96E]/40 px-3 py-2 ${WARM_TINT}`}>
-        <p className="text-[11px] text-[#6B6B6B]">
+        <p className="text-[11px] text-ink-2">
           <span className="font-semibold text-[#0A1931]">A_L</span>
           {feedArrow}
           {t("tree.mapFeedAL")}
@@ -492,7 +492,7 @@ export function ProductTreeView() {
                 <Highlight text={node.label} query={query} />
               </span>
               {node.note && (
-                <span className="text-[11px] text-[#6B6B6B]">
+                <span className="text-[11px] text-ink-2">
                   <Highlight text={node.note} query={query} />
                 </span>
               )}
@@ -517,13 +517,13 @@ export function ProductTreeView() {
                     aria-expanded={expanded}
                     className={`w-full text-left flex items-center gap-2 rounded-lg px-2 py-[5px] min-h-[44px] md:min-h-[32px] ${focusRing}`}
                   >
-                    <span className="shrink-0 w-[18px] h-[18px] rounded-md bg-[#F5F3EF] text-[#6B6B6B] flex items-center justify-center">
+                    <span className="shrink-0 w-[18px] h-[18px] rounded-md bg-[#F5F3EF] text-ink-2 flex items-center justify-center">
                       <Chevron open={expanded} />
                     </span>
                     {content}
                     {b && (
                       <span
-                        className="shrink-0 text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full bg-[#EFECE6] text-[#6B6B6B]"
+                        className="shrink-0 text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full bg-[#EFECE6] text-ink-2"
                         title={
                           b.shown !== b.total
                             ? t("ux.products.visibleOf", { n: b.shown, total: b.total })
@@ -564,8 +564,8 @@ export function ProductTreeView() {
         <h2 className="font-trajan text-[16px] uppercase tracking-widest text-[#0A1931]">
           {t("tree.title")}
         </h2>
-        <p className="text-[12px] text-[#6B6B6B] mt-2">{t("tree.intro")}</p>
-        <p className="text-[11px] text-[#6B6B6B] mt-1">{t("tree.source")}</p>
+        <p className="text-[12px] text-ink-2 mt-2">{t("tree.intro")}</p>
+        <p className="text-[11px] text-ink-2 mt-1">{t("tree.source")}</p>
       </div>
 
       {/* Section picker, search and tag filter — first, so a search is one tap away */}
@@ -603,7 +603,7 @@ export function ProductTreeView() {
           })}
         </div>
 
-        <p className="text-[11px] text-[#6B6B6B]">{t(section.blurbKey)}</p>
+        <p className="text-[11px] text-ink-2">{t(section.blurbKey)}</p>
 
         <div className="flex flex-wrap items-center gap-2">
           <div role="search" className="relative flex-1 min-w-[200px]">
@@ -629,7 +629,7 @@ export function ProductTreeView() {
                 onClick={clearSearch}
                 aria-label={t("ux.products.clearSearch")}
                 title={t("ux.products.clearSearch")}
-                className={`absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-[#6B6B6B] ${focusRing}`}
+                className={`absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-ink-2 ${focusRing}`}
               >
                 <IconClose size={14} />
               </button>
@@ -658,7 +658,7 @@ export function ProductTreeView() {
 
         {taggable && (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] text-[#6B6B6B]">{t("tree.tagFilter")}</span>
+            <span className="text-[11px] text-ink-2">{t("tree.tagFilter")}</span>
             <button
               type="button"
               onClick={() => setTag(null)}
@@ -686,7 +686,7 @@ export function ProductTreeView() {
         )}
 
         {searching && (visibleRoots.length > 0 || elsewhere.length > 0) && (
-          <p className="text-[11px] text-[#6B6B6B]" aria-live="polite">
+          <p className="text-[11px] text-ink-2" aria-live="polite">
             {visibleRoots.length > 0 &&
               (hits.size === 1 ? t("tree.match1") : t("tree.matches", { n: hits.size }))}
             {elsewhere.length > 0 && (
@@ -726,14 +726,14 @@ export function ProductTreeView() {
         <summary
           className={`list-none [&::-webkit-details-marker]:hidden cursor-pointer select-none flex items-center gap-2 px-4 py-3 min-h-[44px] rounded-[14px] ${focusRing}`}
         >
-          <span className="text-[#6B6B6B]">
+          <span className="text-ink-2">
             <Chevron open={howTo} />
           </span>
-          <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
+          <span className="font-trajan text-[11px] uppercase tracking-widest text-ink-2">
             {t("tree.mapTitle")}
           </span>
           {!howTo && (
-            <span className="text-[11px] text-[#6B6B6B] truncate">
+            <span className="text-[11px] text-ink-2 truncate">
               · {t("ux.products.howToReadHint")}
             </span>
           )}
@@ -743,7 +743,7 @@ export function ProductTreeView() {
 
           {/* Tag legend — what the chips on every product mean */}
           <div>
-            <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
+            <h3 className="font-trajan text-[11px] uppercase tracking-widest text-ink-2">
               {t("tree.tagLegend")}
             </h3>
             <dl className="mt-3 space-y-1.5">
@@ -752,9 +752,9 @@ export function ProductTreeView() {
                   <dt className="shrink-0 w-10">
                     <TagChip tag={tg} />
                   </dt>
-                  <dd className="text-[#6B6B6B]">
+                  <dd className="text-ink-2">
                     {t(`tree.tag${tg}Desc`)}
-                    <span className="text-[#6B6B6B]">
+                    <span className="text-ink-2">
                       {" · "}
                       {t("tree.tagCount", { n: GLOBAL_TAG_COUNTS[tg] })}
                     </span>
@@ -769,11 +769,11 @@ export function ProductTreeView() {
       {/* The trees — one panel per root */}
       {visibleRoots.length === 0 ? (
         <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-6 text-center">
-          <p className="text-[13px] text-[#6B6B6B]">
+          <p className="text-[13px] text-ink-2">
             {searching ? t("ux.products.noResultFor", { q: query.trim() }) : t("tree.noMatch")}
           </p>
           {searching && nothingAnywhere && (
-            <p className="text-[11px] text-[#6B6B6B] mt-2 max-w-[460px] mx-auto">
+            <p className="text-[11px] text-ink-2 mt-2 max-w-[460px] mx-auto">
               {t("ux.products.searchHint")}
             </p>
           )}
@@ -810,7 +810,7 @@ export function ProductTreeView() {
                 <Highlight text={root.label} query={query} />
               </span>
               {root.note && (
-                <span className="text-[11px] text-[#6B6B6B]">
+                <span className="text-[11px] text-ink-2">
                   <Highlight text={root.note} query={query} />
                 </span>
               )}
@@ -823,7 +823,7 @@ export function ProductTreeView() {
                 </span>
               )}
               <span
-                className="ml-auto shrink-0 text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded-full bg-[#EFECE6] text-[#6B6B6B]"
+                className="ml-auto shrink-0 text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded-full bg-[#EFECE6] text-ink-2"
                 title={
                   b.shown !== b.total
                     ? t("ux.products.visibleOf", { n: b.shown, total: b.total })
@@ -848,7 +848,7 @@ export function ProductTreeView() {
                     rootHit ? WARM_TINT : ""
                   } ${focusRing} focus-visible:ring-inset`}
                 >
-                  <span className="text-[#6B6B6B] w-3 flex items-center">
+                  <span className="text-ink-2 w-3 flex items-center">
                     <Chevron open={expanded} />
                   </span>
                   {header}
@@ -881,7 +881,7 @@ export function ProductTreeView() {
           <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#0A1931]">
             {t("tree.margin")}
           </h3>
-          <p className="text-[11px] text-[#6B6B6B] mt-1 mb-3">{t("tree.marginBlurb")}</p>
+          <p className="text-[11px] text-ink-2 mt-1 mb-3">{t("tree.marginBlurb")}</p>
           <ol className="space-y-1">
             {marginSteps.map((step, i) => (
               <li key={i} className="flex items-baseline gap-2">
@@ -894,13 +894,13 @@ export function ProductTreeView() {
                 </span>
                 <span
                   className={`text-[12px] ${
-                    step.op === "=" ? "font-semibold text-[#0A1931]" : "text-[#6B6B6B]"
+                    step.op === "=" ? "font-semibold text-[#0A1931]" : "text-ink-2"
                   }`}
                 >
                   {step.label}
                 </span>
                 {(step.noteKey || step.note) && (
-                  <span className="text-[11px] text-[#6B6B6B]">
+                  <span className="text-[11px] text-ink-2">
                     ({step.noteKey ? t(step.noteKey) : step.note})
                   </span>
                 )}
@@ -913,25 +913,25 @@ export function ProductTreeView() {
       {/* Abbreviations + what was changed versus the raw sheets */}
       <div className="grid gap-4 md:grid-cols-2">
         <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-4">
-          <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
+          <h3 className="font-trajan text-[11px] uppercase tracking-widest text-ink-2">
             {t("tree.glossary")}
           </h3>
           <dl className="mt-3 space-y-1.5">
             {glossary.map(([abbr, key]) => (
               <div key={abbr} className="flex gap-2 text-[12px]">
                 <dt className="shrink-0 w-12 font-semibold text-[#0A1931]">{abbr}</dt>
-                <dd className="text-[#6B6B6B]">{t(key)}</dd>
+                <dd className="text-ink-2">{t(key)}</dd>
               </div>
             ))}
           </dl>
         </div>
         <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-4">
-          <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
+          <h3 className="font-trajan text-[11px] uppercase tracking-widest text-ink-2">
             {t("tree.changes")}
           </h3>
           <ul className="mt-3 space-y-2">
             {changeNotesKeys.map((key) => (
-              <li key={key} className="flex gap-2 text-[12px] text-[#6B6B6B]">
+              <li key={key} className="flex gap-2 text-[12px] text-ink-2">
                 <span className="shrink-0 mt-[7px] w-[5px] h-[5px] rounded-full bg-[#C9A96E]" />
                 <span>{t(key)}</span>
               </li>

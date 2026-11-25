@@ -120,7 +120,7 @@ export default function App() {
           <div className="font-trajan text-[22px] tracking-widest text-[#0A1931]">
             {t("app.loadingTitle")}
           </div>
-          <div role="status" className="mt-3 text-[13px] text-[#6B6B6B] max-w-[420px]">
+          <div role="status" className="mt-3 text-[13px] text-ink-2 max-w-[420px]">
             {offlineNow
               ? t("app.offline")
               : netErr

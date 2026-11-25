@@ -186,7 +186,7 @@ function TaskCardView({
             </span>
           )}
           {showStatus && (
-            <span className="shrink-0 text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-[#F5F3EF] text-[#6B6B6B] border border-transparent">
+            <span className="shrink-0 text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-[#F5F3EF] text-ink-2 border border-transparent">
               {statusLabel(lang, task.status)}
             </span>
           )}
@@ -196,7 +196,7 @@ function TaskCardView({
       {!open && (
         <div className="px-3 pb-3 -mt-1 flex flex-wrap items-center gap-1.5">
           {showNames && (
-            <span className="inline-flex items-center gap-1 text-[11px] text-[#6B6B6B]">
+            <span className="inline-flex items-center gap-1 text-[11px] text-ink-2">
               <span className="flex -space-x-1">
                 {owners.slice(0, 3).map((name, i) => (
                   <span
@@ -217,14 +217,14 @@ function TaskCardView({
                   ? "bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA]"
                   : until !== null && until <= 2
                   ? "bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]"
-                  : "bg-[#F5F3EF] text-[#6B6B6B] border-transparent"
+                  : "bg-[#F5F3EF] text-ink-2 border-transparent"
               }`}
             >
               {dueFmt}
             </span>
           )}
           {task.status === "WAITING" && task.waitingSince && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F3EF] text-[#6B6B6B] border border-transparent">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F3EF] text-ink-2 border border-transparent">
               {waiting} {t("task.days")}
             </span>
           )}
@@ -238,7 +238,7 @@ function TaskCardView({
             </span>
           )}
           {total > 0 && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F3EF] text-[#6B6B6B] border border-transparent">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F3EF] text-ink-2 border border-transparent">
               ☑ {done}/{total}
             </span>
           )}

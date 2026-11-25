@@ -31,7 +31,7 @@
   --ctl-bg: #ffffff;
   --ctl-border: #e8e6e1;
   --ctl-fg: #0a1931;
-  --ctl-fg-2: #6b6b6b;
+  --ctl-fg-2: #55524d; /* --ink-2 */
   --ctl-on-bg: #0a1931;
   --ctl-on-fg: #c9a96e;
   --ctl-on-border: #0a1931;

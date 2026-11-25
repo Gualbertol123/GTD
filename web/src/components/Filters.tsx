@@ -26,7 +26,7 @@ export function Filters({ filters, setFilters, members }: Props) {
 
   return (
     <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-3 flex flex-wrap items-center gap-2">
-      <span className="font-trajan text-[10px] uppercase tracking-widest text-[#6B6B6B] mr-1">
+      <span className="font-trajan text-[10px] uppercase tracking-widest text-ink-2 mr-1">
         {t("filters.title")}
       </span>
       <input
@@ -74,7 +74,7 @@ export function Filters({ filters, setFilters, members }: Props) {
       <button
         type="button"
         onClick={reset}
-        className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1]"
+        className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-ink-2 border border-[#E8E6E1]"
       >
         {t("ux.board.resetFilters")}
       </button>

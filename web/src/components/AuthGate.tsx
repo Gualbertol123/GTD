@@ -173,7 +173,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         <h1 className="font-trajan text-[16px] uppercase tracking-widest text-[#0A1931] mt-4">
           {t("auth.title")}
         </h1>
-        <p className="text-[12px] text-[#6B6B6B] mt-2 mb-5">{t("auth.prompt")}</p>
+        <p className="text-[12px] text-ink-2 mt-2 mb-5">{t("auth.prompt")}</p>
         {!isTeamEmailConfigured ? (
           <p className="text-[12px] text-[#C81E1E]">{t("auth.noEmail")}</p>
         ) : (

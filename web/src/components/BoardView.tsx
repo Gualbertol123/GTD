@@ -369,7 +369,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
             <button
               type="button"
               onClick={resetFilters}
-              className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1]"
+              className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-ink-2 border border-[#E8E6E1]"
             >
               {t("ux.board.resetFilters")}
             </button>
@@ -425,7 +425,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
 
         {editorOpen && (
           <div id="board-columns-panel" className="mt-3 pt-3 border-t border-[#E8E6E1]">
-            <div className="text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-2">{t("view.columnsHint")}</div>
+            <div className="text-[10px] uppercase tracking-widest text-ink-2 mb-2">{t("view.columnsHint")}</div>
             <div role="group" aria-label={t("ux.board.columnsPanel")} className="flex flex-wrap gap-2">
               {STATUS_ORDER.map((s) => {
                 const shown = !hidden.has(s);
@@ -451,7 +451,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
         {editLayout && view === "board" && (
           <div className="mt-3 pt-3 border-t border-[#E8E6E1] flex items-center justify-between gap-2 flex-wrap">
             <span className="text-[11px] text-[#7A5F30]">{t("view.editHint")}</span>
-            <button onClick={resetWidths} className="h-8 px-3 rounded-full text-[11px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1]">
+            <button onClick={resetWidths} className="h-8 px-3 rounded-full text-[11px] font-semibold bg-white text-ink-2 border border-[#E8E6E1]">
               {t("view.resetWidths")}
             </button>
           </div>
@@ -627,9 +627,9 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                       <div className="font-trajan text-[12px] uppercase tracking-wide text-[#0A1931]">
                         {statusLabel(lang, status)}
                       </div>
-                      <div className="text-[10px] text-[#6B6B6B] truncate">{t(`status.${status}.help`)}</div>
+                      <div className="text-[10px] text-ink-2 truncate">{t(`status.${status}.help`)}</div>
                     </div>
-                    <span className="shrink-0 text-[11px] font-semibold text-[#6B6B6B] bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
+                    <span className="shrink-0 text-[11px] font-semibold text-ink-2 bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
                       {colTasks.length}
                     </span>
                   </div>
@@ -668,11 +668,11 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
               onClick={() => setDoneOpen((o) => !o)}
               className="w-full flex items-center gap-2 text-left"
             >
-              <span aria-hidden="true" className={`text-[#6B6B6B] text-[11px] transition-transform ${doneOpen ? "rotate-90" : ""}`}>▶</span>
-              <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
+              <span aria-hidden="true" className={`text-ink-2 text-[11px] transition-transform ${doneOpen ? "rotate-90" : ""}`}>▶</span>
+              <span className="font-trajan text-[11px] uppercase tracking-widest text-ink-2">
                 {t("doneBar.title")}
               </span>
-              <span className="text-[11px] font-semibold text-[#6B6B6B] bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
+              <span className="text-[11px] font-semibold text-ink-2 bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
                 {doneWeekAll.length}
               </span>
               <span className="text-[10px] text-ink-3 ml-1 hidden sm:inline">{t("doneBar.hint")}</span>
@@ -709,11 +709,11 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
               onClick={() => setArchOpen((o) => !o)}
               className="w-full flex items-center gap-2 text-left"
             >
-              <span aria-hidden="true" className={`text-[#6B6B6B] text-[11px] transition-transform ${archOpen ? "rotate-90" : ""}`}>▶</span>
-              <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
+              <span aria-hidden="true" className={`text-ink-2 text-[11px] transition-transform ${archOpen ? "rotate-90" : ""}`}>▶</span>
+              <span className="font-trajan text-[11px] uppercase tracking-widest text-ink-2">
                 {t("archived.title")}
               </span>
-              <span className="text-[11px] font-semibold text-[#6B6B6B] bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
+              <span className="text-[11px] font-semibold text-ink-2 bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
                 {archivedAll.length}
               </span>
               <span className="text-[10px] text-ink-3 ml-1 hidden sm:inline">{t("archived.hint")}</span>

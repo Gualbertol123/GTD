@@ -80,7 +80,7 @@ export function ProjectTimeline({
                 i % step === 0 ? (
                   <span
                     key={m.ms}
-                    className="absolute top-0 text-[10px] font-semibold uppercase tracking-wide text-[#6B6B6B]"
+                    className="absolute top-0 text-[10px] font-semibold uppercase tracking-wide text-ink-2"
                     style={{ left: `${pos(m.ms)}%` }}
                   >
                     {m.label}
@@ -177,7 +177,7 @@ function Undated({ list, onOpen }: { list: Project[]; onOpen: (id: string) => vo
   const { t } = useT();
   return (
     <div className="mt-3 pt-3 border-t border-[#E8E6E1] flex flex-wrap items-center gap-1.5 text-left">
-      <span className="text-[11px] font-semibold text-[#6B6B6B] mr-1">{t("projects.timeline.noDates")}:</span>
+      <span className="text-[11px] font-semibold text-ink-2 mr-1">{t("projects.timeline.noDates")}:</span>
       {list.map((p) => (
         <button
           key={p.id}

@@ -190,7 +190,7 @@ export function ProjectsView({ board, send }: Props) {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0 max-w-[640px]">
             <h2 className="font-trajan text-[20px] tracking-wide text-[#0A1931]">{t("projects.title")}</h2>
-            <p className="text-[12px] text-[#6B6B6B] mt-0.5">{t("projects.subtitle")}</p>
+            <p className="text-[12px] text-ink-2 mt-0.5">{t("projects.subtitle")}</p>
           </div>
           <div className="flex gap-1.5 w-full sm:w-auto">
             <input
@@ -316,11 +316,11 @@ export function ProjectsView({ board, send }: Props) {
 
       {projects.length === 0 ? (
         <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-10 text-center">
-          <div className="flex justify-center text-[#6B6B6B]">
+          <div className="flex justify-center text-ink-2">
             <Icon name="folder" size={30} strokeWidth={1.6} />
           </div>
           <div className="text-[14px] text-[#0A1931] font-semibold mt-2">{t("projects.none")}</div>
-          <div className="text-[12px] text-[#6B6B6B] mt-1">{t("projects.noneHint")}</div>
+          <div className="text-[12px] text-ink-2 mt-1">{t("projects.noneHint")}</div>
           <button
             onClick={() => nameInput.current?.focus()}
             className="mt-4 h-9 px-4 rounded-full bg-[#0A1931] text-[#C9A96E] text-[12px] font-semibold"
@@ -346,10 +346,10 @@ export function ProjectsView({ board, send }: Props) {
           {/* Older: a collapsible bar, like the board's Archived one. */}
           <section className="bg-white rounded-[14px] border border-[#E8E6E1]">
             <button onClick={() => setOlderOpen((v) => !v)} aria-expanded={olderOpen} className="w-full flex items-center gap-3 px-4 h-12 text-left">
-              <span className="text-[#6B6B6B]"><Icon name={olderOpen ? "down" : "arrow"} size={12} /></span>
+              <span className="text-ink-2"><Icon name={olderOpen ? "down" : "arrow"} size={12} /></span>
               <span className="font-trajan text-[12px] uppercase tracking-widest text-[#0A1931]">{t("projects.older")}</span>
               <Count n={older.length} />
-              <span className="text-[11px] text-[#6B6B6B] truncate">{t("projects.olderHint")}</span>
+              <span className="text-[11px] text-ink-2 truncate">{t("projects.olderHint")}</span>
             </button>
             {olderOpen && (
               <div className="px-3 pb-3">
@@ -392,7 +392,7 @@ function SectionTitle({ title, hint, n, color }: { title: string; hint: string; 
       <span className="w-2 h-2 rounded-full" style={{ background: color }} />
       <h3 className="font-trajan text-[12px] uppercase tracking-widest text-[#0A1931]">{title}</h3>
       <Count n={n} />
-      <span className="text-[11px] text-[#6B6B6B]">{hint}</span>
+      <span className="text-[11px] text-ink-2">{hint}</span>
     </div>
   );
 }
@@ -421,7 +421,7 @@ function Figure({
         pressed ? "border-[#C9A96E] ring-1 ring-[#C9A96E]" : "border-[#E8E6E1]"
       }`}
     >
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#6B6B6B]">
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-2">
         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
         <span className="truncate">{label}</span>
       </div>
@@ -477,7 +477,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
               ) : (
                 <>
                   <span className={`w-2.5 h-2.5 rounded-full ${PRIORITY_DOT[projectPriority(p)]}`} />
-                  <span className="text-[10px] font-semibold text-[#6B6B6B]">{projectPriority(p)}</span>
+                  <span className="text-[10px] font-semibold text-ink-2">{projectPriority(p)}</span>
                 </>
               )}
             </div>
@@ -485,7 +485,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
               {p.name || "—"}
             </div>
             {p.description ? (
-              <div className="mt-1 text-[12px] leading-relaxed text-[#6B6B6B] line-clamp-2">{p.description}</div>
+              <div className="mt-1 text-[12px] leading-relaxed text-ink-2 line-clamp-2">{p.description}</div>
             ) : null}
           </div>
           <ProgressRing value={s.share} color={done ? PROJECT_STATUS_COLOR.done : color} />
@@ -493,7 +493,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
 
         <div className="space-y-1.5">
           <StatusStack byStatus={s.byStatus} total={s.total} height={6} />
-          <div className="flex items-center gap-2 text-[11px] text-[#6B6B6B]">
+          <div className="flex items-center gap-2 text-[11px] text-ink-2">
             <span className="tabular-nums">
               {s.total ? t("projects.tasksCount", { n: `${s.done}/${s.total}` }) : t("projects.noTasksYet")}
             </span>
@@ -504,7 +504,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
             )}
           </div>
           {!done && boardMode(p) !== "all" && (
-            <div className="text-[11px] text-[#6B6B6B] truncate">
+            <div className="text-[11px] text-ink-2 truncate">
               <Icon name={boardMode(p) === "sequential" ? "arrow" : "ban"} size={11} className="mr-1 -mt-px align-middle" />
               {t(`projects.mode.${boardMode(p)}`)}
               {boardMode(p) === "sequential" && s.current && (
@@ -517,13 +517,13 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
             </div>
           )}
           {!done && s.nextDue && (
-            <div className="text-[11px] text-[#6B6B6B] truncate">
+            <div className="text-[11px] text-ink-2 truncate">
               {t("projects.nextDue")}: <span className="text-[#0A1931] font-medium">{s.nextDue.title}</span> · {fmtDay(s.nextDue.dueDate, lang)}
             </div>
           )}
         </div>
 
-        <div className="mt-auto flex items-center gap-2 flex-wrap text-[11px] text-[#6B6B6B]">
+        <div className="mt-auto flex items-center gap-2 flex-wrap text-[11px] text-ink-2">
           <Avatars names={p.owners ?? []} />
           <span className="flex-1" />
           {p.targetDate && !done && (
@@ -548,7 +548,7 @@ function OlderRow({ project: p, stats: s, onOpen }: { project: Project; stats: P
     <button onClick={onOpen} className="w-full flex items-center gap-3 px-1 py-2.5 text-left rounded-lg">
       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: projectColor(p) }} />
       <span className="flex-1 min-w-0 truncate text-[13px] font-medium text-[#0A1931]">{p.name || "—"}</span>
-      <span className="hidden sm:inline text-[11px] text-[#6B6B6B] tabular-nums">{t("projects.tasksCount", { n: s.total })}</span>
+      <span className="hidden sm:inline text-[11px] text-ink-2 tabular-nums">{t("projects.tasksCount", { n: s.total })}</span>
       <Avatars names={p.owners ?? []} size={18} />
       <span className="text-[11px] text-[#065F46] font-semibold whitespace-nowrap">
         ✓ {fmtMs(s.completedAt!, lang, true)}

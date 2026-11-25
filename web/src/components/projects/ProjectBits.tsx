@@ -120,7 +120,7 @@ export function Avatars({ names, max = 3, size = 22 }: { names: string[]; max?: 
       ))}
       {names.length > max && (
         <span
-          className="rounded-full bg-[#EFECE6] text-[#6B6B6B] font-bold flex items-center justify-center ring-2 ring-white"
+          className="rounded-full bg-[#EFECE6] text-ink-2 font-bold flex items-center justify-center ring-2 ring-white"
           style={{ width: size, height: size, fontSize: size * 0.4 }}
         >
           +{names.length - max}

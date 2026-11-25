@@ -38,15 +38,15 @@ export function PriorityDistribution({ tasks }: { tasks: Task[] }) {
         title={t("prio.distribution")}
       >
         <span className="flex items-center gap-2 flex-wrap min-w-0">
-          <span aria-hidden="true" className={`text-[#6B6B6B] text-[11px] transition-transform ${collapsed ? "" : "rotate-90"}`}>▶</span>
-          <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">
+          <span aria-hidden="true" className={`text-ink-2 text-[11px] transition-transform ${collapsed ? "" : "rotate-90"}`}>▶</span>
+          <span className="font-trajan text-[11px] uppercase tracking-widest text-ink-2">
             {t("prio.distribution")}
           </span>
           {collapsed && total > 0 && (
             <span className="flex items-center gap-3 ml-2">
               {PRIOS.map(({ p, dot }, i) =>
                 counts[i] > 0 ? (
-                  <span key={p} className="inline-flex items-center gap-1 text-[11px] text-[#6B6B6B]">
+                  <span key={p} className="inline-flex items-center gap-1 text-[11px] text-ink-2">
                     <span aria-hidden="true" className={`w-2 h-2 rounded-full ${dot}`} />
                     {p} <span className="font-semibold text-[#0A1931]">{counts[i]}</span>
                   </span>
@@ -55,7 +55,7 @@ export function PriorityDistribution({ tasks }: { tasks: Task[] }) {
             </span>
           )}
         </span>
-        <span className="text-[11px] text-[#6B6B6B]">{total}</span>
+        <span className="text-[11px] text-ink-2">{total}</span>
       </button>
       {!collapsed && (
       <div id="prio-distribution-body" className="space-y-2.5 mt-3">
@@ -65,7 +65,7 @@ export function PriorityDistribution({ tasks }: { tasks: Task[] }) {
               <span aria-hidden="true" className={`w-2 h-2 rounded-full ${dot}`} />
               {p}
             </span>
-            <span className="w-20 shrink-0 text-[10px] uppercase tracking-wide text-[#6B6B6B]">
+            <span className="w-20 shrink-0 text-[10px] uppercase tracking-wide text-ink-2">
               {t(`prio.${p}short`)}
             </span>
             <div className="flex-1 h-3 rounded-full bg-[#F0EDE8] overflow-hidden">

@@ -37,7 +37,7 @@ export function ConfirmInline({ text, onYes, onNo }: { text: string; onYes: () =
         type="button"
         onClick={onNo}
         aria-describedby={id}
-        className="h-8 px-3 rounded-full font-semibold text-[#6B6B6B] border border-[#E8E6E1]"
+        className="h-8 px-3 rounded-full font-semibold text-ink-2 border border-[#E8E6E1]"
       >
         {t("task.no")}
       </button>

@@ -53,7 +53,7 @@ function SaveNote({ status }: { status: SaveStatus }) {
   );
 }
 
-const capLabel = "text-[11px] uppercase tracking-wide text-[#6B6B6B]";
+const capLabel = "text-[11px] uppercase tracking-wide text-ink-2";
 
 export function SettingsView({ board, send }: Props) {
   const { t } = useT();
@@ -109,7 +109,7 @@ export function SettingsView({ board, send }: Props) {
           </div>
           <div className="min-w-0">
             <div className="text-[12px] font-semibold text-[#0A1931]">{t("settings.logo")}</div>
-            <div className="text-[11px] text-[#6B6B6B]">{t("settings.logoHint", { mb: INPUT_MAX_MB })}</div>
+            <div className="text-[11px] text-ink-2">{t("settings.logoHint", { mb: INPUT_MAX_MB })}</div>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <input ref={logoInput} type="file" accept={LOGO_ACCEPT} hidden onChange={(e) => upload(e.target.files?.[0], "logo")} />
               <button onClick={() => logoInput.current?.click()} className={`${smallBtn} bg-[#0A1931] text-[#C9A96E] border-[#0A1931]`}>
@@ -145,7 +145,7 @@ export function SettingsView({ board, send }: Props) {
           </div>
           <div className="min-w-0">
             <div className="text-[12px] font-semibold text-[#0A1931]">{t("settings.favicon")}</div>
-            <div className="text-[11px] text-[#6B6B6B]">{t("settings.faviconHint", { mb: INPUT_MAX_MB })}</div>
+            <div className="text-[11px] text-ink-2">{t("settings.faviconHint", { mb: INPUT_MAX_MB })}</div>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <input ref={faviconInput} type="file" accept={FAVICON_ACCEPT} hidden onChange={(e) => upload(e.target.files?.[0], "favicon")} />
               <button onClick={() => faviconInput.current?.click()} className={`${smallBtn} bg-[#0A1931] text-[#C9A96E] border-[#0A1931]`}>
@@ -232,7 +232,7 @@ export function SettingsView({ board, send }: Props) {
         )}
       </section>
 
-      <p className="text-[11px] text-[#6B6B6B]">{t("settings.migrationNote")}</p>
+      <p className="text-[11px] text-ink-2">{t("settings.migrationNote")}</p>
     </div>
   );
 }

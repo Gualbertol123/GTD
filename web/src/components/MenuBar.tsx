@@ -45,9 +45,9 @@ export function MenuBar() {
         aria-controls={open ? "menu-bar-body" : undefined}
         className="w-full flex items-center gap-2 text-left"
       >
-        <span aria-hidden="true" className={`text-[#6B6B6B] text-[11px] transition-transform ${open ? "rotate-90" : ""}`}>▶</span>
-        <span className="font-trajan text-[11px] uppercase tracking-widest text-[#6B6B6B]">{t("menuBar.title")}</span>
-        <span className="text-[11px] font-semibold text-[#6B6B6B] bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
+        <span aria-hidden="true" className={`text-ink-2 text-[11px] transition-transform ${open ? "rotate-90" : ""}`}>▶</span>
+        <span className="font-trajan text-[11px] uppercase tracking-widest text-ink-2">{t("menuBar.title")}</span>
+        <span className="text-[11px] font-semibold text-ink-2 bg-white rounded-full px-2 py-0.5 border border-[#E8E6E1]">
           {days.length}
         </span>
         <span className="text-[10px] text-ink-3 ml-1 hidden sm:inline truncate">

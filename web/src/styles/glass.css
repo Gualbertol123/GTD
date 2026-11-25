@@ -275,14 +275,13 @@ html[data-skin="glass"] .min-h-screen.bg-\[\#0A1931\] {
 html[data-skin="glass"] .text-\[\#0A1931\] {
   color: var(--label);
 }
-html[data-skin="glass"] .text-\[\#6B6B6B\] {
-  color: var(--label-2);
-}
 html[data-skin="glass"] .text-\[\#C9C5BE\] {
   color: var(--label-3);
 }
-/* Tertiary text is a token (text-ink-3): Glass points it at --label-3. */
+/* Secondary and tertiary text are tokens (text-ink-2, text-ink-3): Glass
+   points them at its label steps. */
 html[data-skin="glass"] {
+  --ink-2: var(--label-2);
   --ink-3: var(--label-3);
 }
 html[data-skin="glass"] .text-\[\#C9A96E\],

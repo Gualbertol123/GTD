@@ -84,7 +84,7 @@ export function RecurrenceControls({ task, send, available }: Props) {
           className={`${pill} px-3 font-semibold transition-colors ${
             task.pinned
               ? "bg-[#FBF3E2] text-[#7A5F30] border-[#C9A96E]"
-              : "bg-[#F5F3EF] text-[#6B6B6B] border-[#E8E6E1]"
+              : "bg-[#F5F3EF] text-ink-2 border-[#E8E6E1]"
           }`}
         >
           <span className={task.pinned ? "text-[#C9A96E]" : ""}>
@@ -93,7 +93,7 @@ export function RecurrenceControls({ task, send, available }: Props) {
           {t(task.pinned ? "pin.on" : "pin.add")}
         </button>
 
-        <label className={`${pill} pl-3 pr-1 bg-[#F5F3EF] border-[#E8E6E1] text-[#6B6B6B]`}>
+        <label className={`${pill} pl-3 pr-1 bg-[#F5F3EF] border-[#E8E6E1] text-ink-2`}>
           <RepeatIcon />
           {t("rec.repeat")}
           <select
@@ -111,7 +111,7 @@ export function RecurrenceControls({ task, send, available }: Props) {
         </label>
 
         {rule && (
-          <label className={`${pill} px-3 bg-[#F5F3EF] border-[#E8E6E1] text-[#6B6B6B]`}>
+          <label className={`${pill} px-3 bg-[#F5F3EF] border-[#E8E6E1] text-ink-2`}>
             {t("rec.every")}
             <input
               type="number"
@@ -131,7 +131,7 @@ export function RecurrenceControls({ task, send, available }: Props) {
 
       {rule?.freq === "weekly" && (
         <div role="group" aria-label={t("rec.days")} className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] text-[#6B6B6B] mr-0.5">{t("rec.days")}</span>
+          <span className="text-[11px] text-ink-2 mr-0.5">{t("rec.days")}</span>
           {[0, 1, 2, 3, 4, 5, 6].map((d) => (
             <button
               key={d}
@@ -155,7 +155,7 @@ export function RecurrenceControls({ task, send, available }: Props) {
       )}
 
       {rule && (
-        <p className="text-[11px] text-[#6B6B6B]">
+        <p className="text-[11px] text-ink-2">
           <span className="font-semibold text-[#0A1931]">{t("rec.next", { date: nextFmt })}</span>
           {" · "}
           {t(task.dueDate ? "rec.hint" : "rec.hintNoDue")}

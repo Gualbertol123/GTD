@@ -190,7 +190,7 @@ export function AppearanceMenu() {
               aria-valuetext={`${pct}%`}
               className="color-range w-full"
             />
-            <div className="relative h-4 text-[11px] text-[#6B6B6B] mt-1" aria-hidden="true">
+            <div className="relative h-4 text-[11px] text-ink-2 mt-1" aria-hidden="true">
               <span className="absolute left-0">{t("color.grey")}</span>
               <span className="absolute -translate-x-1/2" style={{ left: `${((COLOR_DEFAULT - COLOR_MIN) / (COLOR_MAX - COLOR_MIN)) * 100}%` }}>
                 100%
