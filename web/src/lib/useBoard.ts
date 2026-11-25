@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { reportSaveError } from "./saveErrors";
 import type { Board, Op } from "./types";
 import { fetchBoard, fetchChange, seedIfEmpty, writeOp, type ChangedTable } from "./db";
-import { applyRowChange, type RowChange } from "./rowSync";
+import { applyRowChange, reconcileBoard, type RowChange } from "./rowSync";
 import { createSend, errMsg, withPending, type BoardCell } from "./optimisticSend";
 import { supabase } from "./supabaseClient";
 import { isConfigured } from "./supabaseConfig";
@@ -47,14 +47,23 @@ export function useBoard(): UseBoard {
   const boardRef = useRef<BoardCell>({ current: null }).current;
   // Local ops not yet confirmed by the server (set once `send` exists).
   const pendingOps = useRef<() => Op[]>(() => []);
+  // The board last handed to React. Every new board is reconciled with it
+  // first (lib/rowSync.ts): rows that did not change keep their objects, so
+  // a poll that finds nothing new re-renders nothing, and one changed task
+  // re-renders one card.
+  const shown = useRef<Board | null>(null);
+  const show = useCallback((b: Board) => {
+    const next = reconcileBoard(shown.current, b);
+    shown.current = next;
+    boardRef.current = next;
+    setBoard(next);
+  }, [boardRef]);
   // Server rows in (a full reload or a realtime re-read). A local write still
   // in flight is re-applied on top: the echo of an earlier write used to bring
   // back a row without it, so a box just ticked un-ticked for a moment.
   const commit = useCallback((server: Board) => {
-    const next = withPending(server, pendingOps.current());
-    boardRef.current = next;
-    setBoard(next);
-  }, [boardRef]);
+    show(withPending(server, pendingOps.current()));
+  }, [show]);
 
   // Guard against overlapping/stale reloads clobbering newer state.
   const loadSeq = useRef(0);
@@ -202,7 +211,7 @@ export function useBoard(): UseBoard {
   const send = useMemo(() => {
     const s = createSend({
         cell: boardRef,
-        publish: setBoard,
+        publish: show,
         // Persist; realtime + poll reconcile to authoritative state.
         write: writeOp,
         onFail: (message, handled) => {
@@ -214,7 +223,7 @@ export function useBoard(): UseBoard {
       });
     pendingOps.current = s.pending;
     return s;
-  }, [boardRef, reload]);
+  }, [boardRef, reload, show]);
 
   return { board, conn, error, send, reload };
 }

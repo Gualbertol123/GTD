@@ -55,3 +55,81 @@ export function applyRowChange(board: Board, ch: RowChange): Board {
       return { ...board, ...ch.meta };
   }
 }
+
+// ---- Structural sharing -----------------------------------------------------
+// A full reload (the 30 s poll, a tab refocus) builds every task anew, and so
+// does an optimistic op (applyOpLocal copies the board). Equal rows used to
+// arrive as new objects, so every task card re-rendered for nothing. Before a
+// board is shown it goes through reconcileBoard: whatever equals what is on
+// screen keeps its old object, so only what really changed is new.
+
+/** Deep equality for plain data (board rows). A key holding undefined counts as absent. */
+export function sameData(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (!sameData(a[i], b[i])) return false;
+    return true;
+  }
+  // Only plain objects compare by their fields (a Date or a Map never equals a copy).
+  if (!isPlain(a) || !isPlain(b)) return false;
+  const ra = a as Record<string, unknown>;
+  const rb = b as Record<string, unknown>;
+  const ka = Object.keys(ra).filter((k) => ra[k] !== undefined);
+  const kb = Object.keys(rb).filter((k) => rb[k] !== undefined);
+  if (ka.length !== kb.length) return false;
+  for (const k of ka) if (!sameData(ra[k], rb[k])) return false;
+  return true;
+}
+
+function isPlain(o: object): boolean {
+  const p = Object.getPrototypeOf(o);
+  return p === Object.prototype || p === null;
+}
+
+/** `next`, with each item equal to the one of the same id in `prev` replaced
+ *  by prev's object, and `prev` itself when nothing changed at all. */
+export function reuseById<T extends { id: string }>(prev: T[] | undefined, next: T[]): T[] {
+  if (!prev || prev === next) return next;
+  const byId = new Map(prev.map((x) => [x.id, x]));
+  let same = prev.length === next.length;
+  const out = next.map((x, i) => {
+    const old = byId.get(x.id);
+    const keep = old !== undefined && sameData(old, x) ? old : x;
+    if (keep !== prev[i]) same = false;
+    return keep;
+  });
+  return same ? prev : out;
+}
+
+// Fields that are lists of rows: matched item by item, by id.
+const BY_ID = new Set<string>(["tasks", "projects", "reflections", "personalNotes"]);
+// Stamped with the time of every reload or op; nothing reads it.
+const IGNORED = new Set<string>(["updatedAt"]);
+
+/** `next`, sharing every part that equals `prev` (see above). The values are always next's. */
+export function reconcileBoard(prev: Board | null, next: Board): Board {
+  if (!prev || prev === next) return next;
+  const p = prev as unknown as Record<string, unknown>;
+  const n = next as unknown as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  let same = true;
+  for (const k of Object.keys(n)) {
+    const nv = n[k];
+    const pv = p[k];
+    const v =
+      BY_ID.has(k) && Array.isArray(nv) && Array.isArray(pv)
+        ? reuseById(pv as { id: string }[], nv as { id: string }[])
+        : sameData(pv, nv)
+        ? pv
+        : nv;
+    out[k] = v;
+    if (v !== pv && !IGNORED.has(k)) same = false;
+  }
+  // A field prev had and next lacks.
+  for (const k of Object.keys(p)) {
+    if (!(k in n) && p[k] !== undefined && !IGNORED.has(k)) same = false;
+  }
+  return same ? prev : (out as unknown as Board);
+}
