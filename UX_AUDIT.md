@@ -171,8 +171,10 @@ stat tiles without borders and dots; one status chip per project card.
   new-task bar and filters; a person is multi-pick in the editor but a single
   select on a project's new task; deleting is an Undo toast (tasks, subtasks,
   members, weekly), an inline confirm plus Undo (weekly clear, projects), an
-  inline confirm without Undo (notes, logo, logout) or `window.confirm()`
-  (the report's Ripristina); there are five toast implementations.
+  inline confirm without Undo (notes, logo, logout, and now the report's
+  Ripristina, which used `window.confirm()` — the only native dialog; it
+  shares `components/ConfirmInline.tsx` with Settings); there are five toast
+  implementations.
 - **Feedback before a migration.** Projects (015), multi-assign (009),
   recurring (023), notes and music each show a note; the In evidenza band
   (023) silently disappears; the report detects 013 only on write (G-34).

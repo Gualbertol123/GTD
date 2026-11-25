@@ -3,6 +3,7 @@ import type { Board, Op } from "../lib/types";
 import { useT } from "../lib/i18n";
 import { collectReport, weekPeriod, type Period } from "../lib/reportData";
 import { GlassReport, type GlassReportActions } from "./GlassReport";
+import { ConfirmInline } from "./ConfirmInline";
 import type { ReportDoc } from "../lib/reportDoc";
 import { supabase } from "../lib/supabaseClient";
 import { shortDate } from "../lib/dates";
@@ -238,12 +239,29 @@ export function ReportView({ board, send }: Props) {
     return () => window.clearTimeout(h);
   }, [included]);
 
-  // Throw away this week's changes and start again from the board.
+  // Ripristina: throw away this period's changes and start again from the
+  // board. It cannot be undone, so it asks first, inline (ConfirmInline,
+  // focus on No), never with the browser's pop-up.
+  const [confirmReset, setConfirmReset] = useState(false);
+  const resetBtnRef = useRef<HTMLButtonElement>(null);
+  const actionsRowRef = useRef<HTMLDivElement>(null);
+  const focusAfterConfirm = useRef<null | "reset" | "row">(null);
+  useEffect(() => setConfirmReset(false), [draftKey]);
+  useEffect(() => {
+    const where = focusAfterConfirm.current;
+    if (confirmReset || !where) return;
+    focusAfterConfirm.current = null;
+    // No: back to Ripristina. Yes: Ripristina is now disabled (nothing left
+    // to discard), so the row's first action takes focus.
+    if (where === "reset" && resetBtnRef.current && !resetBtnRef.current.disabled) resetBtnRef.current.focus();
+    else actionsRowRef.current?.querySelector<HTMLButtonElement>("button:not([disabled])")?.focus();
+  }, [confirmReset, hasDraft]);
   const resetReport = () => {
-    if (!window.confirm(t("report.resetConfirm"))) return;
     clearReportDraft(draftKey);
     setHasDraft(false);
     setResetN((n) => n + 1);
+    focusAfterConfirm.current = "row";
+    setConfirmReset(false);
   };
   const [busy, setBusy] = useState<null | "docx" | "pdf">(null);
   const [err, setErr] = useState<ErrLine | null>(null);
@@ -436,7 +454,7 @@ export function ReportView({ board, send }: Props) {
           <span className="text-[11px] text-[#6B6B6B]">{t("report.hint")}</span>
         </div>
 
-        <div className="flex items-end gap-2 flex-wrap">
+        <div ref={actionsRowRef} className="flex items-end gap-2 flex-wrap">
           <label className="flex flex-col gap-1">
             <span className="text-[10px] uppercase tracking-wide text-[#6B6B6B]">
               {t("report.period")}
@@ -515,18 +533,31 @@ export function ReportView({ board, send }: Props) {
               </button>
             </>
           )}
-          {(stage === "editing" || hasDraft) && (
-            <button
-              type="button"
-              onClick={resetReport}
-              disabled={busy !== null || !hasDraft}
-              className={`${ghostBtn} text-[#C81E1E] border-[#FECACA] inline-flex items-center gap-1.5`}
-              title={t("report.resetHint")}
-            >
-              <IconUndo />
-              {t("report.reset")}
-            </button>
-          )}
+          {(stage === "editing" || hasDraft) &&
+            (confirmReset ? (
+              <span className="min-h-[36px] inline-flex items-center">
+                <ConfirmInline
+                  text={t("report.resetConfirm")}
+                  onYes={resetReport}
+                  onNo={() => {
+                    focusAfterConfirm.current = "reset";
+                    setConfirmReset(false);
+                  }}
+                />
+              </span>
+            ) : (
+              <button
+                ref={resetBtnRef}
+                type="button"
+                onClick={() => setConfirmReset(true)}
+                disabled={busy !== null || !hasDraft}
+                className={`${ghostBtn} text-[#C81E1E] border-[#FECACA] inline-flex items-center gap-1.5`}
+                title={t("report.resetHint")}
+              >
+                <IconUndo />
+                {t("report.reset")}
+              </button>
+            ))}
           {stage === "editing" && hiddenCount > 0 && !badRange && (
             <button
               type="button"

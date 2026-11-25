@@ -946,7 +946,9 @@ appears anywhere.
   leave the tab or reload and the REPORT tab reopens on that period — a past
   week included — with its report as you left it, as long as its draft is
   still kept; otherwise it opens on this week. **Ripristina / Reset** throws
-  the period's changes away. Drafts (and the remembered period) are deleted
+  the period's changes away, after an inline "Sicuro? Sì / No" (focus on
+  No; `components/ConfirmInline.tsx`, shared with Settings — no browser
+  pop-up). Drafts (and the remembered period) are deleted
   when the device logs out of the team.
 - **Editing.** Every text on the pages is `contentEditable` — titles, labels,
   counts, dates, tile figures, headers and footers (only page numbers are

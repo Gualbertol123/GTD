@@ -305,14 +305,33 @@ groups.report = async () => {
       const busy = await pdfBtn.isDisabled();
       ok("report: PDF button re-enabled after failure", !busy);
     } else ok("report: Scarica PDF button present when editing", false);
-    // Reset (Ripristina)
-    let dlg = null;
-    page.once("dialog", (d) => { dlg = d.message(); d.accept(); });
-    await page.locator("main button", { hasText: "Ripristina" }).first().click();
+    // Reset (Ripristina): an inline "Sicuro? Sì / No" with focus on No, never
+    // the browser's confirm().
+    const dialogs = [];
+    const onDialog = (d) => { dialogs.push(d.message()); d.dismiss(); };
+    page.on("dialog", onDialog);
+    const resetBtn = page.locator("main button", { hasText: "Ripristina" }).first();
+    const hasQa = () => page.evaluate(() => [...document.querySelectorAll("[data-ed-id]")].some((e) => e.textContent.includes("QAEDIT")));
+    const focused = () => page.evaluate(() => document.activeElement?.textContent?.trim() ?? "");
+    await resetBtn.click();
+    await wait(page, 400);
+    const question = await page.locator("main", { hasText: "Scartare tutte le modifiche a questo report" }).count();
+    ok("report: Ripristina asks inline, focus on No", question > 0 && (await focused()) === "No" && dialogs.length === 0, `question shown=${question > 0}, focus="${await focused()}", native dialogs=${dialogs.length}`);
+    await page.keyboard.press("Enter"); // Enter on No: nothing is thrown away
+    await wait(page, 600);
+    ok("report: No keeps the draft and gives focus back to Ripristina", (await hasQa()) && /Ripristina/.test(await focused()), `focus="${await focused()}"`);
+    await resetBtn.click();
+    await wait(page, 400);
+    await page.keyboard.press("Escape"); // Escape answers No as well
+    await wait(page, 400);
+    ok("report: Escape closes the question and keeps the draft", (await hasQa()) && (await page.locator("main", { hasText: "Scartare tutte le modifiche a questo report" }).count()) === 0);
+    await resetBtn.click();
+    await wait(page, 400);
+    await page.locator("main button", { hasText: /^Sì$/ }).click();
     await wait(page, 1500);
-    const still = await page.evaluate(() => [...document.querySelectorAll("[data-ed-id]")].some((e) => e.textContent.includes("QAEDIT")));
     const dk = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("gtd-report-draft:")));
-    ok("report: Ripristina throws the week's draft away", !still, `confirm()="${dlg}", drafts left=${dk.join(",")}`);
+    ok("report: Sì throws the week's draft away, with no native dialog", !(await hasQa()) && dialogs.length === 0, `drafts left=${dk.join(",")}, native dialogs=${dialogs.length}, focus after="${await focused()}"`);
+    page.off("dialog", onDialog);
     // Close and Word download
     await page.locator("main button", { hasText: "Chiudi report" }).first().click().catch(() => {});
     await wait(page, 500);
