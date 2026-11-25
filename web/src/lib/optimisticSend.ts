@@ -121,6 +121,12 @@ export function withPending(board: Board, ops: Op[]): Board {
   return ops.reduce((b, op) => (REAPPLY.has(op.type) ? applyOpLocal(b, op) : b), board);
 }
 
+/** The request never reached the server (offline, DNS, a dropped connection):
+ *  the browser's own wording, which means nothing to the person reading it. */
+export function isNetworkError(message: string): boolean {
+  return /failed to fetch|fetch failed|networkerror|network request failed|load failed|internet_disconnected|err_network/i.test(message);
+}
+
 export function errMsg(e: unknown): string {
   if (e && typeof e === "object" && "message" in e)
     return String((e as { message: unknown }).message);

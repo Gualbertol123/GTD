@@ -41,7 +41,8 @@ const SKIP = Symbol("no-session");
 // dispatches optimistic ops. All board state is in memory only.
 export function useBoard(): UseBoard {
   const [board, setBoard] = useState<Board | null>(null);
-  const [conn, setConn] = useState<ConnState>("connecting");
+  // Opened offline (the cached app shell, see public/sw.js): say so at once.
+  const [conn, setConn] = useState<ConnState>(() => (isOffline() ? "offline" : "connecting"));
   const [error, setError] = useState<string | null>(null);
   // The offline reason handed to a caller's onError, in the current language.
   const { t } = useT();
@@ -177,10 +178,10 @@ export function useBoard(): UseBoard {
         if (status === "SUBSCRIBED") {
           setConn("online");
           reload(); // pull anything changed while (re)subscribing
-        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          setConn("reconnecting");
-        } else if (status === "CLOSED") {
-          setConn("reconnecting");
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          // Offline stays "Offline" (the socket failing is no news then);
+          // the `online` event below starts the reconnect.
+          setConn(isOffline() ? "offline" : "reconnecting");
         }
       });
 
@@ -193,9 +194,18 @@ export function useBoard(): UseBoard {
     const onVisible = () => {
       if (document.visibilityState === "visible") reload();
     };
+    let liveCheck: ReturnType<typeof setTimeout> | null = null;
     const onOnline = () => {
       setConn("reconnecting");
       reload();
+      // A short drop the socket survived brings no new SUBSCRIBED, so the
+      // badge would read "Reconnecting…" for good: once the channel is still
+      // joined a moment later, it is live. (A dead socket fails its heartbeat,
+      // reconnects and says SUBSCRIBED above.)
+      if (liveCheck) clearTimeout(liveCheck);
+      liveCheck = setTimeout(() => {
+        if (!cancelled && !isOffline() && channel.state === "joined" && supabase.realtime.isConnected()) setConn("online");
+      }, 2000);
     };
     // Offline is its own state (it used to read "reconnecting" the whole time).
     const onOffline = () => setConn("offline");
@@ -206,6 +216,7 @@ export function useBoard(): UseBoard {
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
+      if (liveCheck) clearTimeout(liveCheck);
       clearInterval(poll);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", onOnline);

@@ -39,6 +39,12 @@
 //     → writes are answered after that delay, plus a random 0..jitter, so
 //       parallel requests can land out of order (handy for races).
 //
+//   await goOffline(app, true) / goOffline(app, false)    (app = openApp's result)
+//     → the browser goes offline (context.setOffline) AND the fake host stops
+//       answering: REST calls fail as a network error and the realtime socket
+//       is closed and refused, as a real dropped connection would be
+//       (context.route and routeWebSocket otherwise answer even offline).
+//
 // The fake database also enforces tasks.project_id → projects(id) (23503) and
 // "on delete set null", the board_mode check, a duplicate id on INSERT (23505)
 // and Prefer: resolution=merge-duplicates / ignore-duplicates on upserts.
@@ -493,7 +499,7 @@ export async function openApp(browser, opts = {}) {
   const { skin = "glass", appearance = "dark", blur = true, viewport = { width: 1440, height: 900 }, path = "#/board", lang = "it", me = "Francesco" } = opts;
   const store = opts.store ?? createStore({ missing: opts.missing });
   const realtime = opts.realtime ?? !!opts.store;
-  const ctl = { name: opts.name ?? `ctx${++ctxSeq}`, reject: opts.reject ?? null, delayMs: opts.delayMs ?? 0, jitterMs: opts.jitterMs ?? 0 };
+  const ctl = { name: opts.name ?? `ctx${++ctxSeq}`, reject: opts.reject ?? null, delayMs: opts.delayMs ?? 0, jitterMs: opts.jitterMs ?? 0, offline: false, sockets: new Set() };
   const context = await browser.newContext({
     viewport,
     deviceScaleFactor: opts.scale ?? 1,
@@ -527,6 +533,7 @@ export async function openApp(browser, opts = {}) {
 
   await context.route(`${STUB_HOST}/**`, async (route) => {
     const req = route.request();
+    if (ctl.offline) return route.abort("internetdisconnected");
     const url = new URL(req.url());
     const method = req.method();
     const reply = (status, body, headers = {}) =>
@@ -579,6 +586,8 @@ export async function openApp(browser, opts = {}) {
   // ids, which supabase-js checks), answer heartbeats; with a shared store,
   // push every write to the subscribed sockets as postgres_changes.
   await context.routeWebSocket(/stub\.supabase\.local\/realtime/, (ws) => {
+    if (ctl.offline) return void ws.close({ code: 4000, reason: "offline" });
+    ctl.sockets.add(ws);
     const mine = new Map(); // topic -> subscriber
     ws.onMessage((raw) => {
       let msg;
@@ -609,6 +618,7 @@ export async function openApp(browser, opts = {}) {
       } else reply({});
     });
     ws.onClose(() => {
+      ctl.sockets.delete(ws);
       for (const s of mine.values()) store.subs.delete(s);
       mine.clear();
     });
@@ -627,6 +637,13 @@ export async function openApp(browser, opts = {}) {
   await page.waitForSelector("main, [data-mobile-root], .m-app, nav", { timeout: 20000 });
   await page.waitForTimeout(400);
   return { context, page, db, store, ctl };
+}
+
+/** Take a page opened with openApp offline (true) or back online (false). */
+export async function goOffline({ context, ctl }, offline) {
+  ctl.offline = offline;
+  await context.setOffline(offline);
+  if (offline) for (const ws of [...ctl.sockets]) await ws.close({ code: 4000, reason: "offline" }).catch(() => {});
 }
 
 export const COMBOS = [

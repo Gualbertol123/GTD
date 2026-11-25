@@ -19,6 +19,7 @@ import { PHONE_QUERY, useLayout } from "./mobile/useLayout";
 import { MusicButton, MusicPlayer } from "./components/MusicPlayer";
 import { UndoToastHost, showNotice } from "./components/TaskDetails";
 import { onSaveError } from "./lib/saveErrors";
+import { isNetworkError, isOffline } from "./lib/optimisticSend";
 import { navigate, useRoute } from "./lib/history";
 
 // Screens other than the board load when first opened (each is its own
@@ -49,7 +50,7 @@ export default function App() {
   useEffect(
     () =>
       onSaveError((msg) =>
-        showNotice(typeof navigator !== "undefined" && navigator.onLine === false ? t("save.offline") : t("save.failed", { msg }))
+        showNotice(isOffline() ? t("save.offline") : t("save.failed", { msg }))
       ),
     [t]
   );
@@ -102,16 +103,27 @@ export default function App() {
   }, [faviconUrl]);
 
   if (!board) {
+    // Opened offline (the cached shell): say so, and that it comes back by
+    // itself (useBoard reloads on the `online` event). A request that never
+    // reached the server is said in words, not as the browser's fetch error.
+    const offlineNow = conn === "offline" && isOffline();
+    const netErr = !!error && isNetworkError(error);
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F5F3EF]">
         <div className="text-center px-4">
           <div className="font-trajan text-[22px] tracking-widest text-[#0A1931]">
             {t("app.loadingTitle")}
           </div>
-          <div className="mt-3 text-[13px] text-[#6B6B6B]">
-            {conn === "offline" ? t("app.connectFailed") : t("app.connecting")}
+          <div role="status" className="mt-3 text-[13px] text-[#6B6B6B] max-w-[420px]">
+            {offlineNow
+              ? t("app.offline")
+              : netErr
+                ? t("app.unreachable")
+                : conn === "offline"
+                  ? t("app.connectFailed")
+                  : t("app.connecting")}
           </div>
-          {error && (
+          {error && !offlineNow && !netErr && (
             <div className="mt-2 text-[11px] text-[#C81E1E] max-w-[420px]">{error}</div>
           )}
         </div>

@@ -8,7 +8,7 @@
 //           routes lang offline board
 //
 // Needs the dev server on :5199 pointed at the fake host (see stub.mjs).
-import { launch, openApp, STUB_HOST } from "./stub.mjs";
+import { goOffline, launch, openApp, STUB_HOST } from "./stub.mjs";
 
 const only = process.argv[2]?.split(",");
 const OUT = process.env.OUT ?? ".";
@@ -798,37 +798,52 @@ groups.lang = async () => {
 };
 
 // ---------------------------------------------------------------- OFFLINE
+// Offline, an edit is refused up front (it used to look saved, then vanish):
+// the board is unchanged, nothing is sent, and the toast says so. The badge
+// reads Offline, and Live again once the connection is back. (Opening the
+// installed app offline needs the service worker: scripts/ux/offline-pwa.mjs
+// against a production build.)
 groups.offline = async () => {
-  const { context, page, db } = await openApp(browser, { skin: "classic", appearance: "light", path: "#/weekly" });
-  const badge0 = await page.locator("header [role=status]").first().innerText().catch(() => "?");
-  // context.route answers before the network, so also refuse every stub call.
-  const cut = (route) => route.abort("internetdisconnected");
-  await context.route(`${STUB_HOST}/**`, cut);
-  await context.setOffline(true);
-  await wait(page, 4000);
-  const badge1 = await page.locator("header [role=status]").first().innerText().catch(() => "?");
-  info("offline: connection badge", `online="${badge0.trim()}" -> offline="${badge1.trim()}"`);
+  const app = await openApp(browser, { skin: "classic", appearance: "light", path: "#/weekly" });
+  const { page, db, store } = app;
+  const badge = () => page.locator("header [role=status]").first().innerText().catch(() => "?");
+  const badge0 = await badge();
+  await goOffline(app, true);
+  await wait(page, 1500);
+  const badge1 = await badge();
+  ok("offline: the badge says Offline", /Offline/.test(badge1), `online="${badge0.trim()}" -> offline="${badge1.trim()}"`);
+  const writes0 = store.log.length;
   const inp = page.locator('input[aria-label="Vittorie: Aggiungi…"]');
   await inp.fill("Scritto offline");
   await inp.press("Enter");
-  await wait(page, 2500);
+  await wait(page, 800);
   const shown = await page.evaluate(() => [...document.querySelectorAll("textarea")].some((e) => e.value === "Scritto offline"));
-  const errs = await errorsOnScreen(page);
-  info("offline: add a weekly item while offline", `still shown=${shown}, messages=${errs.join(" / ") || "none"}`);
+  const toast = await page.locator("[data-undo-toast]").innerText().catch(() => "");
+  ok("offline: a weekly item added offline is not shown as added", !shown);
+  ok("offline: the toast says the change was not made, offline", /non fatta: sei offline/i.test(toast), toast);
+  ok("offline: nothing was sent", store.log.length === writes0);
   await page.screenshot({ path: `${OUT}/offline-weekly.png` });
-  await context.unroute(`${STUB_HOST}/**`, cut);
-  await context.setOffline(false);
-  await wait(page, 15000);
-  const badge2 = await page.locator("header [role=status]").first().innerText().catch(() => "?");
-  info("offline: after reconnect", `badge="${badge2.trim()}", item in DB=${db.weekly.some((r) => r.body === "Scritto offline")}, on screen=${await page.evaluate(() => [...document.querySelectorAll("textarea")].some((e) => e.value === "Scritto offline"))}`);
-  await context.close();
+  await goOffline(app, false);
+  const live = await page
+    .waitForFunction(() => /Live/.test(document.querySelector("header [role=status]")?.textContent ?? ""), null, { timeout: 30000 })
+    .then(() => true)
+    .catch(() => false);
+  ok("offline: back online, the badge says Live by itself", live, (await badge()).trim());
+  ok("offline: the refused item never reached the server", !db.weekly.some((r) => r.body === "Scritto offline"));
+  await app.context.close();
   // phone offline
   const ph = await openApp(browser, { skin: "glass", appearance: "dark", path: "#/today", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  await ph.context.setOffline(true);
-  await ph.page.evaluate(() => window.dispatchEvent(new Event("offline")));
-  await wait(ph.page, 4000);
-  info("offline phone: header", (await ph.page.locator("header, .m-head, [class*=m-top]").first().innerText().catch(() => "")).replace(/\n+/g, " | ").slice(0, 160));
+  await goOffline(ph, true);
+  await wait(ph.page, 1500);
+  const head = (await ph.page.locator(".m-header__title p").first().innerText().catch(() => "")).trim();
+  ok("offline phone: the header says Offline", /Offline/.test(head), head);
   await ph.page.screenshot({ path: `${OUT}/offline-phone.png` });
+  await goOffline(ph, false);
+  const phLive = await ph.page
+    .waitForFunction(() => /Live/.test(document.querySelector(".m-header__title p")?.textContent ?? ""), null, { timeout: 30000 })
+    .then(() => true)
+    .catch(() => false);
+  ok("offline phone: back online, Live by itself", phLive);
   await ph.context.close();
 };
 
