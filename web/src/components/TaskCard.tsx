@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { claimFocusAfterMove } from "../lib/focusAfterMove";
 import type { Op, Task } from "../lib/types";
 import { PRIORITY_DOT } from "../lib/constants";
 import { ownerLabel, priorityLabel, statusLabel, useT, localeCode } from "../lib/i18n";
@@ -72,6 +73,11 @@ export function TaskCard({
     },
     []
   );
+  // Just moved here from its editor: keep keyboard focus on this task.
+  useEffect(() => {
+    if (claimFocusAfterMove(task.id)) headRef.current?.focus({ preventScroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const isDone = task.status === "DONE";
   const detailsId = `task-details-${task.id}`;
 
@@ -128,7 +134,7 @@ export function TaskCard({
           }}
           aria-label={t(isDone ? "ux.board.reopen" : "ux.board.markDone")}
           title={t(isDone ? "ux.board.reopen" : "ux.board.markDone")}
-          className={`shrink-0 -m-0.5 p-0.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E] transition-colors ${
+          className={`shrink-0 -m-0.5 p-0.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ctl-focus)] transition-colors ${
             isDone ? "text-[#065F46]" : "text-ink-3"
           }`}
         >
@@ -140,7 +146,7 @@ export function TaskCard({
           onClick={() => setOpen(!open)}
           aria-expanded={open}
           aria-controls={open ? detailsId : undefined}
-          className="card-head flex-1 min-w-0 text-left flex items-start gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]"
+          className="card-head flex-1 min-w-0 text-left flex items-start gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ctl-focus)]"
         >
           <span aria-hidden="true" className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${PRIORITY_DOT[task.priority]}`} />
           <span className="sr-only">{t("ux.board.priority", { p: priorityLabel(t, task.priority) })}:</span>

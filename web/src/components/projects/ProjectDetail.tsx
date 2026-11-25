@@ -76,8 +76,17 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
     patch({ owners: cur.includes(m) ? cur.filter((o) => o !== m) : [...cur, m] });
   };
 
+  // Opening a project (or its ‹ › neighbour) replaces the list, so the
+  // control that opened it is gone and focus fell to <body>: the page takes
+  // it, named by the project, and Tab goes on from its top.
+  const pageRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const a = document.activeElement;
+    if (!a || a === document.body || !a.isConnected || !pageRef.current?.contains(a)) pageRef.current?.focus({ preventScroll: true });
+  }, [p.id]);
+
   return (
-    <div className="space-y-4">
+    <div ref={pageRef} tabIndex={-1} role="region" aria-label={p.name} className="space-y-4 outline-none">
       {/* Navigation */}
       <div className="flex items-center gap-2 flex-wrap">
         <button

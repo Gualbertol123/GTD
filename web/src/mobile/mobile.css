@@ -169,10 +169,11 @@ html[data-layout="mobile"] {
   outline-offset: 2px;
 }
 /* Text fields show focus with the caret (and their own ring), not an outline. */
+/* (Not sliders or checkboxes: those have no caret, so they keep the ring.) */
 .m-app textarea:focus-visible,
-.m-app input:focus-visible,
+.m-app input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):focus-visible,
 .m-sheet textarea:focus-visible,
-.m-sheet input:focus-visible { outline: none; }
+.m-sheet input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):focus-visible { outline: none; }
 .m-app button,
 .m-sheet button {
   -webkit-user-select: none;
@@ -740,7 +741,9 @@ html[data-typing] .m-dock {
   font-size: 12px;
   font-weight: 600;
   background: color-mix(in srgb, var(--c) 14%, transparent);
-  color: var(--c);
+  /* The colour pulled toward the label ink, as the desktop's .tint does: the
+     raw orange / blue as text on its own tint was 3.2–3.6:1. */
+  color: color-mix(in srgb, var(--c) 68%, var(--m-text));
   white-space: nowrap;
   max-width: 100%;
   overflow: hidden;

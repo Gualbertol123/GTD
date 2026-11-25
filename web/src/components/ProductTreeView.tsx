@@ -47,7 +47,7 @@ const GLOBAL_TAG_COUNTS = Object.fromEntries(
 ) as Record<Tag, number>;
 
 const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ctl-focus)]";
 
 function TagChip({ tag }: { tag: Tag }) {
   return (

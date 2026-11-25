@@ -162,7 +162,7 @@ export function TaskCard({
               </span>
             )}
             {task.pinned && !done && (
-              <span className="m-chip m-chip--amber" aria-label={t("pin.on")}>
+              <span className="m-chip m-chip--amber" role="img" aria-label={t("pin.on")}>
                 <StarIcon on size={11} />
               </span>
             )}

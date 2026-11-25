@@ -115,7 +115,7 @@ html[data-skin="glass"][data-appearance="dark"] {
   /* Field states (index.css): focus is systemBlue with a soft ring. */
   --field-border: var(--separator);
   --field-border-focus: var(--ios-blue);
-  --field-ring: rgba(10, 132, 255, 0.5);
+  --field-ring: var(--ios-blue); /* opaque: the translucent ring was 1.3–2.5:1 */
   --field-invalid: var(--ios-red);
   --field-invalid-ring: rgba(255, 69, 58, 0.45);
 
@@ -129,6 +129,7 @@ html[data-skin="glass"][data-appearance="dark"] {
   --ctl-on-fg: #ffffff;
   --ctl-on-border: transparent;
   --ctl-focus: var(--ios-blue);
+  --ctl-accent: var(--ios-blue);
   --ctl-track: var(--fill-3);
   --ctl-track-border: transparent;
 
@@ -214,7 +215,7 @@ html[data-skin="glass"][data-appearance="light"] {
 
   --field-border: var(--separator);
   --field-border-focus: var(--ios-blue);
-  --field-ring: rgba(0, 122, 255, 0.4);
+  --field-ring: var(--ios-blue);
   --field-invalid: var(--ios-red);
   --field-invalid-ring: rgba(255, 59, 48, 0.35);
 
@@ -427,6 +428,12 @@ html[data-skin="glass"] header.bg-\[\#0A1931\]::before {
   background-attachment: scroll, fixed, fixed, fixed, fixed, fixed;
   background-repeat: no-repeat;
   filter: saturate(var(--sat));
+}
+/* Focus in the dark header: systemBlue on its blue wallpaper was 1.65:1, so
+   the ring there is white. (The light header is bright: blue reads.) */
+html[data-skin="glass"][data-appearance="dark"] header {
+  --ctl-focus: #ffffff;
+  --field-ring: #ffffff;
 }
 /* In light the header is a bright sheet, so its text has to flip with it. */
 html[data-skin="glass"][data-appearance="light"] header.bg-\[\#0A1931\] {
@@ -685,7 +692,7 @@ html[data-skin="glass"] button:not(:disabled):active {
   opacity: 0.8;
 }
 html[data-skin="glass"] button:focus-visible {
-  outline: 2px solid var(--ios-blue);
+  outline: 2px solid var(--ctl-focus);
   outline-offset: 2px;
 }
 

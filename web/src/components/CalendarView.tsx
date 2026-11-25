@@ -196,7 +196,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
             ref={detailsRef}
             tabIndex={-1}
             aria-labelledby="cal-details-title"
-            className="bg-white rounded-[14px] border border-[#E8E6E1] p-3 outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]"
+            className="bg-white rounded-[14px] border border-[#E8E6E1] p-3 outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ctl-focus)]"
           >
             <div className="flex items-center justify-between gap-2 mb-3">
               <div id="cal-details-title" className="font-trajan text-[11px] uppercase text-[#6B6B6B]">

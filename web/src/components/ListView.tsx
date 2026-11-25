@@ -71,7 +71,7 @@ export function ListView({ tasks, members, send, showNames = true, multiAssign =
                         }}
                         aria-expanded={isOpen}
                         aria-controls={isOpen ? detailsId : undefined}
-                        className="flex items-center gap-2 text-left rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E] focus-visible:ring-offset-2"
+                        className="flex items-center gap-2 text-left rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ctl-focus)] focus-visible:ring-offset-2"
                       >
                         <span aria-hidden="true" className={`w-2 h-2 rounded-full shrink-0 mt-1 ${PRIORITY_DOT[tk.priority]}`} />
                         <span className="sr-only">{t("ux.board.priority", { p: priorityLabel(t, tk.priority) })}:</span>

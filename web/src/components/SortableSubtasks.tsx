@@ -297,7 +297,7 @@ function SubtaskRow({
         }}
         aria-label={t("ux.board.subtaskMove", { n: index })}
         title={t("ux.board.subtaskMove", { n: index })}
-        className={`${lead} cursor-grab active:cursor-grabbing px-0.5 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]`}
+        className={`${lead} cursor-grab active:cursor-grabbing px-0.5 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ctl-focus)]`}
         style={{ touchAction: "none" }}
       >
         <Grip />
@@ -346,7 +346,7 @@ function SubtaskRow({
         onClick={onDelete}
         aria-label={t("ux.board.subtaskDelete")}
         title={t("ux.board.subtaskDelete")}
-        className={`${lead} px-0.5 rounded-sm text-ink-3 outline-none focus-visible:ring-2 focus-visible:ring-[#DC2626]/50`}
+        className={`${lead} px-0.5 rounded-sm text-ink-3 outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ctl-focus)]`}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
           <path d="M6 6l12 12M18 6 6 18" />

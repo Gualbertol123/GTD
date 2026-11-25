@@ -105,7 +105,7 @@ export function MembersBar({ board, send }: Props) {
                 <button
                   type="button"
                   onClick={() => setConfirm(m)}
-                  className="shrink-0 w-5 h-5 rounded-full inline-flex items-center justify-center text-ink-3 outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]"
+                  className="shrink-0 w-5 h-5 rounded-full inline-flex items-center justify-center text-ink-3 outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ctl-focus)]"
                   title={t("ux.board.removeMemberLabel", { name: m })}
                   aria-label={t("ux.board.removeMemberLabel", { name: m })}
                 >

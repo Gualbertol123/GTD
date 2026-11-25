@@ -12,7 +12,7 @@
   /* Field states (Classic). glass.css re-points these for both appearances. */
   --field-border: #e8e6e1;
   --field-border-focus: #c9a96e;
-  --field-ring: rgba(201, 169, 110, 0.45);
+  --field-ring: var(--ctl-focus, #0a1931); /* one ring for every control: opaque, ≥ 3:1 */
   --field-invalid: #dc2626;
   --field-invalid-ring: rgba(220, 38, 38, 0.3);
 }

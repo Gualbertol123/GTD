@@ -423,14 +423,23 @@ function DoneToggle({ task, onMove }: { task: Task; onMove: (s: Status) => void 
   const { lang } = useT();
   const done = task.status === "DONE";
   return (
+    // A checkbox named by its task (it used to read "Done" / "Next" in both
+    // languages, with no task); 24 px to tap around the 18 px circle.
     <button
       onClick={() => onMove(done ? "NEXT" : "DONE")}
+      role="checkbox"
+      aria-checked={done}
+      aria-label={task.title}
       title={done ? statusLabel(lang, "NEXT") : statusLabel(lang, "DONE")}
-      aria-label={done ? statusLabel(lang, "NEXT") : statusLabel(lang, "DONE")}
-      className="w-[18px] h-[18px] shrink-0 rounded-full border-[1.5px] flex items-center justify-center text-[10px] text-white"
-      style={done ? { background: "#34C759", borderColor: "#34C759" } : { borderColor: "#C9C5BE" }}
+      className="w-6 h-6 -m-[3px] shrink-0 rounded-full flex items-center justify-center"
     >
-      {done ? <Icon name="check" size={11} strokeWidth={3} /> : null}
+      <span
+        aria-hidden="true"
+        className="w-[18px] h-[18px] rounded-full border-[1.5px] flex items-center justify-center text-[10px] text-white"
+        style={done ? { background: "#34C759", borderColor: "#34C759" } : { borderColor: "var(--ink-3)" }}
+      >
+        {done ? <Icon name="check" size={11} strokeWidth={3} /> : null}
+      </span>
     </button>
   );
 }
@@ -607,7 +616,7 @@ function MiniBoard({
                         onToggle(task.id);
                       }
                     }}
-                    className={`group rounded-[10px] bg-white border p-2 cursor-grab active:cursor-grabbing space-y-1 outline-none focus-visible:border-[#C9A96E] focus-visible:ring-2 focus-visible:ring-[#C9A96E]/50 ${
+                    className={`group rounded-[10px] bg-white border p-2 cursor-grab active:cursor-grabbing space-y-1 outline-none focus-visible:border-[#C9A96E] focus-visible:ring-2 focus-visible:ring-[color:var(--ctl-focus)] ${
                       openId === task.id ? "border-[#C9A96E]" : "border-[#E8E6E1]"
                     }`}
                   >

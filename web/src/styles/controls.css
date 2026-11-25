@@ -35,9 +35,18 @@
   --ctl-on-bg: #0a1931;
   --ctl-on-fg: #c9a96e;
   --ctl-on-border: #0a1931;
-  --ctl-focus: #c9a96e;
+  /* Keyboard focus ring: navy on the light Classic surfaces (about 8:1; the
+     gold it used to be was 2:1, WCAG 1.4.11 asks 3:1). Gold on the navy
+     header, below. Glass re-points it in glass.css. */
+  --ctl-focus: #0a1931;
+  --ctl-accent: #c9a96e; /* sliders and other native accents */
   --ctl-track: #f5f3ef;
   --ctl-track-border: #e8e6e1;
+}
+
+/* Classic's header is navy: there the ring is gold (7:1 on navy). */
+html:not([data-skin="glass"]) header {
+  --ctl-focus: #c9a96e;
 }
 
 /* On the navy header (Classic) the track is dark, so the chosen segment is the
@@ -147,7 +156,7 @@ html[data-skin="glass"] .seg {
 
 /* The colour-intensity slider (components/ColorControl.tsx): the accent. */
 .color-range {
-  accent-color: var(--ctl-focus);
+  accent-color: var(--ctl-accent);
 }
 /* Its panel opens inside the header, where glass.css §10 turns nested blur
    off: a translucent film there would be unreadable over the board, so it

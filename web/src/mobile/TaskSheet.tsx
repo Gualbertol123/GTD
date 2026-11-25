@@ -25,6 +25,7 @@ function PropRow({
   value,
   valueColor,
   onClick,
+  pressed,
 }: {
   icon: React.ReactNode;
   tile: string;
@@ -32,9 +33,17 @@ function PropRow({
   value: React.ReactNode;
   valueColor?: string;
   onClick?: () => void;
+  /** An on/off row (In evidenza): announced as a switch, not a chooser. */
+  pressed?: boolean;
 }) {
   return (
-    <button className="m-row" onClick={onClick} disabled={!onClick} style={{ minHeight: 54 }}>
+    <button
+      className="m-row"
+      onClick={onClick}
+      disabled={!onClick}
+      style={{ minHeight: 54 }}
+      {...(pressed === undefined ? {} : { role: "switch", "aria-checked": pressed })}
+    >
       <span className="m-row__icon" style={{ ["--tile" as string]: tile }}>
         {icon}
       </span>
@@ -191,6 +200,7 @@ export function TaskSheet({
             value={t(task.pinned ? "pin.yes" : "pin.no")}
             valueColor={task.pinned ? "var(--m-orange)" : undefined}
             onClick={() => patch({ pinned: !task.pinned })}
+            pressed={!!task.pinned}
           />
         )}
         <PropRow
