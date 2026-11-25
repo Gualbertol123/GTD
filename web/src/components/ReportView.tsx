@@ -630,7 +630,7 @@ export function ReportView({ board, send }: Props) {
 
       {/* Two live regions, both always there: a notice is announced politely,
           a refused save as an alert. */}
-      <div className="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-6 z-[60] pointer-events-none max-w-[calc(100vw-32px)]">
+      <div className="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-6 z-[60] pointer-events-none w-max max-w-[calc(100vw-32px)]">
         <div role="status" aria-live="polite">
           {toast && !toast.error && <ToastPill toast={toast} onClose={() => setToast(null)} />}
         </div>
