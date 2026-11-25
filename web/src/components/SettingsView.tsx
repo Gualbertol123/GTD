@@ -53,7 +53,9 @@ function SaveNote({ status }: { status: SaveStatus }) {
   );
 }
 
-const capLabel = "text-[11px] uppercase tracking-wide text-ink-2";
+// Field labels in sentence case: the section heads above are already the
+// uppercase level, so two stacked uppercase levels read as one.
+const capLabel = "text-[12px] font-semibold text-ink-2";
 
 export function SettingsView({ board, send }: Props) {
   const { t } = useT();

@@ -418,7 +418,9 @@ function Figure({
       onClick={onClick}
       aria-pressed={pressed ? true : undefined}
       className={`text-left rounded-[12px] bg-[#F5F3EF] border px-3 py-2.5 transition-colors ${
-        pressed ? "border-[#C9A96E] ring-1 ring-[#C9A96E]" : "border-[#E8E6E1]"
+        // No hairline at rest (the fill is enough inside the panel); the
+        // chosen filter keeps its gold ring.
+        pressed ? "border-[#C9A96E] ring-1 ring-[#C9A96E]" : "border-transparent"
       }`}
     >
       <div className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-2">
