@@ -942,9 +942,12 @@ appears anywhere.
 - **Drafts.** Every change (texts, hidden cards, chosen highlights) is saved
   on this device straight away, per report period (`gtd-report-draft:<from>_<to>`
   in `localStorage`, `prefs.ts`), and kept for **7 days** after the last
-  change: leave the tab or reload and the REPORT tab reopens that week's
-  report as you left it. **Ripristina / Reset** throws the week's changes away.
-  Drafts are deleted when the device logs out of the team.
+  change. The period last chosen is remembered too (`gtd-report-period`):
+  leave the tab or reload and the REPORT tab reopens on that period — a past
+  week included — with its report as you left it, as long as its draft is
+  still kept; otherwise it opens on this week. **Ripristina / Reset** throws
+  the period's changes away. Drafts (and the remembered period) are deleted
+  when the device logs out of the team.
 - **Editing.** Every text on the pages is `contentEditable` — titles, labels,
   counts, dates, tile figures, headers and footers (only page numbers are
   automatic); planner items have their own × too. An edit is stored when the

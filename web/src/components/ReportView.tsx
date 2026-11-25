@@ -8,7 +8,13 @@ import { supabase } from "../lib/supabaseClient";
 import { shortDate } from "../lib/dates";
 import { projectStats } from "../lib/projects";
 import { isOffline } from "../lib/optimisticSend";
-import { clearReportDraft, purgeReportDrafts, readReportDraft } from "../lib/prefs";
+import {
+  clearReportDraft,
+  purgeReportDrafts,
+  readReportDraft,
+  readReportPeriod,
+  writeReportPeriod,
+} from "../lib/prefs";
 import { isMissingColumn } from "../lib/saveErrors";
 import type { SendError } from "../lib/optimisticSend";
 import "@fontsource-variable/inter";
@@ -149,15 +155,24 @@ function ToastPill({ toast, onClose }: { toast: Toast; onClose: () => void }) {
 // The old Word template is still available as a direct download.
 export function ReportView({ board, send }: Props) {
   const { t, lang } = useT();
-  const [period, setPeriod] = useState<Period>(() => weekPeriod(0));
-  const [custom, setCustom] = useState(false);
-  const draftKey = `${period.from}_${period.to}`;
-  // Coming back to the tab with a saved draft for this week reopens it.
-  const [stage, setStage] = useState<Stage>(() => {
+  // Coming back to the tab reopens the period last chosen on this device, as
+  // long as its draft is still kept (7 days), with its draft open; otherwise
+  // this week (and this week's draft, if there is one).
+  const [start] = useState(() => {
     purgeReportDrafts();
-    const p = weekPeriod(0);
-    return readReportDraft(`${p.from}_${p.to}`) ? "editing" : "setup";
+    const hasDraft = (p: Period) => !!readReportDraft(`${p.from}_${p.to}`);
+    const saved = readReportPeriod();
+    const p = saved && hasDraft(saved) ? saved : weekPeriod(0);
+    const isWeek = Array.from({ length: WEEKS_BACK }, (_, i) => weekPeriod(i)).some(
+      (w) => w.from === p.from && w.to === p.to
+    );
+    return { period: p, custom: !isWeek, stage: (hasDraft(p) ? "editing" : "setup") as Stage };
   });
+  const [period, setPeriod] = useState<Period>(start.period);
+  const [custom, setCustom] = useState(start.custom);
+  const draftKey = `${period.from}_${period.to}`;
+  useEffect(() => writeReportPeriod(period), [period]);
+  const [stage, setStage] = useState<Stage>(start.stage);
   const [hasDraft, setHasDraft] = useState(false);
   const [resetN, setResetN] = useState(0);
   useEffect(() => setHasDraft(!!readReportDraft(draftKey)), [draftKey]);

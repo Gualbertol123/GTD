@@ -30,6 +30,7 @@ const KEYS = {
   musicEngine: "gtd-music-engine",
   mTab: "gtd-m-tab",
   mBoardCol: "gtd-m-board-col",
+  reportPeriod: "gtd-report-period",
 } as const;
 
 export function readPref(key: keyof typeof KEYS): string | null {
@@ -98,6 +99,7 @@ export function clearLoginState(): void {
   removePref("reflauth");
   // Report drafts hold board text: they go too, so a shared device keeps none.
   purgeReportDrafts(true);
+  removePref("reportPeriod");
 }
 
 // Priority-distribution collapsed state (default collapsed to save space).
@@ -241,6 +243,21 @@ export function clearReportDraft(period: string): void {
   } catch {
     /* ignore */
   }
+}
+
+// The report period last chosen on this device, so the REPORT tab reopens on
+// it (a past week's draft included) rather than always on this week. The tab
+// uses it only while that period still has a draft.
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+export function readReportPeriod(): { from: string; to: string } | null {
+  const p = readJson<{ from?: unknown; to?: unknown } | null>("reportPeriod", null);
+  if (!p || typeof p.from !== "string" || typeof p.to !== "string") return null;
+  return ISO_DAY.test(p.from) && ISO_DAY.test(p.to) ? { from: p.from, to: p.to } : null;
+}
+
+export function writeReportPeriod(p: { from: string; to: string }): void {
+  writePref("reportPeriod", JSON.stringify({ from: p.from, to: p.to }));
 }
 
 /** Remove expired drafts (or every draft, e.g. when logging out). */

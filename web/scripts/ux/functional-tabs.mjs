@@ -240,18 +240,36 @@ groups.report = async () => {
       await page.locator("main").click({ position: { x: 5, y: 5 } });
       await wait(page, 800);
     }
-    const lastStage = await page.locator("main button", { hasText: "Scarica PDF" }).count();
+    // The tab reopens on the period last chosen, with its draft (G-35).
+    const lwOnPage = () => page.evaluate(() => [...document.querySelectorAll("[data-ed-id]")].some((e) => e.textContent.includes("LASTWEEK")));
+    const editing = async () => (await page.locator("main button", { hasText: "Scarica PDF" }).count()) > 0;
     await go(page, "#/board");
     await go(page, "#/report");
     await wait(page, 1500);
     const selVal = await page.locator("main select").first().inputValue();
-    const hasLW = await page.evaluate(() => document.body.innerText.includes("LASTWEEK"));
-    info("report: past-week draft after leaving the tab", `stage after select=${lastStage ? "editing" : "setup"}; on return period=${selVal} (0=this week), LASTWEEK visible=${hasLW}`);
-    await sel.selectOption("1").catch(() => {});
+    ok("report: leaving the tab on last week's draft reopens last week", selVal === "1" && (await editing()) && (await lwOnPage()), `period=${selVal} (0=this week), editing=${await editing()}, LASTWEEK on page=${await lwOnPage()}`);
+    await page.reload();
+    await wait(page, 2500);
+    ok("report: reload reopens last week's draft too", (await sel.inputValue()) === "1" && (await lwOnPage()), `period=${await sel.inputValue()}`);
+    // A remembered week with no draft falls back to this week (and its draft).
+    await sel.selectOption("3");
+    await wait(page, 1200);
+    await go(page, "#/board");
+    await go(page, "#/report");
     await wait(page, 1500);
-    const lwStage = await page.locator("main button", { hasText: "Scarica PDF" }).count();
-    const hasLW2 = await page.evaluate(() => [...document.querySelectorAll("[data-ed-id]")].some((e) => e.textContent.includes("LASTWEEK")));
-    info("report: re-selecting last week", `stage=${lwStage ? "editing" : "setup"}, LASTWEEK on page=${hasLW2}`);
+    ok("report: a remembered week without a draft falls back to this week", (await sel.inputValue()) === "0" && (await editing()), `period=${await sel.inputValue()}, editing=${await editing()}`);
+    // An expired draft (older than 7 days) does not reopen either.
+    await sel.selectOption("1");
+    await wait(page, 1200);
+    await page.evaluate(() => {
+      const k = Object.keys(localStorage).find((x) => x.startsWith("gtd-report-draft:") && localStorage.getItem(x).includes("LASTWEEK"));
+      const d = JSON.parse(localStorage.getItem(k));
+      localStorage.setItem(k, JSON.stringify({ ...d, savedAt: Date.now() - 8 * 86400000 }));
+    });
+    await go(page, "#/board");
+    await go(page, "#/report");
+    await wait(page, 1500);
+    ok("report: an expired past-week draft falls back to this week", (await sel.inputValue()) === "0", `period=${await sel.inputValue()}`);
     await sel.selectOption("0");
     await wait(page, 1500);
     // Download PDF (functions are aborted in the harness)
