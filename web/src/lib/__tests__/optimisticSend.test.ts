@@ -158,7 +158,7 @@ describe("createSend offline", () => {
     expect(deps.publish).not.toHaveBeenCalled();
     expect(deps.write).not.toHaveBeenCalled();
     expect(send.pending()).toEqual([]);
-    expect(onError).toHaveBeenCalledWith("you are offline");
+    expect(onError).toHaveBeenCalledWith("you are offline", { code: "offline" });
     expect(deps.onOffline).toHaveBeenCalledWith("you are offline", true);
     expect(deps.onFail).not.toHaveBeenCalled();
   });
