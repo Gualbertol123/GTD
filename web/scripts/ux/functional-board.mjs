@@ -362,7 +362,7 @@ section("refused.desktop", async (browser) => {
     ctl.reject = (m, t) => m === "DELETE" && t === "tasks";
     const card = await openCard(page, "Mind Map macroambiti");
     await card.locator("button", { hasText: /^Elimina$/ }).click();
-    await card.locator("button", { hasText: /^Sì$/ }).click();
+    // (no "Sì" step since 2026-11-25: deleted at once, with Annulla)
     await sleep(1500);
     check("refused delete: task still on the server", !!sv(store.db, "12"));
     check("refused delete: card comes back", (await columnsOf(page, "Mind Map macroambiti")).length === 1);
@@ -465,7 +465,7 @@ section("migrations", async (browser) => {
     check("before 023: completing a task works", sv(store.db, "7").status === "DONE");
     const c2 = await openCard(page, "Mind Map macroambiti");
     await c2.locator("button", { hasText: /^Elimina$/ }).click();
-    await c2.locator("button", { hasText: /^Sì$/ }).click();
+    // (no "Sì" step since 2026-11-25: deleted at once, with Annulla)
     await sleep(300);
     await toastUndo(page).click();
     await sleep(600);
@@ -759,7 +759,7 @@ section("board.editor", async (browser) => {
   // delete with Undo
   const snapshot = JSON.stringify(sv(store.db, "6"));
   await card.locator("button", { hasText: /^Elimina$/ }).click();
-  await card.locator("button", { hasText: /^Sì$/ }).click();
+  // (no "Sì" step since 2026-11-25: deleted at once, with Annulla)
   await waitFor(() => !sv(store.db, "6"));
   check("delete: row gone", !sv(store.db, "6"));
   await toastUndo(page).click();
@@ -798,7 +798,7 @@ section("board.realtime", async (browser) => {
   await B.page.keyboard.press("Escape");
   const cB = await openCard(B.page, "Mind Map macroambiti");
   await cB.locator("button", { hasText: /^Elimina$/ }).click();
-  await cB.locator("button", { hasText: /^Sì$/ }).click();
+  // (no "Sì" step since 2026-11-25: deleted at once, with Annulla)
   check("realtime: delete reaches the other browser", !!(await waitFor(async () => (await columnsOf(A.page, "Mind Map macroambiti")).length === 0)));
   // B's Undo brings it back for A too
   await toastUndo(B.page).click();
@@ -1133,8 +1133,8 @@ section("races", async (browser) => {
     for (let i = 0; i < tries; i++) {
       const store = createStore({ jitterMs: 400 });
       const { page, context } = await openApp(browser, { store, name: `pdel${i}`, path: "#/projects/p1" });
+      // Deleted at once since 2026-11-25 (no "Sì" step), with Annulla.
       await page.locator("button", { hasText: /^Elimina progetto$/ }).click();
-      await page.locator("button", { hasText: /^Sì$/ }).click();
       await sleep(800);
       await toastUndo(page).click();
       await sleep(2000);

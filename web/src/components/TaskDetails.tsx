@@ -177,7 +177,6 @@ export function TaskDetails({
   onDeleted,
 }: Props) {
   const { t, lang } = useT();
-  const [confirmDel, setConfirmDel] = useState(false);
   const [newSub, setNewSub] = useState("");
   const [assignOpen, setAssignOpen] = useState(false);
   const { projects, available: projectsOn, recurring: recurringOn } = useProjects();
@@ -190,16 +189,6 @@ export function TaskDetails({
   const [copied, setCopied] = useState(false);
   const [titleHint, setTitleHint] = useState(false);
   const titleCancelled = useRef(false);
-  const noRef = useRef<HTMLButtonElement>(null);
-  const delRef = useRef<HTMLButtonElement>(null);
-  const wasConfirming = useRef(false);
-  useEffect(() => {
-    // "No" gets the focus (never the destructive "Sì"); cancelling hands it
-    // back to the Elimina button.
-    if (confirmDel) noRef.current?.focus();
-    else if (wasConfirming.current) delRef.current?.focus();
-    wasConfirming.current = confirmDel;
-  }, [confirmDel]);
   useEffect(() => {
     if (!titleHint) return;
     const h = window.setTimeout(() => setTitleHint(false), 3000);
@@ -221,12 +210,18 @@ export function TaskDetails({
     if (v !== task.title) patch({ title: v });
   };
 
-  const deleteTask = () => {
+  // Deleted at once, with Annulla bringing it back whole (owner's rule,
+  // 2026-11-25: no "Sicuro?" before something that can be undone). From the
+  // keyboard, focus goes to Annulla: the card it was in is gone.
+  const deleteTask = (viaKeyboard: boolean) => {
     const snapshot: Task = { ...task, subtasks: task.subtasks.map((s) => ({ ...s })) };
     send({ type: "deleteTask", id: task.id });
     onDeleted?.(snapshot);
-    showUndo(t("ux.board.taskDeleted", { title: snapshot.title }), () =>
-      send({ type: "addTask", task: snapshot })
+    showUndo(
+      t("ux.board.taskDeleted", { title: snapshot.title }),
+      () => send({ type: "addTask", task: snapshot }),
+      8000,
+      { focus: viaKeyboard }
     );
   };
 
@@ -614,51 +609,13 @@ export function TaskDetails({
             ))}
           </select>
         </div>
-        {confirmDel ? (
-          <div
-            role="group"
-            aria-label={t("task.delete")}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                setConfirmDel(false);
-              }
-            }}
-            className="flex flex-wrap items-center gap-2 min-w-0 max-w-full text-[13px] bg-[#FEF2F2] border border-[#FECACA] rounded-[18px] pl-3 pr-1 py-1"
-          >
-            <span className="min-w-0 flex-1 text-[#C81E1E] font-semibold break-words">
-              {total > 0
-                ? t("ux.board.deleteConfirmSubs", { title: task.title, n: total })
-                : t("ux.board.deleteConfirm", { title: task.title })}
-            </span>
-            <span className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={deleteTask}
-                className="h-8 px-4 rounded-full bg-[#DC2626] text-white text-[12px] font-semibold"
-              >
-                {t("task.yes")}
-              </button>
-              <button
-                ref={noRef}
-                type="button"
-                onClick={() => setConfirmDel(false)}
-                className="h-8 px-4 rounded-full bg-white text-[#6B6B6B] border border-[#E8E6E1] text-[12px] font-semibold"
-              >
-                {t("task.no")}
-              </button>
-            </span>
-          </div>
-        ) : (
-          <button
-            ref={delRef}
-            type="button"
-            onClick={() => setConfirmDel(true)}
-            className="h-8 px-4 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1]"
-          >
-            {t("task.delete")}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={(e) => deleteTask(e.detail === 0)}
+          className="h-8 px-4 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1]"
+        >
+          {t("task.delete")}
+        </button>
       </div>
     </div>
   );
