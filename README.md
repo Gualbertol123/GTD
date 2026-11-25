@@ -568,6 +568,7 @@ the **login session** (Supabase access + refresh token, never the password; key
 | `gtd-hidden-cols` | hidden Kanban columns |
 | `gtd-col-weights` | per-column widths (edit-layout mode) |
 | `gtd-prio-collapsed` | priority chart collapsed |
+| `gtd-pin-band` | *In evidenza* band open (`1`, default) or collapsed (`0`) |
 | `gtd-me` | which member "you" are |
 | `gtd-reviewed` | learnings reviewed today (spaced review) |
 | `gtd-session` | the Supabase Auth session (tokens, not the password) |
