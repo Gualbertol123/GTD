@@ -1367,3 +1367,17 @@ html[data-music="mini-video"] .m-app { padding-bottom: calc(96px + 300px + env(s
 .m-color { display: flex; align-items: center; gap: 10px; }
 .m-color input[type="range"] { flex: 1; min-height: 44px; accent-color: var(--m-accent-fill); }
 .m-color .m-pill:disabled { opacity: 0.45; }
+
+/* A highlighted ("In evidenza") task: an orange bar down its left edge. */
+.m-card--pinned { position: relative; }
+.m-card--pinned::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--m-orange);
+  pointer-events: none;
+}

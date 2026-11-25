@@ -996,3 +996,12 @@ html[data-skin="glass"] .tag-v {
 html[data-skin="glass"][data-appearance="dark"] .tag-v {
   color: var(--ios-orange);
 }
+
+/* Highlighted tasks and their band, in Glass: systemOrange instead of gold. */
+html[data-skin="glass"] .task-card.is-pinned::before {
+  background: var(--ios-orange);
+}
+html[data-skin="glass"] .pin-band {
+  background: color-mix(in srgb, var(--ios-orange) 12%, transparent);
+  border-color: color-mix(in srgb, var(--ios-orange) 40%, transparent);
+}

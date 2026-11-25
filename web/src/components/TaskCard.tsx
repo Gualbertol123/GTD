@@ -7,6 +7,9 @@ import { daysSince, daysUntil } from "../lib/dates";
 import { TaskDetails, showUndo } from "./TaskDetails";
 import { useProjects } from "../lib/projectsContext";
 import { projectColor, stepOf } from "../lib/projects";
+import { nextDue, ruleLabel } from "../lib/recurrence";
+import { toISODate } from "../lib/dates";
+import { RepeatIcon, StarIcon } from "./RecurrenceControls";
 
 interface Props {
   task: Task;
@@ -78,7 +81,16 @@ export function TaskCard({
     const prevWaiting = task.waitingSince;
     const next = isDone ? "NEXT" : "DONE";
     send({ type: "moveTask", id: task.id, status: next });
-    showUndo(t(isDone ? "ux.board.reopenToast" : "ux.board.doneToast", { title: task.title }), () => {
+    // A recurring task says when the next one is due (it was just created).
+    const nextDate =
+      !isDone && task.recurrence ? nextDue(task.recurrence, task.dueDate, toISODate(new Date())) : "";
+    const text = nextDate
+      ? t("rec.nextToast", {
+          title: task.title,
+          date: new Date(`${nextDate}T00:00:00`).toLocaleDateString(localeCode(lang), { day: "numeric", month: "short" }),
+        })
+      : t(isDone ? "ux.board.reopenToast" : "ux.board.doneToast", { title: task.title });
+    showUndo(text, () => {
       send({ type: "moveTask", id: task.id, status: prev });
       if (prev === "WAITING" && prevWaiting) {
         send({ type: "updateTask", id: task.id, patch: { waitingSince: prevWaiting } });
@@ -105,7 +117,7 @@ export function TaskCard({
       // border that lights up under every text box read as the box highlighting.
       className={`task-card bg-white rounded-[12px] border transition-colors ${
         open ? "border-[#E8E6E1] is-open" : "border-[#E8E6E1] hover:border-[#C9A96E]"
-      }`}
+      } ${task.pinned && !isDone ? "is-pinned" : ""}`}
     >
       <div className="p-3 flex items-start gap-2">
         <button
@@ -140,6 +152,12 @@ export function TaskCard({
           ) : (
             <span className="flex-1 min-w-0 font-semibold text-[13px] text-[#0A1931] leading-snug break-words hyphens-auto [hyphenate-limit-chars:10_4_4]">
               {task.title}
+            </span>
+          )}
+          {task.pinned && !open && (
+            <span className="shrink-0 mt-0.5 text-[#C9A96E]" title={t("pin.on")}>
+              <StarIcon on size={13} />
+              <span className="sr-only">{t("pin.on")}</span>
             </span>
           )}
           {showStatus && (
@@ -183,6 +201,15 @@ export function TaskCard({
           {task.status === "WAITING" && task.waitingSince && (
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F3EF] text-[#6B6B6B] border border-[#E8E6E1]">
               {waiting} {t("task.days")}
+            </span>
+          )}
+          {task.recurrence && (
+            <span
+              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-[#EEF2FA] text-[#1E3A6E] border border-[#D5DEEE]"
+              title={t("rec.chip", { rule: ruleLabel(task.recurrence, lang) })}
+            >
+              <RepeatIcon size={10} />
+              {ruleLabel(task.recurrence, lang)}
             </span>
           )}
           {total > 0 && (

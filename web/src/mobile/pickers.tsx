@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import type { Priority, Status } from "../lib/types";
+import type { Priority, Recurrence, Status } from "../lib/types";
+import { cleanRule } from "../lib/recurrence";
 import { STATUS_ORDER, UNASSIGNED } from "../lib/constants";
 import { useT } from "../lib/i18n";
 import { useProjects } from "../lib/projectsContext";
@@ -263,6 +264,48 @@ export function ProjectPicker({
           </div>
         </>
       )}
+    </Sheet>
+  );
+}
+
+/** How a task repeats: never, or one of the common rules (finer rules on the desktop). */
+export function RepeatPicker({
+  value,
+  onPick,
+  onClose,
+}: {
+  value?: Recurrence;
+  onPick: (r: Recurrence | undefined) => void;
+  onClose: () => void;
+}) {
+  const { t } = useT();
+  const cur = value ? cleanRule(value) : undefined;
+  const weekdays = cur?.freq === "weekly" && cur.days?.length === 5 && cur.days.every((d, i) => d === i);
+  const plain = (f: Recurrence["freq"]) => cur?.freq === f && cur.every === 1 && !cur.days?.length;
+  const options: { key: string; label: string; rule?: Recurrence; on: boolean }[] = [
+    { key: "never", label: t("rec.never"), on: !cur },
+    { key: "daily", label: t("rec.daily"), rule: { freq: "daily", every: 1 }, on: plain("daily") },
+    { key: "weekdays", label: t("rec.weekdays"), rule: { freq: "weekly", every: 1, days: [0, 1, 2, 3, 4] }, on: !!weekdays && cur?.every === 1 },
+    { key: "weekly", label: t("rec.weekly"), rule: { freq: "weekly", every: 1 }, on: plain("weekly") },
+    { key: "monthly", label: t("rec.monthly"), rule: { freq: "monthly", every: 1 }, on: plain("monthly") },
+    { key: "yearly", label: t("rec.yearly"), rule: { freq: "yearly", every: 1 }, on: plain("yearly") },
+  ];
+  return (
+    <Sheet title={t("rec.repeat")} onClose={onClose}>
+      <div className="m-panel m-list" role="listbox">
+        {options.map((o) => (
+          <Row
+            key={o.key}
+            title={o.label}
+            hint={o.key === "never" ? undefined : t("rec.hint")}
+            selected={o.on}
+            onClick={() => {
+              onPick(o.rule ? { ...o.rule, series: value?.series } : undefined);
+              onClose();
+            }}
+          />
+        ))}
+      </div>
     </Sheet>
   );
 }

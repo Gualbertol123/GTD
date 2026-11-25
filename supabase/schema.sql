@@ -61,7 +61,9 @@ create table public.tasks (
   done_at        bigint,                        -- when it entered DONE (archive timer)
   updated_at     bigint not null default 0,
   created_at     bigint not null default 0,     -- ordering within a column
-  assignees      text[]                         -- everyone on a shared task
+  assignees      text[],                        -- everyone on a shared task
+  pinned         boolean not null default false, -- in the "In evidenza" band (migration 023)
+  recurrence     jsonb                          -- recurring rule, null = one-off (migration 023)
 );
 
 -- One row per team member per day — the Daily Reflection.

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { Op, Priority, Status, Task } from "../lib/types";
+import type { Op, Priority, Recurrence, Status, Task } from "../lib/types";
 import { STATUS_ORDER, UNASSIGNED, genId } from "../lib/constants";
 import { ownerInitial, ownersLabel, ownersPatch } from "../lib/owners";
 import { priorityLabel, statusLabel, useT } from "../lib/i18n";
 import { useMe } from "../lib/identity";
+import { useProjects } from "../lib/projectsContext";
+import { RepeatIcon, StarIcon } from "./RecurrenceControls";
 
 const PRIOS: Priority[] = ["P1", "P2", "P3", "P4"];
 
@@ -55,6 +57,9 @@ export function QuickAdd({
   const [priority, setPriority] = useState<Priority>("P2");
   const [status, setStatus] = useState<Status>("NEXT");
   const [due, setDue] = useState("");
+  const [repeat, setRepeat] = useState<Recurrence["freq"] | "">("");
+  const [pin, setPin] = useState(false);
+  const { recurring: recurringOn } = useProjects();
 
   const memberLabel = (name: string) => (name === UNASSIGNED ? t("members.unassigned") : name);
 
@@ -94,6 +99,8 @@ export function QuickAdd({
       dueDate: due || undefined,
       // A task born in Waiting starts counting its days today.
       ...(status === "WAITING" ? { waitingSince: new Date().toISOString().slice(0, 10) } : {}),
+      ...(recurringOn && pin ? { pinned: true } : {}),
+      ...(recurringOn && repeat ? { recurrence: { freq: repeat, every: 1 } } : {}),
       updatedAt: Date.now(),
       createdAt: Date.now(),
     };
@@ -102,6 +109,8 @@ export function QuickAdd({
     setAdded({ task, ...vis });
     setTitle("");
     setDue("");
+    setRepeat("");
+    setPin(false);
     setPickOpen(false);
   };
 
@@ -198,6 +207,34 @@ export function QuickAdd({
           className="min-w-0 bg-transparent outline-none text-[13px] text-[#0A1931]"
         />
       </label>
+      {recurringOn && (
+        <>
+          <label className={`${field} pl-4 pr-3 inline-flex items-center gap-1.5 text-[#6B6B6B]`} title={t("rec.repeat")}>
+            <RepeatIcon />
+            <select
+              value={repeat}
+              onChange={(e) => setRepeat(e.target.value as Recurrence["freq"] | "")}
+              aria-label={t("rec.repeat")}
+              className="bg-transparent outline-none text-[13px] text-[#0A1931] cursor-pointer"
+            >
+              <option value="">{t("rec.repeat")}: {t("rec.never")}</option>
+              {(["daily", "weekly", "monthly", "yearly"] as const).map((f) => (
+                <option key={f} value={f}>{t(`rec.${f}`)}</option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            aria-pressed={pin}
+            onClick={() => setPin((v) => !v)}
+            title={t(pin ? "pin.remove" : "pin.add")}
+            aria-label={t("pin.add")}
+            className={`${field} w-11 inline-flex items-center justify-center ${pin ? "text-[#C9A96E] !border-[#C9A96E]" : "text-[#6B6B6B]"}`}
+          >
+            <StarIcon on={pin} size={16} />
+          </button>
+        </>
+      )}
       <button
         type="button"
         onClick={create}

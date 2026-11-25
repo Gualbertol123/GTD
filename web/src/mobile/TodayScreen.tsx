@@ -28,7 +28,12 @@ export function TodayScreen({ board, send }: { board: Board; send: Send }) {
   const known = !!me && board.members.includes(me);
 
   const groups = useMemo(() => {
-    const mine = boardTasks(board).filter((tk) => tk.status !== "DONE" && (!known || isOwnedBy(tk, me)));
+    const open = boardTasks(board).filter((tk) => tk.status !== "DONE");
+    // In evidenza: the whole team's highlighted tasks, first and only once.
+    const pinned = open
+      .filter((tk) => tk.pinned)
+      .sort((a, b) => (a.dueDate ?? "9").localeCompare(b.dueDate ?? "9") || PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
+    const mine = open.filter((tk) => !tk.pinned && (!known || isOwnedBy(tk, me)));
     const late: Task[] = [];
     const today: Task[] = [];
     const doing: Task[] = [];
@@ -47,7 +52,7 @@ export function TodayScreen({ board, send }: { board: Board; send: Send }) {
     doing.sort(byPriorityThenDue);
     soon.sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""));
     waiting.sort((a, b) => daysSince(b.waitingSince) - daysSince(a.waitingSince));
-    return { late, today, doing, soon, waiting };
+    return { pinned, late, today, doing, soon, waiting };
   }, [board, me, known]);
 
   const doneWeek = board.tasks.filter((tk) => tk.status === "DONE" && !isArchived(tk)).length;
@@ -121,6 +126,7 @@ export function TodayScreen({ board, send }: { board: Board; send: Send }) {
         </button>
       )}
 
+      {section("pin.band", groups.pinned, true)}
       {section("m.sec.late", groups.late, true)}
       {section("m.sec.today", groups.today, true)}
       {section("m.sec.doing", groups.doing)}

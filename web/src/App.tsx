@@ -101,7 +101,7 @@ export default function App() {
     );
   }
 
-  const projectsValue = { projects: board.projects, tasks: board.tasks, available: !!board.projectsV2Available };
+  const projectsValue = { projects: board.projects, tasks: board.tasks, available: !!board.projectsV2Available, recurring: !!board.recurringAvailable };
 
   // The music player sits first, outside both layouts, so it keeps playing
   // when the layout switches (it is never re-mounted).

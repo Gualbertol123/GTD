@@ -1,6 +1,7 @@
 import { supabase } from "./supabaseClient";
 import type { BoardMode, Board, PersonalNote, Op, Priority, Project, Reflection, Subtask, Task, Weekly, WeeklyItem } from "./types";
 import { reorderByIds } from "./localReducer";
+import { cleanRule, parseRule } from "./recurrence";
 import type { RowChange } from "./rowSync";
 import {
   SEED_BOARD_NAME,
@@ -38,6 +39,8 @@ interface TaskRow {
   updated_at: number;
   created_at: number;
   project_id?: string | null; // migration 015
+  pinned?: boolean | null; // migration 023
+  recurrence?: unknown; // migration 023 (jsonb)
 }
 
 function rowToTask(r: TaskRow): Task {
@@ -56,6 +59,8 @@ function rowToTask(r: TaskRow): Task {
     fileDir: r.file_dir ?? undefined,
     doneAt: r.done_at ?? undefined,
     projectId: r.project_id ?? undefined,
+    pinned: r.pinned ? true : undefined,
+    recurrence: parseRule(r.recurrence),
     updatedAt: r.updated_at,
     createdAt: r.created_at,
   };
@@ -77,6 +82,8 @@ function taskToRow(t: Task): TaskRow {
     file_dir: t.fileDir ?? null,
     done_at: t.doneAt ?? null,
     project_id: t.projectId ?? null,
+    pinned: !!t.pinned,
+    recurrence: t.recurrence ? cleanRule(t.recurrence) : null,
     updated_at: t.updatedAt ?? Date.now(),
     created_at: t.createdAt ?? Date.now(),
   };
@@ -101,6 +108,9 @@ function patchToRow(patch: Partial<Task>): Record<string, unknown> {
   if ("doneAt" in patch) out.done_at = patch.doneAt ?? null;
   // Same rule as assignees: only once migration 015 is known to be in.
   if ("projectId" in patch && hasProjectsV2) out.project_id = patch.projectId ?? null;
+  // Same rule again, for migration 023.
+  if ("pinned" in patch && hasRecurring) out.pinned = !!patch.pinned;
+  if ("recurrence" in patch && hasRecurring) out.recurrence = patch.recurrence ? cleanRule(patch.recurrence) : null;
   out.updated_at = Date.now();
   return out;
 }
@@ -272,6 +282,19 @@ async function probeBoardMode(): Promise<boolean> {
   return hasBoardMode;
 }
 
+// Has migration 023 run (tasks.pinned / tasks.recurrence)?
+let hasRecurring = false;
+
+async function probeRecurring(): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("tasks").select("pinned,recurrence").limit(1);
+    hasRecurring = !error;
+  } catch {
+    hasRecurring = false;
+  }
+  return hasRecurring;
+}
+
 async function probeAssignees(): Promise<boolean> {
   try {
     const { error } = await supabase.from("tasks").select("assignees").limit(1);
@@ -344,6 +367,7 @@ export async function fetchBoard(): Promise<Board> {
     assignees,
     projectsV2,
     boardMode,
+    recurring,
   ] = await Promise.all([
     supabase.from("board_meta").select("*").eq("id", "main").maybeSingle(),
     supabase.from("tasks").select("*").order("created_at", { ascending: true }),
@@ -354,6 +378,7 @@ export async function fetchBoard(): Promise<Board> {
     probeAssignees(),
     probeProjectsV2(),
     probeBoardMode(),
+    probeRecurring(),
   ]);
 
   if (meta.error) throw meta.error;
@@ -387,6 +412,7 @@ export async function fetchBoard(): Promise<Board> {
     assigneesAvailable: assignees,
     projectsV2Available: projectsV2,
     boardModeAvailable: boardMode,
+    recurringAvailable: recurring,
     updatedAt: Date.now(),
   };
 }
@@ -470,7 +496,7 @@ export async function seedIfEmpty(): Promise<boolean> {
     );
   await supabase
     .from("tasks")
-    .upsert(seedTasks().map((t) => { const { project_id: _p, ...row } = taskToRow(t); return row; }), { onConflict: "id", ignoreDuplicates: true });
+    .upsert(seedTasks().map((t) => { const { project_id: _p, pinned: _n, recurrence: _r, ...row } = taskToRow(t); return row; }), { onConflict: "id", ignoreDuplicates: true });
   await supabase
     .from("weekly")
     .upsert(
@@ -512,7 +538,17 @@ export async function writeOp(op: Op, board: Board): Promise<void> {
       if (row.done_at == null) delete row.done_at;
       if (!hasAssignees || row.assignees == null) delete row.assignees;
       if (!hasProjectsV2 || row.project_id == null) delete row.project_id;
-      await must(supabase.from("tasks").insert(row));
+      if (!hasRecurring) {
+        delete row.pinned;
+        delete row.recurrence;
+      }
+      // A recurring task's next occurrence has a worked-out id: if a teammate
+      // completed the same task a moment earlier, the row is already there.
+      if (t.recurrence?.series && t.id.includes("@")) {
+        await must(supabase.from("tasks").upsert(row, { onConflict: "id", ignoreDuplicates: true }));
+      } else {
+        await must(supabase.from("tasks").insert(row));
+      }
       break;
     }
     case "updateTask":

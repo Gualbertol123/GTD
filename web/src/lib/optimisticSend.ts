@@ -1,5 +1,6 @@
 import type { Board, Op } from "./types";
 import { applyOpLocal } from "./localReducer";
+import { expandOp } from "./recurrence";
 
 export interface BoardCell {
   /** The newest board, ahead of React's render: every change lands here first. */
@@ -20,7 +21,7 @@ export interface SendDeps {
 // several sends in one tick (an Undo that restores many rows, "turn into
 // tasks") all stack up instead of each one starting from the last render.
 export function createSend(deps: SendDeps) {
-  return (op: Op, onError?: (message: string) => void): void => {
+  const one = (op: Op, onError?: (message: string) => void): void => {
     const before = deps.cell.current;
     if (!before) return;
     const next = applyOpLocal(before, op);
@@ -33,6 +34,12 @@ export function createSend(deps: SendDeps) {
       onError?.(message);
       deps.onFail(message);
     });
+  };
+  return (op: Op, onError?: (message: string) => void): void => {
+    const before = deps.cell.current;
+    if (!before) return;
+    // A recurring task's completion also adds its next occurrence (lib/recurrence.ts).
+    for (const o of expandOp(before, op)) one(o, onError);
   };
 }
 

@@ -10,6 +10,7 @@ import { UX_CALENDAR_EN, UX_CALENDAR_IT } from "./i18n.ux.calendar";
 import { UX_SHELL_EN, UX_SHELL_IT } from "./i18n.ux.shell";
 import { UX_MOBILE_EN, UX_MOBILE_IT } from "./i18n.ux.mobile";
 import { UX_MUSIC_EN, UX_MUSIC_IT } from "./i18n.ux.music";
+import { UX_RECURRING_EN, UX_RECURRING_IT } from "./i18n.ux.recurring";
 
 export const UX_IT: Record<string, string> = {
   ...UX_BOARD_IT,
@@ -21,6 +22,7 @@ export const UX_IT: Record<string, string> = {
   ...UX_SHELL_IT,
   ...UX_MOBILE_IT,
   ...UX_MUSIC_IT,
+  ...UX_RECURRING_IT,
 };
 
 export const UX_EN: Record<string, string> = {
@@ -33,4 +35,5 @@ export const UX_EN: Record<string, string> = {
   ...UX_SHELL_EN,
   ...UX_MOBILE_EN,
   ...UX_MUSIC_EN,
+  ...UX_RECURRING_EN,
 };

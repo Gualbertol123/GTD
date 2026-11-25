@@ -9,6 +9,8 @@ interface ProjectsCtx {
   tasks: Task[];
   /** Migration 015 is in: tasks can be linked to a project. */
   available: boolean;
+  /** Migration 023 is in: tasks can repeat and be highlighted. */
+  recurring?: boolean;
 }
 
 const Ctx = createContext<ProjectsCtx>({ projects: [], tasks: [], available: false });

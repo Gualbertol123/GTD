@@ -10,6 +10,7 @@ import { useProjects } from "../lib/projectsContext";
 import { projectColor } from "../lib/projects";
 import { AutoTextarea } from "./AutoTextarea";
 import { SortableSubtasks } from "./SortableSubtasks";
+import { RecurrenceControls } from "./RecurrenceControls";
 
 const PRIOS: Priority[] = ["P1", "P2", "P3", "P4"];
 
@@ -151,7 +152,7 @@ export function TaskDetails({
   const [confirmDel, setConfirmDel] = useState(false);
   const [newSub, setNewSub] = useState("");
   const [assignOpen, setAssignOpen] = useState(false);
-  const { projects, available: projectsOn } = useProjects();
+  const { projects, available: projectsOn, recurring: recurringOn } = useProjects();
   const linked = task.projectId ? projects.find((p) => p.id === task.projectId) : undefined;
 
   const title = useSyncedField(task.title);
@@ -418,6 +419,8 @@ export function TaskDetails({
         ))}
         <span className="text-[11px] text-[#6B6B6B] ml-1">{t(`prio.${task.priority}short`)}</span>
       </div>
+
+      <RecurrenceControls task={task} send={send} available={!!recurringOn} />
 
       {task.status === "WAITING" && task.waitingSince && (
         <div className="text-[11px] text-[#92400E]">

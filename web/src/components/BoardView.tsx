@@ -10,6 +10,7 @@ import { MembersBar } from "./MembersBar";
 import { PriorityDistribution } from "./PriorityDistribution";
 import { ListView } from "./ListView";
 import { MenuBar } from "./MenuBar";
+import { StarIcon } from "./RecurrenceControls";
 import {
   readHidden,
   writeHidden,
@@ -89,6 +90,8 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
   const [weights, setWeights] = useState<Record<string, number>>(() => readWeights());
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<Status | null>(null);
+  const [overBand, setOverBand] = useState(false);
+  const [bandOpen, setBandOpen] = useState(true);
   // Open cards per column: a column holding an open card grows so its editor
   // is not squeezed into a narrow strip.
   const [openCards, setOpenCards] = useState<Record<string, Status>>({});
@@ -166,6 +169,20 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
         (tk) => tk.title.toLowerCase().includes(dq) || tk.desc.toLowerCase().includes(dq)
       )
     : doneWeekAll;
+
+  // "In evidenza": highlighted tasks still to do, with the board's filters.
+  // They stay in their column too (like the Done bar, a second view).
+  const byDue = (a: Task, b: Task) =>
+    (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999") ||
+    PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+  const pinned = tasks.filter((tk) => tk.pinned && tk.status !== "DONE").sort(byDue);
+  const pinnedRecurring = pinned.filter((tk) => tk.recurrence);
+  const pinnedOther = pinned.filter((tk) => !tk.recurrence);
+  const dropOnBand = () => {
+    if (dragId) send({ type: "updateTask", id: dragId, patch: { pinned: true } });
+    setDragId(null);
+    setOverBand(false);
+  };
 
   const drop = (status: Status) => {
     if (dragId) send({ type: "moveTask", id: dragId, status });
@@ -427,6 +444,100 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
             {t("ux.board.resetFilters")}
           </button>
         </div>
+      )}
+
+      {/* In evidenza — highlighted tasks and recurring tasks, above the columns. */}
+      {board.recurringAvailable && (
+        <section
+          aria-label={t("pin.band")}
+          onDragEnter={(e) => {
+            if (dragId) {
+              e.preventDefault();
+              setOverBand(true);
+            }
+          }}
+          onDragOver={(e) => {
+            if (!dragId) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            if (!overBand) setOverBand(true);
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverBand(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            dropOnBand();
+          }}
+          className={`pin-band rounded-[14px] p-3 transition-colors ${overBand ? "drop-target" : ""}`}
+        >
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-expanded={bandOpen}
+              aria-label={t(bandOpen ? "pin.collapse" : "pin.expand")}
+              onClick={() => setBandOpen((o) => !o)}
+              className="flex items-center gap-2 text-left min-w-0"
+            >
+              <span aria-hidden="true" className={`text-[#7A5F30] text-[11px] transition-transform ${bandOpen ? "rotate-90" : ""}`}>▶</span>
+              <span className="text-[#C9A96E]"><StarIcon on size={15} /></span>
+              <span className="font-trajan text-[12px] uppercase tracking-widest text-[#7A5F30]">{t("pin.band")}</span>
+              <span className="text-[11px] font-semibold text-[#7A5F30] bg-white rounded-full px-2 py-0.5 border border-[#E8D6AE]">
+                {pinned.length}
+              </span>
+            </button>
+            <span className="text-[10px] text-[#7A5F30] ml-1 hidden md:inline truncate">
+              {overBand ? t("pin.drop") : t("pin.bandHint")}
+            </span>
+          </div>
+          {bandOpen &&
+            (pinned.length === 0 ? (
+              <p className="mt-2 text-[12px] text-[#7A5F30]">{overBand ? t("pin.drop") : t("pin.empty")}</p>
+            ) : (
+              <div className="mt-3 space-y-3">
+                {[
+                  { key: "recurring", label: t("pin.recurring"), list: pinnedRecurring },
+                  { key: "tasks", label: t("pin.tasks"), list: pinnedOther },
+                ]
+                  .filter((g) => g.list.length > 0)
+                  .map((g, _i, groups) => (
+                    <div key={g.key}>
+                      {groups.length > 1 && (
+                        <div className="text-[10px] uppercase tracking-widest text-[#7A5F30] mb-1.5 px-0.5">
+                          {g.label} · {g.list.length}
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 items-start">
+                        {g.list.map((tk) => (
+                          <TaskCard
+                            multiAssign={board.assigneesAvailable !== false}
+                            key={tk.id}
+                            task={tk}
+                            members={members}
+                            send={send}
+                            showNames={showNames}
+                            draggable={!editLayout}
+                            showStatus
+                            onDragStart={(e) => {
+                              setDragId(tk.id);
+                              e.dataTransfer.setData("text/plain", tk.id);
+                              e.dataTransfer.effectAllowed = "move";
+                              (e.currentTarget as HTMLElement).classList.add("dragging");
+                            }}
+                            onDragEnd={(e) => {
+                              (e.currentTarget as HTMLElement).classList.remove("dragging");
+                              setDragId(null);
+                              setOverCol(null);
+                              setOverBand(false);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ))}
+        </section>
       )}
 
       {view === "list" ? (

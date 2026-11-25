@@ -18,6 +18,20 @@ export interface Subtask {
   doneAt?: number; // set when ticked, cleared when unticked — drives the weekly report
 }
 
+/**
+ * How a recurring task repeats (migration 023). Completing one occurrence
+ * creates the next, with its due date moved on by this rule.
+ */
+export interface Recurrence {
+  freq: "daily" | "weekly" | "monthly" | "yearly";
+  /** Every N days / weeks / months / years (1 or more). */
+  every: number;
+  /** Weekly only: the weekdays it falls on, 0 = Monday … 6 = Sunday. Empty = the due date's weekday. */
+  days?: number[];
+  /** The id shared by every occurrence of one recurring task (the first one's id). */
+  series?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -40,6 +54,10 @@ export interface Task {
   doneAt?: number; // set when it enters DONE; drives auto-archiving
   /** The project this task belongs to (migration 015). */
   projectId?: string;
+  /** Shown in the board's "In evidenza" band (migration 023). */
+  pinned?: boolean;
+  /** Set on a recurring task (migration 023). */
+  recurrence?: Recurrence;
   updatedAt: number;
   createdAt?: number; // ordering within a column (oldest first)
 }
@@ -132,6 +150,8 @@ export interface Board {
   projectsV2Available?: boolean;
   /** False when migration 016 has not been run: every project task is on the board. */
   boardModeAvailable?: boolean;
+  /** False when migration 023 has not been run: no recurring or pinned tasks. */
+  recurringAvailable?: boolean;
   updatedAt: number;
   rev?: number; // optional; not used by the Supabase backend
   // Editable settings (nullable until the settings migration is applied).

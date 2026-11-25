@@ -6,6 +6,8 @@ import { projectColor, stepOf } from "../lib/projects";
 import { daysSince } from "../lib/dates";
 import { Avatars, DueChip, PRIO_VAR, STATUS_VAR } from "./ui";
 import { IconArrowRight, IconCheck, IconHourglass } from "./icons";
+import { RepeatIcon, StarIcon } from "../components/RecurrenceControls";
+import { ruleLabel } from "../lib/recurrence";
 
 // A swipe must be clearly sideways (twice as much across as down) and long
 // before it acts, so scrolling past a card never completes it by accident.
@@ -35,7 +37,7 @@ export function TaskCard({
   /** Swipe right = done, left = move. Off where sideways swipes scroll (the Board). */
   swipe?: boolean;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const { projects, tasks } = useProjects();
   const project = task.projectId ? projects.find((p) => p.id === task.projectId) : undefined;
   const step = stepOf(task, projects, tasks);
@@ -119,7 +121,7 @@ export function TaskCard({
       )}
       <div
         ref={card}
-        className={`m-card${done ? " m-card--done" : ""}${swipe ? "" : " m-card--noswipe"}`}
+        className={`m-card${done ? " m-card--done" : ""}${swipe ? "" : " m-card--noswipe"}${task.pinned && !done ? " m-card--pinned" : ""}`}
         // A tap anywhere on the card opens it; for keyboards and screen
         // readers the title is the "open" button (a role="button" card that
         // held the done checkbox was a control inside a control).
@@ -159,7 +161,17 @@ export function TaskCard({
                 {t(`m.status.${task.status}`)}
               </span>
             )}
+            {task.pinned && !done && (
+              <span className="m-chip m-chip--amber" aria-label={t("pin.on")}>
+                <StarIcon on size={11} />
+              </span>
+            )}
             {task.priority === "P1" && !done && <span className="m-chip m-chip--red">P1</span>}
+            {task.recurrence && (
+              <span className="m-chip m-chip--blue">
+                <RepeatIcon size={11} /> {ruleLabel(task.recurrence, lang)}
+              </span>
+            )}
             <DueChip task={task} />
             {waiting !== null && (
               <span className={`m-chip ${waiting >= 7 ? "m-chip--red" : "m-chip--amber"}`}>

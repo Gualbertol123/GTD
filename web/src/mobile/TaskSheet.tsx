@@ -9,11 +9,13 @@ import { projectColor, stepOf } from "../lib/projects";
 import { daysSince, daysUntil } from "../lib/dates";
 import { AutoTextarea } from "../components/AutoTextarea";
 import { Avatar, PRIO_VAR, STATUS_VAR, Sheet, shortDay } from "./ui";
-import { DuePicker, PeoplePicker, PriorityPicker, ProjectPicker, StatusPicker } from "./pickers";
+import { DuePicker, PeoplePicker, PriorityPicker, ProjectPicker, RepeatPicker, StatusPicker } from "./pickers";
+import { RepeatIcon, StarIcon } from "../components/RecurrenceControls";
+import { ruleLabel } from "../lib/recurrence";
 import { IconCalendar, IconCheck, IconChevron, IconClose, IconFlag, IconFolder, IconHourglass, IconStatus, IconTrash, IconUser } from "./icons";
 import { useTaskActions, type Send } from "./actions";
 
-type Picker = "status" | "priority" | "due" | "people" | "project" | null;
+type Picker = "status" | "priority" | "due" | "people" | "project" | "repeat" | null;
 
 /** One detail of the task: a tinted icon, its name, its value, and a chevron. */
 function PropRow({
@@ -69,7 +71,7 @@ export function TaskSheet({
 }) {
   const { t, lang } = useT();
   const { moveTo, toggleDone, remove, fail } = useTaskActions(send);
-  const { projects, tasks, available: projectsOn } = useProjects();
+  const { projects, tasks, available: projectsOn, recurring: recurringOn } = useProjects();
   const title = useSyncedField(task.title);
   const desc = useSyncedField(task.desc);
   const notes = useSyncedField(task.notes);
@@ -172,6 +174,25 @@ export function TaskSheet({
           valueColor={dueColor}
           onClick={() => setPicker("due")}
         />
+        {recurringOn && (
+          <PropRow
+            icon={<RepeatIcon size={16} />}
+            tile="var(--m-indigo)"
+            label={t("rec.repeat")}
+            value={task.recurrence ? ruleLabel(task.recurrence, lang) : t("rec.never")}
+            onClick={() => setPicker("repeat")}
+          />
+        )}
+        {recurringOn && (
+          <PropRow
+            icon={<StarIcon on size={16} />}
+            tile="var(--m-orange)"
+            label={t("pin.on")}
+            value={t(task.pinned ? "pin.yes" : "pin.no")}
+            valueColor={task.pinned ? "var(--m-orange)" : undefined}
+            onClick={() => patch({ pinned: !task.pinned })}
+          />
+        )}
         <PropRow
           icon={<IconUser size={17} />}
           tile="var(--m-blue)"
@@ -385,6 +406,7 @@ export function TaskSheet({
           onClose={() => setPicker(null)}
         />
       )}
+      {picker === "repeat" && <RepeatPicker value={task.recurrence} onPick={(r) => patch({ recurrence: r })} onClose={() => setPicker(null)} />}
       {picker === "project" && <ProjectPicker value={task.projectId} onPick={(id) => patch({ projectId: id })} onClose={() => setPicker(null)} />}
     </Sheet>
   );
