@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { showUndo } from "./TaskDetails";
 import type { Board, Op, Task } from "../lib/types";
 import { PRIORITY_DOT } from "../lib/constants";
 import { sameDay, toISODate } from "../lib/dates";
@@ -48,8 +49,6 @@ export function CalendarView({ board, tasks, members, send }: Props) {
   const [overKey, setOverKey] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; undo: () => void } | null>(null);
-  const [toastHold, setToastHold] = useState(false);
 
   const detailsRef = useRef<HTMLDivElement>(null);
   const focusDetails = useRef(false);
@@ -92,12 +91,6 @@ export function CalendarView({ board, tasks, members, send }: Props) {
   const shortDate = (iso: string) =>
     new Date(iso + "T00:00:00").toLocaleDateString(loc, { day: "numeric", month: "short" });
 
-  // Toast auto-dismiss (paused while hovered or focused).
-  useEffect(() => {
-    if (!toast || toastHold) return;
-    const id = window.setTimeout(() => setToast(null), 7000);
-    return () => window.clearTimeout(id);
-  }, [toast, toastHold]);
 
   // After a keyboard selection, move focus to the details panel.
   useEffect(() => {
@@ -130,10 +123,10 @@ export function CalendarView({ board, tasks, members, send }: Props) {
     const prevKey = prev ? prev.slice(0, 10) : undefined;
     if (prevKey === dueDate) return; // dropped on the same date: nothing to do
     send({ type: "setDueDate", id, dueDate });
-    setToast({
-      msg: dueDate ? t("cal.moved", { date: shortDate(dueDate) }) : t("cal.dueRemoved"),
-      undo: () => send({ type: "setDueDate", id, dueDate: prev }),
-    });
+    // The app's one Undo toast (TaskDetails), like every other undoable change.
+    showUndo(dueDate ? t("cal.moved", { date: shortDate(dueDate) }) : t("cal.dueRemoved"), () =>
+      send({ type: "setDueDate", id, dueDate: prev })
+    );
   };
 
   const dragStart = (id: string) => (e: React.DragEvent) => {
@@ -455,48 +448,6 @@ export function CalendarView({ board, tasks, members, send }: Props) {
         </div>
       </div>
 
-      {/* The wrapper holds the position: the glass skin makes every .bg-white
-          panel position:relative, which would undo "fixed" on the bar itself. */}
-      {toast && (
-        <div className="fixed bottom-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
-          <div
-            role="status"
-            aria-live="polite"
-            onMouseEnter={() => setToastHold(true)}
-            onMouseLeave={() => setToastHold(false)}
-            onFocus={() => setToastHold(true)}
-            onBlur={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setToastHold(false);
-            }}
-            className="pointer-events-auto flex items-center gap-3 rounded-full bg-white border border-[#E8E6E1] shadow-lg pl-4 pr-1.5 py-1.5 text-[13px] text-[#0A1931] max-w-full"
-          >
-            <span className="min-w-0 truncate">{toast.msg}</span>
-            <button
-              type="button"
-              onClick={() => {
-                toast.undo();
-                setToast(null);
-                setToastHold(false);
-              }}
-              className="h-8 px-4 rounded-full bg-[#0A1931] text-[#C9A96E] text-[12px] font-semibold shrink-0"
-            >
-              {t("cal.undo")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setToast(null);
-                setToastHold(false);
-              }}
-              aria-label={t("cal.dismiss")}
-              title={t("cal.dismiss")}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-full text-ink-2 shrink-0"
-            >
-              <IconClose size={16} />
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
