@@ -28,12 +28,23 @@ function addDays(d: Date, n: number): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 }
 
-/** Months added to `anchor`, kept on its day of the month (31 → 30 → 28 …). */
-function addMonths(anchor: Date, n: number): Date {
-  const y = anchor.getFullYear();
-  const m = anchor.getMonth() + n;
+/** Months added to `from`, on day `day` of the month or the month's last day
+ *  when it is shorter (31 → 30 → 28 …). */
+function addMonths(from: Date, n: number, day = from.getDate()): Date {
+  const y = from.getFullYear();
+  const m = from.getMonth() + n;
   const last = new Date(y, m + 1, 0).getDate();
-  return new Date(y, m, Math.min(anchor.getDate(), last));
+  return new Date(y, m, Math.min(day, last));
+}
+
+/** The day a monthly / yearly series falls on: its anchor while `due` is that
+ *  anchor clamped to its month (Feb 28 for a 31st), else `due`'s own day (the
+ *  date was moved by hand). */
+function anchorDay(rule: Recurrence, due: Date): number {
+  const a = rule.anchor;
+  if (!a) return due.getDate();
+  const last = new Date(due.getFullYear(), due.getMonth() + 1, 0).getDate();
+  return Math.min(a, last) === due.getDate() ? a : due.getDate();
 }
 
 export function cleanRule(r: Recurrence): Recurrence {
@@ -45,6 +56,8 @@ export function cleanRule(r: Recurrence): Recurrence {
   const out: Recurrence = { freq: r.freq, every };
   if (days && days.length) out.days = days;
   if (r.series) out.series = r.series;
+  const anchor = Math.round(Number(r.anchor));
+  if ((r.freq === "monthly" || r.freq === "yearly") && anchor >= 1 && anchor <= 31) out.anchor = anchor;
   return out;
 }
 
@@ -58,18 +71,19 @@ export function parseRule(v: unknown): Recurrence | undefined {
     every: Number(r.every) || 1,
     days: Array.isArray(r.days) ? r.days.map(Number) : undefined,
     series: typeof r.series === "string" && r.series ? r.series : undefined,
+    anchor: r.anchor === undefined ? undefined : Number(r.anchor),
   });
 }
 
 /** The k-th date of the rule after `start` (k = 1 is the first one after it). */
-function nth(rule: Recurrence, start: Date, k: number): Date {
+function nth(rule: Recurrence, start: Date, k: number, day?: number): Date {
   switch (rule.freq) {
     case "daily":
       return addDays(start, rule.every * k);
     case "monthly":
-      return addMonths(start, rule.every * k);
+      return addMonths(start, rule.every * k, day);
     case "yearly":
-      return addMonths(start, 12 * rule.every * k);
+      return addMonths(start, 12 * rule.every * k, day);
     case "weekly":
       return addDays(start, 7 * rule.every * k);
   }
@@ -110,15 +124,24 @@ export function nextDue(rule: Recurrence, due: string | undefined, today: string
     for (let i = 0; i < 2000 && d.getTime() <= t.getTime(); i++) d = nextWeekday(r, d, base);
     return toISODate(d);
   }
+  const day = anchorDay(r, base);
   let k = 1;
-  let d = nth(r, base, k);
+  let d = nth(r, base, k, day);
   // Jump close to today in one step, then walk (keeps months anchored).
   if (d.getTime() <= t.getTime() && r.freq === "daily") {
     k = Math.max(1, Math.floor((t.getTime() - base.getTime()) / (DAY * r.every)));
-    d = nth(r, base, k);
+    d = nth(r, base, k, day);
   }
-  for (let i = 0; i < 5000 && d.getTime() <= t.getTime(); i++) d = nth(r, base, ++k);
+  for (let i = 0; i < 5000 && d.getTime() <= t.getTime(); i++) d = nth(r, base, ++k, day);
   return toISODate(d);
+}
+
+/** A monthly / yearly series keeps the day it falls on (set from the first
+ *  completed occurrence's due date). */
+function anchorOf(rule: Recurrence, due: string | undefined): { anchor?: number } {
+  if (rule.freq !== "monthly" && rule.freq !== "yearly") return {};
+  if (!due) return rule.anchor ? { anchor: rule.anchor } : {};
+  return { anchor: anchorDay(rule, parseISO(due)) };
 }
 
 export function seriesOf(task: Task): string {
@@ -138,7 +161,7 @@ export function nextOccurrence(task: Task, today: string, now: number): Task {
     waitingSince: undefined,
     doneAt: undefined,
     subtasks: task.subtasks.map((s) => ({ id: s.id, text: s.text, done: false })),
-    recurrence: { ...cleanRule(rule), series },
+    recurrence: { ...cleanRule(rule), series, ...anchorOf(rule, task.dueDate) },
     // Edited before it was created = never edited: any change stamps
     // updatedAt with the clock, which is never earlier than createdAt.
     // Reopen only takes back an occurrence still in that state.

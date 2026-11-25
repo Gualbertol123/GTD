@@ -30,6 +30,9 @@ export interface Recurrence {
   days?: number[];
   /** The id shared by every occurrence of one recurring task (the first one's id). */
   series?: string;
+  /** Monthly / yearly: the day of the month the series falls on (1–31). Kept
+   *  so "every month on the 31st" comes back to the 31st after February. */
+  anchor?: number;
 }
 
 export interface Task {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expandOp, nextDue, parseRule, ruleLabel } from "../recurrence";
+import { expandOp, nextDue, nextOccurrence, parseRule, ruleLabel } from "../recurrence";
 import { createSend, type BoardCell } from "../optimisticSend";
 import type { Board, Op } from "../types";
 import { board, task } from "./fixtures";
@@ -108,12 +108,13 @@ describe("expandOp", () => {
     return { cell, writes, send };
   }
 
-  it("reopening takes back the untouched next occurrence", () => {
+  it("reopening takes back the untouched next occurrence", async () => {
     const s = setup(board({ tasks: [rec] }));
     s.send({ type: "moveTask", id: "r1", status: "DONE" });
     expect(s.cell.current!.tasks.map((t) => t.id)).toContain("r1@" + nextDue(rec.recurrence!, rec.dueDate, todayISO()));
     s.send({ type: "moveTask", id: "r1", status: "IN PROGRESS" });
     expect(s.cell.current!.tasks.map((t) => t.id)).toEqual(["r1"]);
+    await new Promise((r) => setTimeout(r, 0)); // the writes go out in order, after the optimistic change
     expect(s.writes.map((w) => w.type)).toEqual(["moveTask", "addTask", "moveTask", "deleteTask"]);
   });
 
@@ -131,3 +132,31 @@ function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+
+describe("monthly and yearly keep their day", () => {
+  const t = (id: string, due: string, freq: "monthly" | "yearly") =>
+    task(id, { status: "NEXT", dueDate: due, recurrence: { freq, every: 1 } });
+  // Complete each occurrence on its due date and follow the series.
+  const follow = (first: ReturnType<typeof t>, n: number) => {
+    const dues: string[] = [];
+    let cur = first;
+    for (let i = 0; i < n; i++) {
+      cur = nextOccurrence(cur, cur.dueDate!, 0);
+      dues.push(cur.dueDate!);
+    }
+    return dues;
+  };
+
+  it("every month on the 31st comes back to the 31st after February", () => {
+    expect(follow(t("m", "2027-01-31", "monthly"), 4)).toEqual(["2027-02-28", "2027-03-31", "2027-04-30", "2027-05-31"]);
+  });
+
+  it("every year on 29 February comes back to the 29th in a leap year", () => {
+    expect(follow(t("y", "2028-02-29", "yearly"), 4)).toEqual(["2029-02-28", "2030-02-28", "2031-02-28", "2032-02-29"]);
+  });
+
+  it("a due date moved by hand becomes the new day", () => {
+    const moved = { ...t("m", "2027-03-15", "monthly"), recurrence: { freq: "monthly" as const, every: 1, anchor: 31 } };
+    expect(nextOccurrence(moved, "2027-03-15", 0).dueDate).toBe("2027-04-15");
+  });
+});
