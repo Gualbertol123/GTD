@@ -165,7 +165,7 @@ html[data-layout="mobile"] {
 }
 .m-app *:focus-visible,
 .m-sheet *:focus-visible {
-  outline: 2px solid var(--m-accent);
+  outline: 2px solid var(--ctl-focus, var(--m-accent));
   outline-offset: 2px;
 }
 /* Text fields show focus with the caret (and their own ring), not an outline. */
@@ -679,7 +679,7 @@ html[data-typing] .m-dock {
 }
 .m-app .m-card__open:focus-visible { outline: none; }
 .m-card:has(.m-card__open:focus-visible) {
-  outline: 2px solid var(--m-accent);
+  outline: 2px solid var(--ctl-focus, var(--m-accent));
   outline-offset: 2px;
 }
 .m-card__title {

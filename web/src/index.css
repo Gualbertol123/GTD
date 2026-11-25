@@ -68,7 +68,7 @@ html[data-color] {
    one-class utilities and glass.css's tag rules without !important.
    --------------------------------------------------------------------------- */
 .field {
-  transition: border-color 100ms ease, outline-color 100ms ease;
+  transition: border-color 100ms ease; /* the focus ring itself appears at once */
 }
 :root .field:focus-visible,
 :root .field:has(:focus-visible) {

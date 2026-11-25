@@ -45,7 +45,7 @@
 }
 
 /* Classic's header is navy: there the ring is gold (7:1 on navy). */
-html:not([data-skin="glass"]) header {
+html:not([data-skin="glass"]) header.bg-\[\#0A1931\] {
   --ctl-focus: #c9a96e;
 }
 

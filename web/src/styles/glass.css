@@ -115,7 +115,9 @@ html[data-skin="glass"][data-appearance="dark"] {
   /* Field states (index.css): focus is systemBlue with a soft ring. */
   --field-border: var(--separator);
   --field-border-focus: var(--ios-blue);
-  --field-ring: var(--ios-blue); /* opaque: the translucent ring was 1.3–2.5:1 */
+  /* Focus ring, dark glass: white. systemBlue measured 2.5–3.3:1 against the
+     dark panels (WCAG 1.4.11 asks 3:1); white is 8:1 or more on all of them. */
+  --field-ring: #ffffff;
   --field-invalid: var(--ios-red);
   --field-invalid-ring: rgba(255, 69, 58, 0.45);
 
@@ -128,7 +130,7 @@ html[data-skin="glass"][data-appearance="dark"] {
   --ctl-on-bg: var(--accent-fill);
   --ctl-on-fg: #ffffff;
   --ctl-on-border: transparent;
-  --ctl-focus: var(--ios-blue);
+  --ctl-focus: #ffffff;
   --ctl-accent: var(--ios-blue);
   --ctl-track: var(--fill-3);
   --ctl-track-border: transparent;
@@ -215,7 +217,10 @@ html[data-skin="glass"][data-appearance="light"] {
 
   --field-border: var(--separator);
   --field-border-focus: var(--ios-blue);
-  --field-ring: var(--ios-blue);
+  /* Focus ring, light glass: Apple's high-contrast blue (systemBlue over the
+     light wallpaper measured 2.4–2.9:1). */
+  --field-ring: #0040dd;
+  --ctl-focus: #0040dd;
   --field-invalid: var(--ios-red);
   --field-invalid-ring: rgba(255, 59, 48, 0.35);
 
