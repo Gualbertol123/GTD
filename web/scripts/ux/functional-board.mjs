@@ -476,7 +476,9 @@ section("migrations", async (browser) => {
     await ph.page.locator(".m-card", { hasText: "Efficientare" }).first().click();
     await sleep(500);
     const sheet = await ph.page.evaluate(() => document.body.innerText);
-    check("before 023: phone task sheet has no Ripeti / In evidenza rows", !/Ripeti/.test(sheet) && !/In evidenza/.test(sheet));
+    // The rows are buttons; the note that says what to run may name them.
+    const rows = await ph.page.locator(".m-sheet button.m-row", { hasText: /^(Ripeti|In evidenza)/ }).count();
+    check("before 023: phone task sheet has no Ripeti / In evidenza rows", rows === 0, `${rows} rows`);
     check("before 023: phone says what to run (README: “the controls say what to run”)", /023/.test(sheet), "the phone hides the rows and says nothing");
     await ph.context.close();
   }

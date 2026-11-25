@@ -183,6 +183,13 @@ export function TaskSheet({
           valueColor={dueColor}
           onClick={() => setPicker("due")}
         />
+        {/* Before migration 023 the two rows below can't work: say what to run
+            (as the desktop editor does) instead of hiding them silently. */}
+        {!recurringOn && (
+          <p className="m-sub" role="note" style={{ margin: "6px 4px", fontSize: 13 }}>
+            {t("rec.migration")}
+          </p>
+        )}
         {recurringOn && (
           <PropRow
             icon={<RepeatIcon size={16} />}

@@ -4,17 +4,17 @@ export const UX_SHELL_IT: Record<string, string> = {
   // The pre-login hint no longer hands out the initial diary password.
   "reflAuth.hint": "Prima volta? Chiedi la password iniziale a un amministratore.",
   "ux.shell.skipToContent": "Vai al contenuto",
-  "save.failed": "Non salvato: {msg}. La bacheca mostra di nuovo ciò che è salvato.",
+  "save.failed": "Non salvato: {msg}. Il board mostra di nuovo ciò che è salvato.",
   // An edit made offline is refused before it changes anything (optimisticSend.ts).
   "save.offline": "Modifica non fatta: sei offline. Rifalla quando torni online.",
   // The same, after a screen's own "Non salvato:" (phone sheets, project page).
   "save.offlineReason": "sei offline, quindi la modifica non è stata fatta. Rifalla quando torni online.",
   // The loading screen when the app opens with no network (the cached shell).
-  "app.offline": "Sei offline. La bacheca si apre da sola appena torna la connessione.",
+  "app.offline": "Sei offline. Il board si apre da solo appena torna la connessione.",
   "app.unreachable": "Il server non risponde. Riprova da solo tra poco.",
   "ux.shell.tabsNav": "Sezioni",
   "ux.shell.close": "Chiudi",
-  "ux.shell.renameBoard": "Rinomina la bacheca",
+  "ux.shell.renameBoard": "Rinomina il board",
   "ux.shell.editSubtitle": "Modifica il sottotitolo",
   "ux.shell.unsavedDraft": "Bozza non salvata",
   "ux.shell.sure": "Sicuro?",

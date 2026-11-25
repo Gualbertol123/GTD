@@ -24,11 +24,11 @@ export const MENU_IT: Record<string, string> = {
 
 export const MENU_EN: Record<string, string> = {
   "sm.more": "More actions",
-  "sm.created": "Playlist «{p}» created",
+  "sm.created": "Playlist “{p}” created",
   "sm.removed": "Removed from the playlist",
   "sm.copyHint": "Copy this link:",
-  "sm.addFail": "Not added to «{p}»",
-  "sm.createFail": "Playlist «{p}» not saved",
+  "sm.addFail": "Not added to “{p}”",
+  "sm.createFail": "Playlist “{p}” not saved",
   "sm.removeFail": "Not removed from the playlist",
   "sm.failWhy": "{what}: {why}",
   "sm.why.offline": "you're offline, try again",
@@ -38,7 +38,7 @@ export const MENU_EN: Record<string, string> = {
   "sm.why.server": "server error, try again",
   "sm.radioSave": "Save radio as playlist",
   "sm.radioSaving": "Creating the radio playlist…",
-  "sm.radioSaved": "Playlist «{p}» saved ({n} songs), updated every day",
-  "sm.radioSavedPlain": "Playlist «{p}» saved ({n} songs). Updating it every day needs database migration 021",
+  "sm.radioSaved": "Playlist “{p}” saved ({n} songs), updated every day",
+  "sm.radioSavedPlain": "Playlist “{p}” saved ({n} songs). Updating it every day needs database migration 021",
   "sm.radioSaveFail": "Radio playlist not created",
 };
