@@ -24,7 +24,8 @@ import { PHONE_QUERY, useLayout } from "./mobile/useLayout";
 import { MusicButton, MusicPlayer } from "./components/MusicPlayer";
 import { music } from "./lib/music";
 import { MusicTab } from "./components/MusicTab";
-import { UndoToastHost } from "./components/TaskDetails";
+import { UndoToastHost, showNotice } from "./components/TaskDetails";
+import { onSaveError } from "./lib/saveErrors";
 import { navigate, useRoute } from "./lib/history";
 
 // The phone layout is its own chunk: desktop visitors never download it.
@@ -44,6 +45,14 @@ export default function App() {
     if (!layout.mobile && (route.tab !== tab || (route.sub && tab !== "projects" && tab !== "music")))
       navigate({ tab, sub: tab === "projects" || tab === "music" ? route.sub : undefined }, { replace: true });
   }, [layout.mobile, route.tab, route.sub, tab]);
+  // A refused write that its screen did not report: say so (both layouts).
+  useEffect(
+    () =>
+      onSaveError((msg) =>
+        showNotice(typeof navigator !== "undefined" && navigator.onLine === false ? t("save.offline") : t("save.failed", { msg }))
+      ),
+    [t]
+  );
   const [mailOpen, setMailOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     search: "",

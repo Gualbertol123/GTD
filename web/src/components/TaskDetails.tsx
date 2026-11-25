@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { focusCardAfterMove } from "../lib/focusAfterMove";
 import { createPortal } from "react-dom";
 import type { Op, Priority, Status, Task } from "../lib/types";
 import { STATUS_ORDER, UNASSIGNED, genId } from "../lib/constants";
@@ -33,7 +34,8 @@ interface Props {
 interface UndoToast {
   id: number;
   text: string;
-  onUndo: () => void;
+  /** None for a notice ("Non salvato…"): the toast then has no Annulla. */
+  onUndo?: () => void;
   ms: number;
   /** Move keyboard focus to Annulla (the delete was done from the keyboard). */
   focus?: boolean;
@@ -54,6 +56,11 @@ const subscribeToast = (l: () => void) => {
  *  focus is on it); Annulla runs onUndo. */
 export function showUndo(text: string, onUndo: () => void, ms = 6000, opts: { focus?: boolean } = {}) {
   toastNow = { id: ++toastSeq, text, onUndo, ms, focus: opts.focus };
+  emitToast();
+}
+/** A message with no Undo (a save that failed), in the same place. */
+export function showNotice(text: string, ms = 8000) {
+  toastNow = { id: ++toastSeq, text, ms };
   emitToast();
 }
 function clearToast(id: number) {
@@ -88,10 +95,24 @@ export function UndoToastHost() {
     const h = window.setTimeout(() => clearToast(toast.id), toast.ms);
     return () => window.clearTimeout(h);
   }, [toast, hold]);
+  // Where focus was when the toast took it, to give it back when the toast
+  // goes (it used to fall to <body>); #main if that element is gone.
+  const returnTo = useRef<Element | null>(null);
   useEffect(() => {
-    if (toast?.focus) undoRef.current?.focus();
+    if (toast?.focus) {
+      returnTo.current = document.activeElement;
+      undoRef.current?.focus();
+    }
     if (!toast) setHold(false);
   }, [toast]);
+  const giveFocusBack = () => {
+    const a = document.activeElement;
+    if (!a || !(a instanceof Node) || !document.querySelector("[data-undo-toast]")?.contains(a)) return;
+    const back = returnTo.current;
+    returnTo.current = null;
+    if (back instanceof HTMLElement && back.isConnected && back !== document.body) back.focus();
+    else document.getElementById("main")?.focus();
+  };
   if (toastHosts[0] !== hostId || typeof document === "undefined") return null;
   return createPortal(
     <div
@@ -107,23 +128,30 @@ export function UndoToastHost() {
           onBlur={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHold(false);
           }}
+          data-undo-toast=""
           className="pointer-events-auto flex items-center gap-3 rounded-full bg-[#1C1C1E] text-white shadow-xl pl-4 pr-1.5 py-1.5 text-[13px]"
         >
           <span className="min-w-0 truncate">{toast.text}</span>
+          {toast.onUndo && (
           <button
             ref={undoRef}
             type="button"
             onClick={() => {
-              toast.onUndo();
+              giveFocusBack();
+              toast.onUndo?.();
               clearToast(toast.id);
             }}
             className="shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold text-[#E9C989] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
           >
             {t("ux.board.undo")}
           </button>
+          )}
           <button
             type="button"
-            onClick={() => clearToast(toast.id)}
+            onClick={() => {
+              giveFocusBack();
+              clearToast(toast.id);
+            }}
             aria-label={t("ux.board.dismiss")}
             className="shrink-0 h-8 w-8 rounded-full inline-flex items-center justify-center text-white/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
           >
@@ -234,7 +262,10 @@ export function TaskDetails({
   const idx = STATUS_ORDER.indexOf(task.status);
   const move = (dir: -1 | 1) => {
     const next = STATUS_ORDER[idx + dir];
-    if (next) send({ type: "moveTask", id: task.id, status: next });
+    if (next) {
+      focusCardAfterMove(task.id);
+      send({ type: "moveTask", id: task.id, status: next });
+    }
   };
   const owners = taskOwners(task);
   const memberLabel = (name: string) => (name === UNASSIGNED ? t("members.unassigned") : name);
@@ -271,14 +302,21 @@ export function TaskDetails({
           }}
           onKeyDown={(e) => {
             // Enter saves (the title is one line); Escape reverts.
+            // Both commit through blur, then put focus back in the field, so
+            // the keyboard stays in the card (it used to fall to <body>, ~30
+            // Tab stops away). A second Escape closes the card.
+            const el = e.currentTarget;
+            const refocus = () => requestAnimationFrame(() => el.isConnected && el.focus({ preventScroll: true }));
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              e.currentTarget.blur();
-            } else if (e.key === "Escape") {
+              el.blur();
+              refocus();
+            } else if (e.key === "Escape" && el.value !== task.title) {
               e.preventDefault();
               titleCancelled.current = true;
               title.setValue(task.title);
-              e.currentTarget.blur();
+              el.blur();
+              refocus();
             }
           }}
           onBlur={() => {
@@ -342,6 +380,7 @@ export function TaskDetails({
               value={linked ? linked.id : ""}
               onChange={(e) => patch({ projectId: e.target.value || undefined })}
               title={t("task.project")}
+              aria-label={t("task.project")}
               className="bg-transparent outline-none text-[12px] text-[#0A1931] max-w-[180px] cursor-pointer"
             >
               <option value="">{t("task.noProject")}</option>
@@ -402,6 +441,7 @@ export function TaskDetails({
             key={p}
             onClick={() => patch({ priority: p })}
             title={priorityLabel(t, p)}
+            aria-pressed={task.priority === p}
             className={`h-7 px-2.5 rounded-full text-[11px] font-semibold border transition-all ${
               task.priority === p
                 ? p === "P1"
@@ -467,7 +507,7 @@ export function TaskDetails({
             placeholder={t("task.addSubtask")}
             className="flex-1 min-w-0 h-8 rounded-full bg-white border border-[#E8E6E1] px-3 text-[12px] field"
           />
-          <button onClick={addSub} className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-[#0A1931] text-[#C9A96E] text-[14px] font-semibold">
+          <button onClick={addSub} aria-label={t("task.addSubtask").replace(/…$/, "")} className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-[#0A1931] text-[#C9A96E] text-[14px] font-semibold">
             +
           </button>
         </div>
@@ -545,6 +585,7 @@ export function TaskDetails({
             onClick={() => move(-1)}
             disabled={idx <= 0}
             title={t("task.prev")}
+            aria-label={t("task.prev")}
             className="w-8 h-8 rounded-full border border-[#E8E6E1] text-[#0A1931] disabled:opacity-30"
           >
             ‹
@@ -553,6 +594,7 @@ export function TaskDetails({
             onClick={() => move(1)}
             disabled={idx >= STATUS_ORDER.length - 1}
             title={t("task.next")}
+            aria-label={t("task.next")}
             className="w-8 h-8 rounded-full bg-[#0A1931] text-white disabled:opacity-30"
           >
             ›
@@ -560,7 +602,10 @@ export function TaskDetails({
           {/* Move directly to any section */}
           <select
             value={task.status}
-            onChange={(e) => send({ type: "moveTask", id: task.id, status: e.target.value as Status })}
+            onChange={(e) => {
+              focusCardAfterMove(task.id);
+              send({ type: "moveTask", id: task.id, status: e.target.value as Status });
+            }}
             title={t("quick.status")}
             className="h-8 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] px-2 text-[12px] text-[#0A1931] field cursor-pointer"
           >

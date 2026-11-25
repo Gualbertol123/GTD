@@ -4,6 +4,8 @@ export const UX_SHELL_IT: Record<string, string> = {
   // The pre-login hint no longer hands out the initial diary password.
   "reflAuth.hint": "Prima volta? Chiedi la password iniziale a un amministratore.",
   "ux.shell.skipToContent": "Vai al contenuto",
+  "save.failed": "Non salvato: {msg}. La bacheca mostra di nuovo ciò che è salvato.",
+  "save.offline": "Non salvato: sei offline. La modifica sparirà: rifalla quando torni online.",
   "ux.shell.tabsNav": "Sezioni",
   "ux.shell.close": "Chiudi",
   "ux.shell.renameBoard": "Rinomina la bacheca",
@@ -21,6 +23,8 @@ export const UX_SHELL_IT: Record<string, string> = {
 };
 
 export const UX_SHELL_EN: Record<string, string> = {
+  "save.failed": "Not saved: {msg}. The board shows what is saved again.",
+  "save.offline": "Not saved: you are offline. The change will go away: make it again once you are back online.",
   "reflAuth.hint": "First time? Ask an admin for the initial password.",
   "ux.shell.skipToContent": "Skip to content",
   "ux.shell.tabsNav": "Sections",

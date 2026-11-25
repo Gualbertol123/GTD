@@ -10,7 +10,7 @@
 // "older" after that.
 // -----------------------------------------------------------------------------
 
-import type { Board, BoardMode, Priority, Project, ProjectStatus, Status, Task } from "./types";
+import type { Board, BoardMode, Op, Priority, Project, ProjectStatus, Status, Task } from "./types";
 import { ARCHIVE_DAYS, PRIORITY_ORDER, STATUS_ORDER, genId } from "./constants";
 import { daysUntil } from "./dates";
 
@@ -81,6 +81,23 @@ export function orderedProjectTasks(p: Project, tasks: Task[]): Task[] {
     if (rb !== undefined) return 1;
     return (a.createdAt ?? 0) - (b.createdAt ?? 0);
   });
+}
+
+/**
+ * Linking an existing task to a project puts it LAST in the project's step
+ * order. Without this an older task linked to a sequential project sorted by
+ * age to step 1 and took the place of the step in progress on the BOARD.
+ * Returns the op plus, when it links, the step order to write with it.
+ */
+export function withLinkOrder(board: Board, op: Op): Op[] {
+  if (op.type !== "updateTask" || !op.patch.projectId) return [op];
+  const task = board.tasks.find((t) => t.id === op.id);
+  const p = board.projects.find((x) => x.id === op.patch.projectId);
+  if (!task || !p || task.projectId === p.id) return [op];
+  const order = orderedProjectTasks(p, board.tasks)
+    .map((t) => t.id)
+    .filter((id) => id !== task.id);
+  return [op, { type: "projectUpdate", id: p.id, patch: { taskOrder: [...order, task.id] } }];
 }
 
 /** In a sequential project, the step on the board now: the first task not DONE. */

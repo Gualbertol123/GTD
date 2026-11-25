@@ -8,24 +8,37 @@ function setup(start: Board) {
   const published: Board[] = [];
   const writes: { op: Op; before: Board }[] = [];
   const onFail = vi.fn();
-  let fail = false;
+  let fail: (op: Op) => boolean = () => false;
+  // Each write resolves after a delay that shrinks with every call, so if
+  // writes were not queued the later ones would finish first.
+  let n = 0;
+  const done: string[] = [];
   const send = createSend({
     cell,
     publish: (b) => published.push(b),
     write: (op, before) => {
       writes.push({ op, before });
-      return fail ? Promise.reject(new Error("refused")) : Promise.resolve();
+      const delay = Math.max(0, 30 - 10 * n++);
+      return new Promise((res, rej) =>
+        setTimeout(() => {
+          if (fail(op)) return rej(new Error("refused"));
+          done.push(op.type);
+          res();
+        }, delay)
+      );
     },
     onFail,
   });
-  return { cell, published, writes, onFail, send, failNext: () => (fail = true) };
+  return { cell, published, writes, done, onFail, send, failNext: () => (fail = () => true), failWhen: (f: (op: Op) => boolean) => (fail = f) };
 }
+const flush = () => new Promise((r) => setTimeout(r, 120));
 
 describe("createSend", () => {
-  it("keeps both of two sends made in the same tick", () => {
+  it("keeps both of two sends made in the same tick", async () => {
     const s = setup(board({ tasks: [task("a")] }));
     s.send({ type: "addTask", task: task("b") });
     s.send({ type: "addTask", task: task("c") });
+    await flush();
     const ids = (b: Board) => b.tasks.map((t) => t.id);
     expect(ids(s.cell.current!)).toEqual(["a", "b", "c"]);
     // The last published board (what React renders) holds both changes.
@@ -46,10 +59,38 @@ describe("createSend", () => {
     s.failNext();
     const onError = vi.fn();
     s.send({ type: "weeklyAdd", column: "well", item: { id: "x", text: "x" } }, onError);
-    await Promise.resolve();
-    await Promise.resolve();
+    await flush();
     expect(onError).toHaveBeenCalledWith("refused");
-    expect(s.onFail).toHaveBeenCalledWith("refused");
+    expect(s.onFail).toHaveBeenCalledWith("refused", true);
+  });
+
+  it("says when nobody else reported a refused write", async () => {
+    const s = setup(board());
+    s.failNext();
+    s.send({ type: "weeklyAdd", column: "well", item: { id: "x", text: "x" } });
+    await flush();
+    expect(s.onFail).toHaveBeenCalledWith("refused", false);
+  });
+
+  it("writes in the order sent, even when a later write would be faster", async () => {
+    const s = setup(board({ tasks: [task("a")] }));
+    s.send({ type: "addTask", task: task("b") });
+    s.send({ type: "updateTask", id: "b", patch: { title: "B" } });
+    s.send({ type: "deleteTask", id: "a" });
+    await flush();
+    expect(s.done).toEqual(["addTask", "updateTask", "deleteTask"]);
+  });
+
+  it("does not send the rest of a group after a refused write", async () => {
+    // Completing a recurring task expands to [moveTask, addTask(next)].
+    const rec = task("r", { status: "NEXT", dueDate: "2026-11-20", recurrence: { freq: "daily", every: 1, series: "r" } } as never);
+    const s = setup(board({ tasks: [rec] }));
+    s.failWhen((op) => op.type === "moveTask");
+    s.send({ type: "moveTask", id: "r", status: "DONE" });
+    expect(s.cell.current!.tasks.length).toBe(2); // optimistic: done + next
+    await flush();
+    expect(s.writes.map((w) => w.op.type)).toEqual(["moveTask"]); // the next one was never inserted
+    expect(s.onFail).toHaveBeenCalledTimes(1);
   });
 
   it("does nothing before the board has loaded", () => {

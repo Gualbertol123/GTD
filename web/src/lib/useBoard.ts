@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { reportSaveError } from "./saveErrors";
 import type { Board, Op } from "./types";
 import { fetchBoard, fetchChange, seedIfEmpty, writeOp, type ChangedTable } from "./db";
 import { applyRowChange, type RowChange } from "./rowSync";
@@ -175,7 +176,8 @@ export function useBoard(): UseBoard {
       setConn("reconnecting");
       reload();
     };
-    const onOffline = () => setConn("reconnecting");
+    // Offline is its own state (it used to read "reconnecting" the whole time).
+    const onOffline = () => setConn("offline");
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
@@ -198,8 +200,9 @@ export function useBoard(): UseBoard {
         publish: setBoard,
         // Persist; realtime + poll reconcile to authoritative state.
         write: writeOp,
-        onFail: (message) => {
+        onFail: (message, handled) => {
           setError(message);
+          if (!handled) reportSaveError(message);
           requestAuthCheck();
           reload(); // undo a failed optimistic change
         },
