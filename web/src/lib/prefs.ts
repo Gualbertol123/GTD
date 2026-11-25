@@ -12,6 +12,7 @@ const KEYS = {
   reviewed: "gtd-reviewed",
   prio: "gtd-prio-collapsed",
   pinBand: "gtd-pin-band",
+  menuBar: "gtd-menu-bar",
   reflauth: "gtd-refl-auth",
   reflpane: "gtd-reflection-pane",
   skin: "gtd-skin",
@@ -110,11 +111,25 @@ export function writePrioCollapsed(v: boolean): void {
 
 // "In evidenza" band open (default) or collapsed, per device, like the other
 // collapsible bars on the board.
+// Owner's decision (2026-11-25): open by default on wide screens, collapsed
+// below 1200 px, where the open band pushed the first card to the fold.
 export function readPinBandOpen(): boolean {
-  return readPref("pinBand") !== "0";
+  const v = readPref("pinBand");
+  if (v !== null) return v !== "0";
+  return typeof window === "undefined" || window.innerWidth >= 1200;
 }
 export function writePinBandOpen(v: boolean): void {
   writePref("pinBand", v ? "1" : "0");
+}
+
+// The "Menu mensa" bar under the board: collapsed by default (owner's
+// decision, 2026-11-25; its header already shows today's dish), remembered
+// per device once opened or closed.
+export function readMenuBarOpen(): boolean {
+  return readPref("menuBar") === "1";
+}
+export function writeMenuBarOpen(v: boolean): void {
+  writePref("menuBar", v ? "1" : "0");
 }
 
 // Per-device reflection login cache: member -> expiry epoch ms, or "never"

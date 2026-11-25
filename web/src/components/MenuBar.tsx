@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { readMenuBarOpen, writeMenuBarOpen } from "../lib/prefs";
 import { useT } from "../lib/i18n";
 import { loadMenu, upcomingMenu, type Menu } from "../lib/menu";
 import { toISODate, weekdayDate } from "../lib/dates";
@@ -11,7 +12,7 @@ const DAYS_SHOWN = 5;
 
 export function MenuBar() {
   const { t, lang } = useT();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(readMenuBarOpen);
   const [menu, setMenu] = useState<Menu | null>(null);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
@@ -34,7 +35,12 @@ export function MenuBar() {
     <div className="bg-[#EFECE6] rounded-[14px] border border-transparent p-3">
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() =>
+          setOpen((o) => {
+            writeMenuBarOpen(!o);
+            return !o;
+          })
+        }
         aria-expanded={open}
         aria-controls={open ? "menu-bar-body" : undefined}
         className="w-full flex items-center gap-2 text-left"
