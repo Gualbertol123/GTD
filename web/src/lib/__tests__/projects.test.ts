@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boardTasks, hiddenFromBoard, orderedProjectTasks, projectStats, stepOf } from "../projects";
+import { boardTasks, hiddenFromBoard, orderedProjectTasks, projectSteps, projectStats, stepOf } from "../projects";
 import { project, task } from "./fixtures";
 
 const p = (mode: "all" | "sequential" | "none", order: string[] = []) =>
@@ -37,6 +37,30 @@ describe("which tasks reach the board", () => {
 
   it("none: keeps every project task off the board", () => {
     expect(boardTasks({ projects: [p("none")], tasks }).map((t) => t.id)).toEqual(["free"]);
+  });
+});
+
+describe("projectSteps", () => {
+  it("gives every task the step stepOf gives it", () => {
+    const projects = [
+      project("s", { boardMode: "sequential", taskOrder: ["c", "a"] }),
+      project("q", { boardMode: "sequential" }),
+      project("all", { boardMode: "all" }),
+      project("s", { boardMode: "all" }), // a duplicate id: the first one counts
+    ];
+    const tasks = [
+      task("a", { projectId: "s", createdAt: 1 }),
+      task("b", { projectId: "s", createdAt: 2 }),
+      task("c", { projectId: "s", createdAt: 3 }),
+      task("d", { projectId: "q", createdAt: 5 }),
+      task("e", { projectId: "q", createdAt: 4 }),
+      task("f", { projectId: "all" }),
+      task("g"),
+    ];
+    const steps = projectSteps(projects, tasks);
+    for (const t of tasks) expect(steps.get(t.id) ?? null).toEqual(stepOf(t, projects, tasks));
+    expect(steps.get("c")).toEqual({ n: 1, total: 3 });
+    expect(steps.get("e")).toEqual({ n: 1, total: 2 });
   });
 });
 

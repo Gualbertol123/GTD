@@ -141,6 +141,23 @@ export function stepOf(task: Task, projects: Project[], tasks: Task[]): { n: num
   return { n: ordered.findIndex((t) => t.id === task.id) + 1, total: ordered.length };
 }
 
+/**
+ * stepOf for every task at once (task id → its step), computed once per board
+ * instead of once per card. Only tasks of sequential projects are in it.
+ */
+export function projectSteps(projects: Project[], tasks: Task[]): Map<string, { n: number; total: number }> {
+  const out = new Map<string, { n: number; total: number }>();
+  const seen = new Set<string>();
+  for (const p of projects) {
+    if (seen.has(p.id)) continue; // stepOf goes by the first project with that id
+    seen.add(p.id);
+    if (boardMode(p) !== "sequential") continue;
+    const ordered = orderedProjectTasks(p, tasks);
+    ordered.forEach((t, i) => out.set(t.id, { n: i + 1, total: ordered.length }));
+  }
+  return out;
+}
+
 export type Health = "done" | "overdue" | "atRisk" | "onTrack" | "noDate";
 
 export const HEALTH_COLOR: Record<Health, string> = {
