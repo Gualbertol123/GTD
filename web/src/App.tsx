@@ -21,6 +21,7 @@ import { UndoToastHost, showNotice } from "./components/TaskDetails";
 import { onSaveError } from "./lib/saveErrors";
 import { isNetworkError, isOffline } from "./lib/optimisticSend";
 import { navigate, useRoute } from "./lib/history";
+import { wantsNewTask } from "./lib/newTaskShortcut";
 
 // Screens other than the board load when first opened (each is its own
 // chunk): the first paint downloads the board and the shell only.
@@ -46,6 +47,11 @@ export default function App() {
     if (!layout.mobile && (route.tab !== tab || (route.sub && tab !== "projects" && tab !== "music")))
       navigate({ tab, sub: tab === "projects" || tab === "music" ? route.sub : undefined }, { replace: true });
   }, [layout.mobile, route.tab, route.sub, tab]);
+  // The "Nuova attività" shortcut (?new=1) on the desktop: open the Board,
+  // whose new-task field then takes the focus (QuickAdd).
+  useEffect(() => {
+    if (!layout.mobile && tab !== "board" && wantsNewTask()) navigate({ tab: "board" }, { replace: true });
+  }, [layout.mobile, tab]);
   // A refused write that its screen did not report: say so (both layouts).
   useEffect(
     () =>

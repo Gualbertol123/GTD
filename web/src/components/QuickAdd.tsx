@@ -8,6 +8,7 @@ import { useMe } from "../lib/identity";
 import { useProjects } from "../lib/projectsContext";
 import { RepeatIcon, StarIcon } from "./RecurrenceControls";
 import { isOffline } from "../lib/optimisticSend";
+import { takeNewTask } from "../lib/newTaskShortcut";
 
 const PRIOS: Priority[] = ["P1", "P2", "P3", "P4"];
 
@@ -42,6 +43,10 @@ export function QuickAdd({
 }: Props) {
   const { t, lang } = useT();
   const titleRef = useRef<HTMLInputElement>(null);
+  // Opened from the installed app's "Nuova attività" shortcut: type at once.
+  useEffect(() => {
+    if (takeNewTask()) titleRef.current?.focus();
+  }, []);
   const [empty, setEmpty] = useState(false);
   const [added, setAdded] = useState<Added | null>(null);
   // The confirmation stays a little longer when the new task is out of sight.

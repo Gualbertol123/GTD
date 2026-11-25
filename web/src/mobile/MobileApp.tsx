@@ -22,6 +22,7 @@ import { AddSheet } from "./AddSheet";
 import { MoveSheet, useTaskActions, type Send } from "./actions";
 import { IconBoard, IconCalendar, IconMore, IconPlus, IconProjects, IconToday, IconUser } from "./icons";
 import type { LayoutChoice } from "./useLayout";
+import { takeNewTask } from "../lib/newTaskShortcut";
 import "./mobile.css";
 
 type TabDef = { id: MobileTab; icon: (p: { size?: number }) => JSX.Element };
@@ -228,11 +229,7 @@ function Shell({
 
   // The home-screen shortcut "New task" opens the app with ?new=1.
   useEffect(() => {
-    const url = new URL(window.location.href);
-    if (!url.searchParams.has("new")) return;
-    url.searchParams.delete("new");
-    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
-    setAdding({});
+    if (takeNewTask()) setAdding({});
   }, []);
 
   const setTab = useCallback(

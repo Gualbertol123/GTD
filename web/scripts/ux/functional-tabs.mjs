@@ -760,6 +760,25 @@ groups.routes = async () => {
     info("routes phone: #/today at desktop width", page.url());
     await context.close();
   }
+  // The installed app's "Nuova attività" shortcut (/?new=1#/board, manifest).
+  for (const [hash, mobile] of [["#/board", false], ["#/calendario", false], ["#/board", true]]) {
+    const { context, page } = await openApp(browser, {
+      skin: "classic",
+      appearance: "light",
+      path: "?new=1" + hash,
+      ...(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : {}),
+    });
+    await wait(page, 600);
+    const where = mobile ? "phone" : `desktop ${hash}`;
+    if (mobile) {
+      ok(`routes: shortcut New task (${where}) opens the add sheet`, (await page.locator("[role=dialog]").count()) > 0);
+    } else {
+      const focused = await page.evaluate(() => document.activeElement?.placeholder || document.activeElement?.tagName);
+      ok(`routes: shortcut New task (${where}) focuses the Board's new-task field`, focused === "Nuova attività…" && /#\/board$/.test(page.url()), `${focused} @ ${page.url()}`);
+    }
+    ok(`routes: shortcut New task (${where}) is taken off the address`, !page.url().includes("new=1"), page.url());
+    await context.close();
+  }
 };
 
 // ---------------------------------------------------------------- LANGUAGE
