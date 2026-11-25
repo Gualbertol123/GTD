@@ -11,6 +11,7 @@ const KEYS = {
   me: "gtd-me",
   reviewed: "gtd-reviewed",
   prio: "gtd-prio-collapsed",
+  pinBand: "gtd-pin-band",
   reflauth: "gtd-refl-auth",
   reflpane: "gtd-reflection-pane",
   skin: "gtd-skin",
@@ -105,6 +106,15 @@ export function readPrioCollapsed(): boolean {
 }
 export function writePrioCollapsed(v: boolean): void {
   writePref("prio", v ? "1" : "0");
+}
+
+// "In evidenza" band open (default) or collapsed, per device, like the other
+// collapsible bars on the board.
+export function readPinBandOpen(): boolean {
+  return readPref("pinBand") !== "0";
+}
+export function writePinBandOpen(v: boolean): void {
+  writePref("pinBand", v ? "1" : "0");
 }
 
 // Per-device reflection login cache: member -> expiry epoch ms, or "never"

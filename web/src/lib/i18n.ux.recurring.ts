@@ -29,8 +29,6 @@ export const UX_RECURRING_IT: Record<string, string> = {
   "pin.drop": "Rilascia per mettere in evidenza",
   "pin.recurring": "Ricorrenti",
   "pin.tasks": "Attività",
-  "pin.collapse": "Comprimi “In evidenza”",
-  "pin.expand": "Espandi “In evidenza”",
   "pin.yes": "Sì",
   "pin.no": "No",
 };
@@ -64,8 +62,6 @@ export const UX_RECURRING_EN: Record<string, string> = {
   "pin.drop": "Drop to highlight",
   "pin.recurring": "Recurring",
   "pin.tasks": "Tasks",
-  "pin.collapse": "Collapse Highlighted",
-  "pin.expand": "Expand Highlighted",
   "pin.yes": "Yes",
   "pin.no": "No",
 };

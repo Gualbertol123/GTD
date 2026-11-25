@@ -161,7 +161,7 @@ export function TaskCard({
             </span>
           )}
           {showStatus && (
-            <span className="shrink-0 text-[10px] font-semibold tracking-wide uppercase px-2 py-1 rounded-full bg-[#0A1931] text-[#C9A96E]">
+            <span className="shrink-0 text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-[#F5F3EF] text-[#6B6B6B] border border-[#E8E6E1]">
               {statusLabel(lang, task.status)}
             </span>
           )}

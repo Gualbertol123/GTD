@@ -18,6 +18,8 @@ import {
   writeViewMode,
   readWeights,
   writeWeights,
+  readPinBandOpen,
+  writePinBandOpen,
   type ViewMode,
 } from "../lib/prefs";
 import type { FilterState } from "./Filters";
@@ -91,7 +93,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<Status | null>(null);
   const [overBand, setOverBand] = useState(false);
-  const [bandOpen, setBandOpen] = useState(true);
+  const [bandOpen, setBandOpen] = useState(readPinBandOpen);
   // Open cards per column: a column holding an open card grows so its editor
   // is not squeezed into a narrow strip.
   const [openCards, setOpenCards] = useState<Record<string, Status>>({});
@@ -255,10 +257,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-3">
-        <div className="font-trajan text-[10px] uppercase tracking-widest text-[#6B6B6B] mb-2 flex items-center gap-1.5">
-          <span>⌕</span> {t("filters.section")}
-        </div>
+      <div role="search" aria-label={t("filters.section")} className="bg-white rounded-[14px] border border-[#E8E6E1] p-3">
         <div className="flex flex-wrap items-center gap-2">
           {/* Board / List toggle */}
           <div
@@ -413,10 +412,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
       )}
 
       {/* New-task row — visually distinct from the search/filter row above */}
-      <div className="rounded-[14px] border border-[#E8E6E1] bg-white p-3">
-        <div className="font-trajan text-[10px] uppercase tracking-widest text-[#7A5F30] mb-2 flex items-center gap-1.5">
-          <span>＋</span> {t("quick.section")}
-        </div>
+      <div role="group" aria-label={t("quick.section")} className="rounded-[14px] border border-[#E8E6E1] bg-white p-3">
         <QuickAdd
           members={members}
           send={send}
@@ -475,8 +471,12 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
             <button
               type="button"
               aria-expanded={bandOpen}
-              aria-label={t(bandOpen ? "pin.collapse" : "pin.expand")}
-              onClick={() => setBandOpen((o) => !o)}
+              onClick={() =>
+                setBandOpen((o) => {
+                  writePinBandOpen(!o);
+                  return !o;
+                })
+              }
               className="flex items-center gap-2 text-left min-w-0"
             >
               <span aria-hidden="true" className={`text-[#7A5F30] text-[11px] transition-transform ${bandOpen ? "rotate-90" : ""}`}>▶</span>
@@ -494,20 +494,22 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
             (pinned.length === 0 ? (
               <p className="mt-2 text-[12px] text-[#7A5F30]">{overBand ? t("pin.drop") : t("pin.empty")}</p>
             ) : (
-              <div className="mt-3 space-y-3">
+              // Groups side by side (recurring first), so a few highlighted
+              // tasks take one row, not a row per group.
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-3">
                 {[
                   { key: "recurring", label: t("pin.recurring"), list: pinnedRecurring },
                   { key: "tasks", label: t("pin.tasks"), list: pinnedOther },
                 ]
                   .filter((g) => g.list.length > 0)
                   .map((g, _i, groups) => (
-                    <div key={g.key}>
+                    <div key={g.key} className="min-w-0 flex-1 basis-[260px]">
                       {groups.length > 1 && (
                         <div className="text-[10px] uppercase tracking-widest text-[#7A5F30] mb-1.5 px-0.5">
                           {g.label} · {g.list.length}
                         </div>
                       )}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 items-start">
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2 items-start">
                         {g.list.map((tk) => (
                           <TaskCard
                             multiAssign={board.assigneesAvailable !== false}
@@ -550,7 +552,6 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
         />
       ) : (
         <>
-          <p className="text-[12px] text-[#6B6B6B]">{t("board.help")}</p>
           <div
             ref={containerRef}
             onDragLeave={(e) => {
