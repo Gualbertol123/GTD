@@ -880,10 +880,13 @@ html[data-skin="glass"]
    surface's layer and redraw its blur in tiles, and the tile edges showed as
    thin straight lines (Chrome only; measured: hovering the board repainted
    blurred layers 71 times). Hover no longer repaints anything at all (section
-   7), which removes the cause. What still repaints inside glass is a press,
-   focus, typing and a drag, so each control keeps a compositing layer of its
-   own. will-change: opacity (not transform) so fixed popups inside keep the
-   viewport as their containing block.
+   7), which removes the cause. Every control used to get a compositing layer
+   of its own for that: with 300 tasks, 992 layers' worth of hints, 825
+   layers, ~184 MB, and scrolling dropped frames. Now only what repaints
+   continuously while used keeps one: fields being typed in. (A press dims a
+   button for 80 ms; check on a real GPU, README §10.) will-change: opacity
+   (not transform) so fixed popups inside keep the viewport as their
+   containing block.
    --------------------------------------------------------------------------- */
 html[data-skin="glass"]:not([data-blur="off"])
   :is(
@@ -895,7 +898,7 @@ html[data-skin="glass"]:not([data-blur="off"])
     .bg-\[\#F0EDE8\],
     .bg-\[\#EFECE6\]
   )
-  :is(button, a[href], input, select, textarea, [draggable="true"]) {
+  :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, [contenteditable="true"]) {
   will-change: opacity;
 }
 
