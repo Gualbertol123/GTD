@@ -1,5 +1,5 @@
 {
- "date": "2026-11-25T11:29:20.456Z",
+ "date": "2026-11-25T13:40:08.616Z",
  "mode": "desktop",
  "step": 24,
  "pages": [
@@ -7,6 +7,31 @@
    "combo": "glass-dark",
    "size": "1440x900",
    "scenario": "board",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 189,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-dark",
+   "size": "1440x900",
+   "scenario": "board-card-open",
    "screens": 2,
    "changed": 1,
    "ok": 0,
@@ -22,32 +47,7 @@
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
      "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
-     "n": 200,
-     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
-    }
-   ],
-   "mutList": []
-  },
-  {
-   "combo": "glass-dark",
-   "size": "1440x900",
-   "scenario": "board-card-open",
-   "screens": 3,
-   "changed": 1,
-   "ok": 0,
-   "allowed": 1,
-   "violations": 0,
-   "mutations": 0,
-   "byVerdict": {},
-   "recs": [
-    {
-     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
-     "verdict": "elsewhere",
-     "changes": {
-      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
-     },
-     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
-     "n": 204,
+     "n": 193,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -72,7 +72,7 @@
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
      "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
-     "n": 164,
+     "n": 153,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -94,10 +94,10 @@
      "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
      "verdict": "elsewhere",
      "changes": {
-      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.906, 0)"
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
      "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
-     "n": 100,
+     "n": 90,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -122,7 +122,7 @@
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
      "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
-     "n": 116,
+     "n": 106,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -147,7 +147,7 @@
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
      "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
-     "n": 98,
+     "n": 92,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -172,7 +172,32 @@
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -207.227, 0)"
      },
      "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
-     "n": 47,
+     "n": 36,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-dark",
+   "size": "1440x900",
+   "scenario": "mail",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 39,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -194,10 +219,10 @@
      "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
      "verdict": "elsewhere",
      "changes": {
-      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.906, 0)"
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
      "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
-     "n": 110,
+     "n": 99,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -222,7 +247,7 @@
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
      "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
-     "n": 141,
+     "n": 131,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -247,7 +272,7 @@
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
      "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
-     "n": 51,
+     "n": 41,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -286,7 +311,7 @@
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
      "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
-     "n": 64,
+     "n": 53,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -296,7 +321,7 @@
    "combo": "glass-dark",
    "size": "1024x768",
    "scenario": "board",
-   "screens": 3,
+   "screens": 2,
    "changed": 1,
    "ok": 0,
    "allowed": 1,
@@ -310,8 +335,8 @@
      "changes": {
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
-     "at": "svg",
-     "n": 121,
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 146,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -335,8 +360,8 @@
      "changes": {
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
-     "at": "svg",
-     "n": 117,
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 132,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -346,7 +371,7 @@
    "combo": "glass-dark",
    "size": "1024x768",
    "scenario": "board-list",
-   "screens": 2,
+   "screens": 1,
    "changed": 1,
    "ok": 0,
    "allowed": 1,
@@ -360,8 +385,8 @@
      "changes": {
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
-     "at": "svg",
-     "n": 110,
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 104,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -385,8 +410,8 @@
      "changes": {
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
-     "at": "svg",
-     "n": 105,
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 90,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -410,8 +435,8 @@
      "changes": {
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
-     "at": "svg",
-     "n": 100,
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 93,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -435,8 +460,8 @@
      "changes": {
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
-     "at": "svg",
-     "n": 89,
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 80,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -460,8 +485,33 @@
      "changes": {
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -207.227, 0)"
      },
-     "at": "svg",
-     "n": 44,
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 36,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-dark",
+   "size": "1024x768",
+   "scenario": "mail",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 39,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -485,8 +535,8 @@
      "changes": {
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
-     "at": "svg",
-     "n": 95,
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 90,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -510,8 +560,8 @@
      "changes": {
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
-     "at": "svg",
-     "n": 134,
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 126,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -535,8 +585,8 @@
      "changes": {
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
-     "at": "svg",
-     "n": 50,
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 41,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -574,8 +624,8 @@
      "changes": {
       "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
      },
-     "at": "svg",
-     "n": 62,
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 47,
      "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
     }
    ],
@@ -620,6 +670,12 @@
    "mutations": 0
   },
   "report": {
+   "changed": 2,
+   "ok": 0,
+   "violations": 0,
+   "mutations": 0
+  },
+  "mail": {
    "changed": 2,
    "ok": 0,
    "violations": 0,

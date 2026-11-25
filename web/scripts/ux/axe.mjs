@@ -16,7 +16,7 @@ const AXE =
       throw new Error("axe-core not found: npm i axe-core@4.10.2 and set AXE_PATH to its axe.min.js");
     }
   })();
-const DESK = ["#/board", "#/projects", "#/projects/p1", "#/weekly", "#/report", "#/calendario", "#/reflection", "#/products", "#/settings"];
+const DESK = ["#/board", "#/projects", "#/projects/p1", "#/weekly", "#/report", "#/mail", "#/calendario", "#/reflection", "#/products", "#/settings"];
 const PHONE = ["#/today", "#/board", "#/projects", "#/agenda", "#/more", "#/more/weekly"];
 const phone = mode === "phone";
 const paths = phone ? PHONE : DESK;

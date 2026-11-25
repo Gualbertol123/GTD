@@ -19,9 +19,23 @@ full file map, how to run and deploy it, and how to extend it.
 
 ## 1. Feature tour (by tab)
 
+The desktop tab bar has six places (owner's decision, 2026-11-25), like the
+phone's five + Altro: **BOARD · PROGETTI · CALENDARIO · SETTIMANA ·
+RIFLESSIONE · ALTRO ▾**. **SETTIMANA** holds the three weekly outputs,
+switched at the top of the page: **Weekly | Report | Mail** (the mail update
+is a page; the header's *Aggiorna via mail* opens it). **ALTRO** is a menu
+with **Prodotti**, **Musica** and **Impostazioni**; while you are on one it
+reads *ALTRO · MUSICA*. Every page keeps its own address (`#/weekly`,
+`#/report`, `#/mail`, `#/products`, …, §1c), so links and Back are as
+before. Deleting anything that can be put back happens at once with an
+**Annulla** toast (tasks, subtasks, members, projects, weekly items and
+*Svuota weekly*, notes, reflection entries, playlists); only what cannot be
+undone (logging out, the logo, the report's *Ripristina*) asks *Sicuro? Sì /
+No*, with the focus on No.
+
 | Tab | What it does |
 | --- | --- |
-| **BOARD** | Kanban with 6 columns (Backlog · Next · In Progress · Waiting · Done · Maybe) **and** a List view (toggle, remembered). Cards expand **inline** (no popups) into a full editor: assignees, priority pills, due date, description, notes, a **File Directory** field with a copy button, a "move to section" dropdown, prev/next arrows, and drag-reorderable subtasks. Columns fill the width edge-to-edge, wrap instead of scrolling, can be shown/hidden (**Columns** editor), and resized in an **edit-layout** mode (neighbours adjust). Below the columns are two full-width collapsible bars, each with its own search: a **Done** bar (tasks completed in the last 7 days — a searchable mirror of the DONE column, cards stay in the column too) and an **Archived** bar (tasks completed more than a week ago, auto-moved out of the DONE column). A **Team** panel (collapsed) manages members; a collapsible **priority distribution** chart; a full new-task bar (choose assignees/priority/status/due up front); search + owner/priority/Focus-P1 filters. A task can be held by **one person or several** — open the assignee pill to tick names; the first one stays the `owner` column, so filters and the weekly recap all count a shared task for everyone on it. Below Archived, a **Menu mensa** bar (open by default) shows the canteen menu of today and the next four menu days — today highlighted, its dish of the day in the bar's header — from `web/src/data/menu.json` (§8, updated monthly; past days never shown). A **Names** toggle next to **Columns** blanks every owner name on the board (cards, list rows, the expanded editor and the new-task bar) so you can screenshot it — it is per-session only and names are always back on next load. **Recurring tasks:** in a task's editor, **Ripeti** sets a rule — every N days / weeks / months / years, and for weekly the weekdays (with a *Feriali* shortcut); the new-task bar has a quick *Ripeti* too. Completing an occurrence leaves it in DONE (it counts in Done, Weekly and the report like any task) and creates the next one in Next, due on the rule's next date (done early → the date after its due date; done late → the first date after today; no due date → counted from the day it is done), with subtasks unticked; the Undo/Reopen takes that next one back while nobody has changed it. Cards carry a ↻ chip with the rule. **In evidenza:** the ★ button in a task's editor (or in the new-task bar, or dragging a card onto it) puts a task in the **In evidenza** band above the columns — highlighted tasks still to do, recurring ones grouped apart, with the board filters applied. They also stay in their column, marked with a gold bar and ★; once DONE they leave the band. On the phone, the task sheet has *Ripeti* and *In evidenza* rows and Oggi opens with the team's highlighted tasks. Needs migration 023 (§3); before it, the controls say what to run. |
+| **BOARD** | Kanban with 6 columns (Backlog · Next · In Progress · Waiting · Done · Maybe) **and** a List view (toggle, remembered). Cards expand **inline** (no popups) into a full editor: assignees, priority pills, due date, description, notes, a **File Directory** field with a copy button, a "move to section" dropdown, prev/next arrows, and drag-reorderable subtasks. Columns fill the width edge-to-edge, wrap instead of scrolling, can be shown/hidden (**Columns** editor), and resized in an **edit-layout** mode (neighbours adjust). Below the columns are two full-width collapsible bars, each with its own search: a **Done** bar (tasks completed in the last 7 days — a searchable mirror of the DONE column, cards stay in the column too) and an **Archived** bar (tasks completed more than a week ago, auto-moved out of the DONE column). A **Team** panel (collapsed) manages members; a collapsible **priority distribution** chart; a full new-task bar (choose assignees/priority/status/due up front); search + owner/priority/Focus-P1 filters. A task can be held by **one person or several** — open the assignee pill to tick names; the first one stays the `owner` column, so filters and the weekly recap all count a shared task for everyone on it. Below Archived, a **Menu mensa** bar (collapsed by default; its header shows the dish of the day) shows the canteen menu of today and the next four menu days — today highlighted, its dish of the day in the bar's header — from `web/src/data/menu.json` (§8, updated monthly; past days never shown). A **Names** toggle next to **Columns** blanks every owner name on the board (cards, list rows, the expanded editor and the new-task bar) so you can screenshot it — it is per-session only and names are always back on next load. **Recurring tasks:** in a task's editor, **Ripeti** sets a rule — every N days / weeks / months / years, and for weekly the weekdays (with a *Feriali* shortcut); the new-task bar has a quick *Ripeti* too. Completing an occurrence leaves it in DONE (it counts in Done, Weekly and the report like any task) and creates the next one in Next, due on the rule's next date (done early → the date after its due date; done late → the first date after today; no due date → counted from the day it is done), with subtasks unticked; the Undo/Reopen takes that next one back while nobody has changed it. Cards carry a ↻ chip with the rule. **In evidenza:** the ★ button in a task's editor (or in the new-task bar, or dragging a card onto it) puts a task in the **In evidenza** band above the columns — highlighted tasks still to do, recurring ones grouped apart, with the board filters applied. They also stay in their column, marked with a gold bar and ★; once DONE they leave the band. On the phone, the task sheet has *Ripeti* and *In evidenza* rows and Oggi opens with the team's highlighted tasks. Needs migration 023 (§3); before it, the controls say what to run. |
 | **PROJECTS** | Two filters, **Ongoing** and **Completed**. A project's status is never set by hand: it is *ongoing* until it has linked board tasks and **every one is DONE**, then it moves to *completed* on its own (dated by its last task's completion), and back to ongoing if a task is reopened or a new one is added. **Ongoing** shows figures (ongoing, completed this week, need attention, open tasks), search, a lead filter, sorting, and two views: **Cards** (colour, priority, progress ring, a bar of its tasks by status, overdue count, next task due, leads, target date, health badge) and **Timeline** (start-to-target bars with progress and a line for today). **Completed** works like the board's Done/Archived: **Recently completed** (last 7 days) as cards, then a collapsible **Older** list. A project's **page** has name, priority, start/target dates, colour, leads, a short description, a progress ring, health (on track / at risk / overdue), tasks per status, a time-vs-work strip, a small **Notes** box, and the **Tasks** section: a status breakdown, a new-task form (title, status, priority, holder, due date) that creates the task on the board already linked, a picker to link an existing board task, search and a person filter, and two views — a **List** grouped by status (tick done, change status inline, due/overdue chips, holders, subtasks, waiting days, unlink, open the full task editor; completed tasks hidden until shown) and a **Board** of the project's tasks where cards are dragged between columns. Progress = linked tasks in DONE ÷ linked tasks. Each project also chooses how its tasks reach the main board (**On the BOARD**: *All tasks* · *In sequence* · *Project only*): in sequence only the current step — the first task in the project's order that is not DONE — is on the BOARD, and when it is done the next one appears there by itself (the list then shows numbered steps with ▲ ▼ to reorder; board cards show *Step n/N*); *Project only* keeps them off the BOARD altogether. Tasks kept off the BOARD are also left out of the report's Next and Planner pages and the mail update's next steps, but still count in Done and appear in the Calendar. On the BOARD, a task card shows its project as a coloured chip and the task editor has a project picker. Projects used to have checklists; a project that still holds one shows it once, with **Turn into tasks** / **Copy into notes**. Needs migration 015 (§3); before it, projects have a name only and the tab says what to run. |
 | **WEEKLY** | Weekly review: a "Recap" block auto-fills from tasks completed **this week** (with owner + subtask progress), a collapsible **Archived** section for tasks done more than a week ago, plus 5 editable retro columns: WINS · LEARNINGS · TO IMPROVE · BLOCKERS · FOCUS NEXT WEEK. |
 | **REPORT** | Builds the weekly report as **A4 pages in Liquid Glass** (light mode) right in the tab (see §5): a cover with the week's numbers, then Done, Next, Projects and the Planner. Click any text on the pages to edit it; press a card's × to leave it out (the × shows on screen only); **Download PDF** saves exactly what is on screen. The old Intesa Sanpaolo Word template is still one click away as **Word (classic template)**. |
@@ -69,13 +83,13 @@ or `desktop`). The mobile app wears the same **Liquid Glass** as the desktop
 sheen, Apple's system colours, label steps — so it follows light / dark with
 it. The tab bar floats as a glass capsule with the + beside it, as on iOS 26.
 With the classic skin it falls back to the cream / navy / gold look.
-**Intensità colori** (the ◐ button in the desktop header, or Altro → Aspetto
+**Intensità colori** (in the desktop header's *Aspetto ▾* menu, or Altro → Aspetto
 on a phone) turns the colour of the whole GTD down to grey (0%) or up to more
 vivid (150%); 100% is the design as drawn. It is per device (`gtd-color`) and
 never affects printing or the PDF report.
 **Aspetto** (Altro, right under your name) is Scuro, Chiaro or **Auto**:
 Auto follows the phone's or computer's own light / dark setting, live, which
-suits the installed app. The desktop header has the same choice (☀ ☾ A).
+suits the installed app. The desktop header's *Aspetto ▾* menu has the same choice (☀ ☾ A).
 
 ### 1c. Addresses and the Back button
 
@@ -533,9 +547,12 @@ everything else still sends nothing. The CSP allows YouTube's script and
 frame, and calls to `accounts.spotify.com` / `api.spotify.com` for *Accedi
 con Spotify* (`netlify.toml`).
 
-Header extras: editable board title + subtitle (double-click), a **"You"**
-identity picker, a live-connection badge, an **IT/EN** toggle, a **Glass**
-switch (§10, on by default), and a **Mail update** generator (Completed = DONE, Next steps = FOCUS + NEXT, → clipboard /
+Header extras: editable board title + subtitle (double-click), the ♫
+player button, a **"You"** identity picker, a live-connection badge, an
+**Aspetto ▾** menu (language IT/EN, the **Glass** switch (§10, on by
+default), light / dark / automatic, glass blur and colour intensity, all per
+device), and **Aggiorna via mail**, which opens SETTIMANA › Mail: the mail
+update generator (Completed = DONE, Next steps = FOCUS + NEXT, → clipboard /
 mail client). The whole app sits behind a real login (one shared Supabase Auth
 account, §11) and is `noindex`.
 
@@ -611,7 +628,8 @@ the **login session** (Supabase access + refresh token, never the password; key
 | `gtd-hidden-cols` | hidden Kanban columns |
 | `gtd-col-weights` | per-column widths (edit-layout mode) |
 | `gtd-prio-collapsed` | priority chart collapsed |
-| `gtd-pin-band` | *In evidenza* band open (`1`, default) or collapsed (`0`) |
+| `gtd-pin-band` | *In evidenza* band open (`1`) or collapsed (`0`); unset: open on screens 1200 px and wider, collapsed below |
+| `gtd-menu-bar` | *Menu mensa* bar open (`1`) or collapsed (`0`, the default) |
 | `gtd-me` | which member "you" are |
 | `gtd-reviewed` | learnings reviewed today (spaced review) |
 | `gtd-session` | the Supabase Auth session (tokens, not the password) |
@@ -1142,14 +1160,15 @@ Because everything flows through the `Op` union, most changes follow one path:
 
 ## 10. The Liquid Glass skin
 
-The **Glass** switch in the header turns the redesign on and off, and when it
-is on a **☀ / ☾ control** next to it picks the light or dark appearance. Glass
+The **Vetro** switch in the header's **Aspetto ▾** menu turns the redesign on
+and off, and when it is on a **☀ / ☾ / A** control below it picks the light,
+dark or automatic appearance. Glass
 is **on by default**, dark is the default appearance, and both choices are
 remembered in **cookies** (`gtd-skin` and `gtd-appearance`, one year,
 `SameSite=Lax`, `Secure` on https), mirrored into `localStorage` so they
 survive cookies being cleared or blocked.
 
-A round **blur** button after ☀ ☾ A (on the phone: Altro → *Sfocatura vetro*)
+The **Sfocatura vetro** switch in the same menu (on the phone: Altro → *Sfocatura vetro*)
 switches the frosted blur off while keeping the glass colours: panels turn
 opaque. Use it if a browser or graphics card draws thin lines or seams in the
 glass, or on a slow computer. It is stored per browser (`gtd-blur`).

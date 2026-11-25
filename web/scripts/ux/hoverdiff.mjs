@@ -71,6 +71,7 @@ const DESKTOP = [
   { name: "project-page", path: "#/projects/p1" },
   { name: "weekly", path: "#/weekly" },
   { name: "report", path: "#/report" },
+  { name: "mail", path: "#/mail" },
   { name: "products", path: "#/products" },
   { name: "calendar", path: "#/calendario" },
   { name: "reflection", path: "#/reflection" },

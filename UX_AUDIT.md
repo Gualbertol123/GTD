@@ -91,14 +91,15 @@ summed over the four combos and both sizes (phone: four combos):
 | m-agenda | 99 / 99 | 0 / 0 |
 | m-more | 54 / 54 | 0 / 0 |
 | m-weekly | 27 / 27 | 0 / 0 |
-| **total** | **4769 / 4681** | **88 / 0** |
+| mail (new page, 2026-11-25 follow-up) | — | 8 / 0 |
+| **total** | **4769 / 4681** | **96 / 0** |
 
 Per combo, violations before → after: Classic 707 → 0, Glass dark 1326 → 0,
 Glass light 1326 → 0, Glass blur off 1322 → 0. Before, by kind: 2,609 rims /
 outlines / borders lighting up, 1,148 things appearing (an `::after` rim
 fading in, a pencil, a ×, a ⋯, a play button), 544 field border steps, 276
 text colour swaps, 56 changes on other elements, 24 slow tints. The 88
-changes left are one element per page run: the harness blocks YouTube, so
+(96 with the Mail page) changes left are one element per page run: the harness blocks YouTube, so
 the ♪ button's warm-up (pointer-enter preloads the player) shows an
 "unreachable" toast — documented in `scripts/ux/hover-allow.json`, silent on
 a normal network. The Music tab has no songs in the harness, so its rows and
@@ -124,8 +125,8 @@ for axe):
 | Script (`web/scripts/ux/`) | What it checks | Result now |
 | --- | --- | --- |
 | `hoverdiff.mjs` | The pointer sweep (§1) | 0 violations, all combos, both sizes, phone |
-| `functional-board.mjs [section]` | Board, recurring, In evidenza, projects and board modes, phone, refused writes, races, before each migration (009, 013, 015, 016, 017, 023), realtime between two browsers | 182 pass, 1 fail (G-39, not fixed); was 171 / 12 |
-| `functional-tabs.mjs [group,…]` | Weekly, Report, Calendar, Reflection, Products, Music, Settings, login, addresses / Back, IT/EN, offline | 88 pass, 0 fail; was 82 / 7 |
+| `functional-board.mjs [section]` | Board, recurring, In evidenza, projects and board modes, phone, refused writes, races, before each migration (009, 013, 015, 016, 017, 023), realtime between two browsers | 183 pass, 0 fail (was 171 / 12) |
+| `functional-tabs.mjs [group,…]` | Weekly, Report, Calendar, Reflection, Products, Music, Settings, login, addresses / Back, IT/EN, offline | 128 pass, 0 fail (more checks since; was 82 / 7) |
 | `keyboard.mjs [desktop\|phone\|all] <combo> --sweep` | Keyboard-only flows, and the contrast of every focus indicator | no weak or invisible indicator, desktop and phone, all combos |
 | `axe.mjs desktop\|phone` | axe-core WCAG 2.0–2.2 A/AA, 9 desktop tabs, 6 phone screens, all combos | 0 violations |
 | `glasscontrast.mjs glass-dark\|glass-light` | Glass text contrast (axe cannot compose translucent glass) | 0 failures |
@@ -133,12 +134,15 @@ for axe):
 | `fold.mjs` | Where the board's first column and card start | 568 / 625 px at 1440×900; 701 / 758 px at 1024×768 |
 | `hovershots.mjs before\|after` | Rest vs hover images of the named cases | `ux-audit/shots/hover-*` |
 | `sweepsummary.mjs` | The before / after table from the sweep JSON | §1 |
+| `offline-pwa.mjs` (production build) | First visit precaches the app; offline it opens and says so; edits refused; back online by itself | 28 / 28 |
+| `board-cards.mjs` | A memoised card never shows stale data: steps, widths, moves, remote edits, language | 14 / 14 |
+| `perf-rerender.mjs` | TaskCard renders per remote change, idle poll and drag (G-33) | 1 / 0 / 2 (were 321 / 321 / 963) |
 
 `stub.mjs` options added in this pass (defaults unchanged): `createStore()`
 shares one fake database between browser contexts and broadcasts every write
 as realtime `postgres_changes`; `reject` refuses chosen writes; `missing:
 ["023", …]` behaves as before that migration; `delayMs` / `jitterMs` let
-writes land out of order. `npm run typecheck` and `npm test` (417 tests,
+writes land out of order. `npm run typecheck` and `npm test` (442 tests,
 including the two new guards) pass on every commit.
 
 ### UI: tokens, skins, hierarchy
@@ -200,7 +204,7 @@ means reproduced, fixed, and re-checked with the script named (in
 | G-03 | Board, Weekly, Projects, Music, Report | all | minor | Controls that existed only under the pointer: subtask delete, project unlink, weekly delete, the header's rename pencils (0.7 → 1), the report's ×, Music's ⋯, radio and play buttons, slider thumbs. Unreachable on touch laptops, invisible to anyone scanning the page. | `group-hover:opacity-100`; `:hover > .x { opacity: 1 }` | Always shown at a quiet weight (ink-3, 0.7–0.85); Music's row play icon is for keyboard focus only (a click on the row plays) | Fixed |
 | G-04 | Header | Glass | major | Opening the colour-intensity pop-over pushed the header from 95 to 233 px and the page jumped (Glass only). | glass.css §3 forced `position: relative` on every panel and child at the skin's weight, beating Tailwind's `.absolute` | Positioning moved to zero-specificity `:where()` rules | Fixed — `skindiff.mjs`; header 95 → 95 px in all combos |
 | G-05 | Header, Projects | Glass | major | The Vetro switch had no knob; project cards lost their colour stripe and the project page its hero bar (all 0 px). | as G-04 | as G-04 | Fixed — `skindiff.mjs` |
-| G-06 | Board | all | major | At 1440×900 the first column started at y=763 (its first card below the fold); at 1024×768 no column was visible (y=911). | five stacked blocks; the band put each group on its own full-width row | Band groups side by side; the two eyebrows and the help line removed; band state remembered | Fixed — `fold.mjs`: 763 → 568 (1440), 911 → 701 (1024). At 1024 the first card is still at the fold: §4 |
+| G-06 | Board | all | major | At 1440×900 the first column started at y=763 (its first card below the fold); at 1024×768 no column was visible (y=911). | five stacked blocks; the band put each group on its own full-width row | Band groups side by side; the two eyebrows and the help line removed; band state remembered | Fixed — `fold.mjs`: 763 → 568 (1440); 911 → 601 at 1024 with the one-row header and the band collapsed below 1200 px (G-43, G-44): first card visible at both sizes |
 | G-07 | Header | all | minor | "Aggiorna via mail", an occasional action, was the loudest fill on every page, competing with + Aggiungi and the chosen tab. | `TopBar.tsx` | Outlined like its neighbours | Fixed |
 | G-08 | Board | all | polish | Boxes inside boxes: trays, meta chips and the band's status chip each drew a border. | `BoardView.tsx`, `MenuBar.tsx`, `TaskDetails.tsx`, `TaskCard.tsx` | Trays and neutral chips keep their fill and lose the line (transparent border: nothing moves) | Fixed |
 | G-09 | Glass skin | Glass | polish | Three Glass rules styled classes no component uses; nothing would notice a renamed class losing its Glass look. | glass.css keys on Classic's literal class names | Dead rules removed; `glass-coupling.test.ts` fails when a restyled class is no longer used | Fixed |
@@ -219,7 +223,7 @@ means reproduced, fixed, and re-checked with the script named (in
 | G-22 | Board (realtime) | all | minor | Two quick subtask ticks: the second un-ticked for ~200 ms while saving, and a click in that window really unticked it. | the echo of write 1 re-read the row without write 2 | Server rows are committed with the still-unconfirmed local ops on top | Fixed — `functional-board.mjs races` 3/3 |
 | G-23 | Board editor | all | minor | Moving a task with ‹ › or "Sposta in" closed its editor, so stepping through columns meant reopening it each time. | each column renders its own `TaskCard`, `open` is local | The moved card reopens (with G-12) | Fixed — `functional-board.mjs board.editor` 5/5 |
 | G-24 | Phone | all | major | Opening Ripeti / Priorità / Scadenza / Stato from a task sheet left focus on the row behind the picker; Escape then dropped it to `<body>` (2.4.3). | `mobile/ui.tsx` `Sheet`: a re-run effect (StrictMode) restored focus out of the new picker and recorded the picker as its own opener | Opener captured once at first render; the delayed restore runs only if the sheet really closed | Fixed — picker probe: Enter → in the picker, Escape → back on the row; `functional-board.mjs phone` 26/26 |
-| G-25 | Phone | all | minor | Switching to the phone layout on `#/projects/<id>` dropped the project (README §1c promises the place is kept). | `mobileRoute` drops `sub`; the project sheet is not in the address | The phone opens that project's sheet | Fixed one way — `functional-tabs.mjs routes` 16/16. Phone → desktop still lands on the list |
+| G-25 | Phone | all | minor | Switching to the phone layout on `#/projects/<id>` dropped the project (README §1c promises the place is kept). | `mobileRoute` drops `sub`; the project sheet is not in the address | The phone opens that project's sheet | Fixed one way — `functional-tabs.mjs routes`. Phone → desktop with a project sheet open (a tablet rotated across 767 px) still lands on the list: not done, see §3 |
 | G-26 | In evidenza | all | polish | With filters hiding every highlighted task, the band said "drag a task here to highlight it". | `BoardView.tsx` | "Nessuna attività in evidenza corrisponde ai filtri." | Fixed |
 | G-27 | Board | all | polish | `waiting_since` was the UTC date: a task moved to Waiting between 00:00 and 02:00 in Italy got yesterday. | `QuickAdd.tsx`, `localReducer.ts`, `db.ts`: `toISOString().slice(0,10)` | `toISODate` (local), like the rest of the app | Fixed |
 | G-28 | Settings | all | minor | The inline "Sicuro? Sì / No" focused Sì: Enter at once logged out or removed the logo (every other confirm focuses No). | `SettingsView.tsx` `ConfirmInline` | Focus on No | Fixed |
@@ -227,14 +231,24 @@ means reproduced, fixed, and re-checked with the script named (in
 | G-30 | Copy | all | minor | Mixed and inconsistent wording: "Prossimi step", "Annullare" for the report's Ripristina (the Undo verb), "Acoustic" in Italian, "sotto-attività" / "sottoattività", the Done bar "questa settimana" for a rolling 7 days; 14 unused keys. | `i18n*.ts` | "Prossimi passi", "Scartare / Discard", "Acustica", "sottoattività", "negli ultimi 7 giorni"; dead keys removed; parity test passes | Fixed. Remaining terms in §3 / §4 |
 | G-31 | Performance | Glass | minor | 825 compositing layers (~184 MB) on a 300-task board: every control inside glass had its own layer for hover repaints that no longer exist. | glass.css §11 `will-change` | Only fields being typed in keep one | Fixed — layers 825 → 45; frame times unchanged in a software compositor: check on a GPU (§4) |
 | G-32 | Performance | all | minor | First load downloaded Report, Calendar, Settings, Products and the Music tab before the board could show. | static imports in `App.tsx`, `MoreScreen.tsx` | Loaded when first opened | Fixed — main JS 253.6 → 201.0 kB gzip (−21%), main CSS 26.4 → 17.8 kB gzip |
-| G-33 | Performance | all | minor | One remote change (or the idle 30 s poll) re-renders every TaskCard: 321 of 321 at 300 tasks, 54–66 ms in a dev build. | TaskCard reads all tasks from context; every poll builds new task objects | — | Not fixed — §3 |
+| G-33 | Performance | all | minor | One remote change (or the idle 30 s poll) re-renders every TaskCard: 321 of 321 at 300 tasks, 54–66 ms in a dev build. | TaskCard reads all tasks from context; every poll builds new task objects | — | Fixed — `perf-rerender.mjs` (316 tasks, dev build): remote one-task change 321 → **1** card (36–49 → 9–12 ms); idle poll 321 → **0**; drag start + crossing + drop 963 → **2**. `reconcileBoard` keeps unchanged rows' objects, steps are props, `React.memo(TaskCard)`; `board-cards.mjs` 14/14 guards stale cards |
 | G-34 | Report | all | minor | Before migration 013, × on a project shows "escluso da tutti i report · Annulla" **and** "Non salvato: esegui migration-013" (twice); the message blames 013 for any failure. | `ReportView.tsx` toast before the write; `report.excludeFailed` | "Escluso · Annulla" and "di nuovo nel report" wait for the write (`send`'s `onSaved`); a refusal is one error in the notice at the foot of the screen; 013 is named only for PGRST204 / 42703, otherwise "Non salvato: {msg}" | Fixed — `functional-tabs.mjs report` (pre-013 and 403); `saveErrors.test.ts` |
 | G-35 | Report | all | minor | A past week's draft does not reopen: the tab always opens on this week. | `ReportView.tsx` starts at `weekPeriod(0)` | The period last chosen is remembered per device (`prefs.ts`, `gtd-report-period`) and reopened, with its draft, while that draft is kept (7 days); otherwise this week | Fixed — `functional-tabs.mjs report` (reopen, reload, no draft, expired draft) |
-| G-36 | Settings | all | polish | Login duration 0 / 500 / −3: the browser's own bubble, in the browser's language. | `SettingsView.tsx` `normDays` never runs | — | Not fixed — clamp on blur |
-| G-37 | Reflection, notes | all | minor | Personal notes: inline confirm, no Undo; reflection entries cannot be deleted at all (`reflectionDelete` exists, unused); a refused reflection read looks like "no entries". | `PersonalNotes.tsx`, `db.ts` | — | Not fixed — needs the delete pattern decided (§4) |
+| G-36 | Settings | all | polish | Login duration 0 / 500 / −3: the browser's own bubble, in the browser's language. | `SettingsView.tsx` `normDays` never runs | — | Fixed — the form validates itself (`noValidate`), a note says what will be saved, 0 → 1; `functional-tabs.mjs settings` |
+| G-37 | Reflection, notes | all | minor | Personal notes: inline confirm, no Undo; reflection entries cannot be deleted at all (`reflectionDelete` exists, unused); a refused reflection read looks like "no entries". | `PersonalNotes.tsx`, `db.ts` | — | Fixed — owner's delete rule (G-45): notes and reflection entries delete at once with Annulla (entries could not be deleted before) |
 | G-38 | PWA | all | minor | The "Nuova attività" shortcut works on the phone layout only; the first visit precaches nothing (offline after one visit opens a broken shell); the runtime cache is never trimmed. | `MobileApp.tsx`, `public/sw.js` | The shortcut focuses the Board's new-task field on the desktop; the first visit precaches the shell and every built file; activate drops older builds | Fixed after the owner's decision (README §1d; `scripts/ux/offline-pwa.mjs`) |
-| G-39 | Phone | all | polish | Before migration 023 the phone task sheet hides Ripeti and In evidenza without saying what to run (the desktop editor says it). | `TaskSheet.tsx` | — | Not fixed |
+| G-39 | Phone | all | polish | Before migration 023 the phone task sheet hides Ripeti and In evidenza without saying what to run (the desktop editor says it). | `TaskSheet.tsx` | — | Fixed — the sheet says what to run; `functional-board.mjs migrations` 22/22 |
 | G-40 | Classic / Glass | — | polish | README §10 said the skins differ in paint only. Measured (`skindiff.mjs`): the header is sticky in Glass only, Aspetto and the blur button exist in Glass only, panels are positioned boxes; nothing else moves (after G-04 / G-05). | — | README §10 lists them | Documented |
+| G-41 | Tabs | all | major | (Owner's decision U2.) Nine tabs, three weekly outputs in three places, Musica both a tab and a header button, Prodotti among the workflow tabs. | `App.tsx` tab bar | Six places: BOARD · PROGETTI · CALENDARIO · SETTIMANA (Weekly / Report / Mail) · RIFLESSIONE · ALTRO ▾ (Prodotti, Musica, Impostazioni); the mail update is a page; every address kept (`components/TabNav.tsx`) | Fixed — `functional-tabs.mjs routes` 16/16, keyboard probe of the ALTRO menu |
+| G-42 | Header | all | minor | (Owner's decision.) Five display pills wrapped the header onto two rows at 1024 px (147 px). | `LangToggle`, `GlassToggle`, `ColorControl` | One "Aspetto ▾" panel (`components/AppearanceMenu.tsx`): language, Vetro, light/dark/auto, blur, colour intensity | Fixed — header 95 px at 1024 in all combos |
+| G-43 | Board | all | minor | (Owner's decision.) Menu mensa open by default, ~760 px. | `MenuBar.tsx` | Collapsed by default, remembered (`gtd-menu-bar`) | Fixed |
+| G-44 | Board | all | minor | (Owner's decision.) In evidenza open at every width pushed the first card to the fold at 1024. | `prefs.ts` | Collapsed by default below 1200 px, open above; remembered once toggled | Fixed — `fold.mjs` |
+| G-45 | Deleting | all | minor | (Owner's decision U3.) Five delete patterns: Undo only; confirm + Undo; confirm, no Undo; `window.confirm()`; not deletable. | `TaskDetails`, `MembersBar`, `ProjectDetail`, `WeeklyView`, `MoreScreen`, `PersonalNotes`, `DailyReflection`, `MusicTab`, `ReportView` | Anything that can be put back: at once, with Annulla (focus to Annulla from the keyboard). Only log out, the logo and the report's Ripristina ask, inline, focus on No (`components/ConfirmInline.tsx`) | Fixed — `functional-board.mjs`, `functional-tabs.mjs`, a probe for members and reflection entries |
+| G-46 | Copy | all | minor | (Owner's decision.) "Bacheca" vs "Board", "Assegnatario" / "Owner" / "Assegnata a", « » vs “ ” mixed in both languages, four formats for missing-migration notes. | `i18n*.ts` | Board; Assegnata a / Assigned to; « » in Italian, “ ” in English (35 strings); one note format «Serve la migrazione NNN: esegui supabase/migration-NNN-….sql nel SQL Editor di Supabase.» | Fixed — i18n parity test |
+| G-47 | Classic text | Classic | minor | (Owner's decision.) Secondary (#6B6B6B) and tertiary (#6E6A64) text had the same lightness: no third step. | 184 `text-[#6B6B6B]` | Token `text-ink-2`: #55524D in Classic (7.6:1), `--label-2` in Glass (unchanged) | Fixed |
+| G-48 | Report | all | minor | (Owner's decision.) The cover's "In evidenza" picks shared a name with the board's ★ band. | `glassReportModel.ts` | «Da sottolineare» (EN "Worth a mention"), pre-filled from the board's ★ tasks; a saved choice is kept | Fixed — `functional-tabs.mjs report` |
+| G-49 | Calendar | all | polish | The calendar drew its own Undo toast (other place, look and timer). | `CalendarView.tsx` | The app's one Undo toast | Fixed — `functional-tabs.mjs calendar` |
+| G-50 | Settings, Projects | all | polish | Uppercase field labels under uppercase section heads (Settings); hairlines on every figure tile (Projects). | `SettingsView.tsx`, `ProjectsView.tsx` | Sentence-case labels; borderless tiles (the chosen filter keeps its ring) | Fixed |
 
 ### 3. Deliberately not changed, and why
 
@@ -242,49 +256,31 @@ means reproduced, fixed, and re-checked with the script named (in
 | --- | --- | --- |
 | **Hover tints** on buttons and rows (allowed by the rule) | The rule permits "a small tint or nothing"; *nothing* is calmer, is the same everywhere, and is the only choice that never repaints a blurred Glass surface (the cause of F-39's flashing). The sweep still accepts a tint (`ok-tint`) if one is wanted later. | Add one `background-color` step on `:hover` for the chosen elements, ≤ 100 ms, and allow it in `hover-rule.test.ts`. |
 | **Undo toast pausing under the pointer**; the ♪ button warming the player on pointer-enter | Neither changes anything on screen; the first is WCAG 2.2.1. | — |
-| **Re-renders on every change** (perf) | Measured with 300 tasks (dev build): one remote change re-renders all 321 TaskCards (66 ms), the 30 s poll the same (54 ms). The cause is structural: every card reads all tasks from context to number sequential steps, and every poll builds new task objects. A real fix reworks the sync layer (keep unchanged objects, pass steps as props, memoise TaskCard). The team's board is far smaller than 300 tasks. | `React.memo(TaskCard)` with id-based callbacks, `useMemo` for the projects context, steps as a prop, and `reload()` reusing unchanged task objects: ~1 card per change, 0 per idle poll. |
 | **Offline edits queued and sent later** | The owner decided "opens offline, edits not kept" (README §1d): the app opens offline and says so, and an edit made offline is refused up front with a message instead of being queued. | A persistent outbox replayed on `online`. |
 | **Type-scale and colour-token migration** | The tokens inventory (in the agent notes below) found 72 hex values and 14 font sizes in components; Tailwind's named colours are defined and unused. The near-duplicates that could merge invisibly have four uses in all; the rest change the look. glass.css keys on the literal class names, so a rename must change both sides in one commit (the new `glass-coupling.test.ts` now catches a miss). | One mechanical commit per scale, after the owner OKs the visible merges (§4). |
 | **Report's PDF / Word**, the server PDF | Unchanged; the screen-only × on report cards is now always visible (never exported). | — |
-| **Delete flows that differ** (U3): Undo toast vs inline confirm vs `window.confirm()` | Unifying them changes how deleting works in five places; listed for the owner with the consistency findings. | One pattern: delete + Undo toast everywhere, no confirms. |
-| **Five toast implementations** | Shared (desktop), Calendar, Report, Music, phone. Merging is a refactor; the save-error notice uses the shared one on both layouts. | Route the four others through `showUndo` / `showNotice`. |
+| **Toast implementations** (four left) | Shared (desktop, now also the Calendar's), Report (its notice), Music, phone. The save-error notice uses the shared one on both layouts. | Route Report and Music through `showUndo` / `showNotice`; the phone's is styled for the phone on purpose. |
+| **Weekly's coloured column pills** (H7) | Their colour classes are restyled by glass.css and their labels are uppercase copy keys; a dot + plain label touches both skins and the copy. | One commit changing the header markup, the glass rules and the five labels. |
+| **Chooser consistency** (U3): priority as pills in the editor but a select in the new-task bar and filters; one person (select) on a project's new task but several on the board; the report's week as a select, Weekly's as ‹ › | Each works; unifying them changes how those screens are used. | Pills for priority everywhere, the multi-person picker on the project form, ‹ › for the report's week. |
+| **Phone → desktop with a project sheet open** (G-25) | Only when a tablet is rotated across 767 px with a sheet open; the sheet's own history step would undo an address change. | Put the open project sheet in the phone's address. |
+| **Phone cards and the sync layer** | The phone's cards still read every task from the projects context; they gain from the memoised context and `reconcileBoard` only. | The same props-instead-of-context change as the desktop card. |
 
 ### 4. What needs the owner
 
-#### Decisions (features and information architecture: not changed without you)
+#### Decisions — asked and answered on 2026-11-25, and done the same day
 
-1. **Tabs (U2).** Today: BOARD · PROGETTI · WEEKLY · REPORT · PRODOTTI ·
-   CALENDARIO · RIFLESSIONE · MUSICA · IMPOSTAZIONI, plus a ♫ button and five
-   display controls in the header. Three weekly outputs live in three places
-   (WEEKLY, REPORT, the header's mail), settings are split between the header
-   and IMPOSTAZIONI, MUSICA is both a tab and a header button, and PRODOTTI
-   (reference material) sits among the workflow tabs. Proposal: **BOARD ·
-   PROGETTI · CALENDARIO · SETTIMANA** (Weekly | Report | Mail) **·
-   RIFLESSIONE · Altro ▾** (Prodotti, Musica, Impostazioni) — the phone's
-   5 + Altro, mirrored.
-2. **Header display controls.** Language, Vetro, Aspetto, blur and colour
-   intensity are five pills; at 1024 px they wrap the header to two rows.
-   One "Aspetto ▾" menu would give back ~50 px above the board.
-3. **Board at 1024×768 (G-6).** The first card still sits at the fold.
-   Options, cheapest first: collapse *In evidenza* by default below 1200 px;
-   make the new-task bar a single field that expands on focus (~60–90 px);
-   fold the priority distribution into the toolbar as chips.
-4. **Menu mensa** is open by default and ~760 px tall under the columns
-   (also asked in the first pass). Collapse by default? Its header already
-   shows the dish of the day.
-5. **Secondary vs tertiary text** in Classic (`#6B6B6B` vs `--ink-3`
-   `#6E6A64`) are the same luminance, so Classic has no real tertiary step.
-   Darken the secondary to about `#55524D`? It is a look change across
-   ~190 places.
-6. **"In evidenza" means two things**: the board's ★ band and the report
-   cover's picked tasks. Rename the report's ("Da sottolineare"), or fill it
-   from ★? — *Decided: both.* The cover's list is now «Da sottolineare»
-   (EN "Worth a mention") and starts from the board's ★ tasks; a choice
-   saved in a period's draft is kept.
-7. **"Questa settimana" (F11).** The board's Done bar is the last 7 days;
-   Weekly is the calendar week. One definition, or the copy fix
-   already made (the Done bar now says "negli ultimi 7 giorni").
-8. **Spotify policy** (from §1e, still open).
+| # | Question | Answer | Done in |
+| --- | --- | --- | --- |
+| 1 | The tabs (U2) | Six places + ALTRO ▾, SETTIMANA = Weekly / Report / Mail | G-41 |
+| 2 | The header's five display pills | One "Aspetto ▾" menu | G-42 |
+| 3 | Board defaults | Menu mensa collapsed; In evidenza collapsed below 1200 px | G-43, G-44 |
+| 4 | How deleting works | Delete + Annulla everywhere; ask only for what can't be undone | G-45 |
+| 5 | Words | Board · Assegnata a · « » / “ ” · one migration-note format | G-46 |
+| 6 | Classic greys; the report cover's "In evidenza" | Both: a real third grey; «Da sottolineare» pre-filled from ★ | G-47, G-48 |
+| 7 | Offline | Opens offline (whole app precached), edits refused up front, no board data stored | G-17, G-38 |
+
+Still open: the **Spotify policy** (README §1e), and the items in §3 above
+(Weekly pills, chooser consistency, phone → desktop project sheet).
 
 #### Only on a real device or GPU
 
@@ -302,37 +298,45 @@ means reproduced, fixed, and re-checked with the script named (in
    the fake server's message shape (supabase-js 2.116); check two people
    ticking subtasks of the same task on the live site.
 6. **Recurring on the 31st** after the next month-end on live data.
+7. **Installed app offline**: open it once online, then in airplane mode —
+   it should open, say it is offline, refuse an edit with a message, and
+   load by itself when the connection returns.
+8. **The new menus** (ALTRO ▾, Aspetto ▾) with a mouse, the keyboard and a
+   screen reader: arrows move through ALTRO, Escape returns to its button.
 
 ### The ten changes you will notice most
 
 1. **Nothing lights up under the mouse any more.** Fields, tabs, buttons,
-   cards and section headers stay as they are; the "box around IN EVIDENZA"
-   and the glowing "Nuova attività" field are gone, and on the phone no ring
-   stays on a button after a tap. Only the cursor changes.
-2. **Buttons that only appeared on hover are always there**, quietly: the ×
-   on subtasks, weekly items and project tasks, the ⋯ and play buttons in
-   Music, the rename pencils, the report's ×.
-3. **The board's columns start ~200 px higher**, and the In evidenza band
-   takes one row: at 1440×900 the first cards are visible without scrolling.
-4. **A save that fails now says so** ("Non salvato: …"), offline included,
-   and the badge reads *Offline* instead of *Riconnessione…*.
-5. **Keyboard focus is a clear ring** everywhere — navy in Classic, white on
-   dark glass, deep blue on light glass — and it no longer jumps to the top
-   of the page after saving a title, moving a task, opening a project or
-   pressing Annulla.
-6. **Recurring tasks behave**: "every month on the 31st" comes back to the
-   31st, and a completion that fails to save never leaves two copies.
-7. **Sequential projects keep their current step** when you link another
-   task to them.
-8. **Moving a task with ‹ › keeps its editor open**, so you can step it
-   across the columns.
-9. **A calmer header and board**: the mail button is outlined instead of
-   gold, trays and grey chips lose their borders, and the bars above the
-   columns lose their Cinzel captions.
-10. **Faster and lighter**: the first load downloads 21% less JavaScript,
-    Glass uses 45 compositing layers instead of 825 on a big board, and in
-    Glass the colour pop-over no longer pushes the page down (the Vetro
-    switch has its knob back, projects their colour bars).
+   cards and section headers stay as they are; only the cursor changes. On
+   the phone no ring stays on a button after a tap. Buttons that only
+   appeared on hover (×, ⋯, pencils, play) are always there, quietly.
+2. **Six places in the tab bar**: BOARD · PROGETTI · CALENDARIO · SETTIMANA
+   · RIFLESSIONE · ALTRO ▾. SETTIMANA holds Weekly, Report and the mail
+   update; ALTRO holds Prodotti, Musica and Impostazioni.
+3. **A one-row header**: language, Vetro, light/dark, blur and colour
+   intensity live in one "Aspetto ▾" menu.
+4. **The work is on screen at once**: the board's columns start ~200 px
+   higher, In evidenza takes one row (collapsed below 1200 px), Menu mensa
+   starts collapsed. The first cards are visible at 1440×900 and 1024×768.
+5. **Deleting never asks "Sicuro?" for something that can be undone**: it
+   happens at once with Annulla, everywhere (tasks, members, projects,
+   notes, weekly, reflection entries, playlists). Only logging out, the logo
+   and the report's Ripristina still ask, with the focus on No.
+6. **A save that fails says so** ("Non salvato: …"). Offline, the installed
+   app still opens, says it is offline, and refuses an edit up front instead
+   of pretending to save it.
+7. **Keyboard focus is a clear ring** (navy, white on dark glass, deep blue
+   on light glass) and never jumps to the top of the page after saving a
+   title, moving a task, opening a project or pressing Annulla.
+8. **Recurring tasks and sequential projects behave**: "every month on the
+   31st" comes back to the 31st, a failed completion never leaves two
+   copies, and linking a task to a sequential project keeps the current step.
+9. **Faster**: 21% less JavaScript on first load; one changed task
+   re-renders one card instead of all of them; Glass uses 45 compositing
+   layers instead of 825 on a big board.
+10. **Calmer and more consistent words and paint**: Board, Assegnata a,
+    «Da sottolineare» on the report cover, « » quotes; a real third grey in
+    Classic, fewer borders, an outlined mail button.
 
 ---
 

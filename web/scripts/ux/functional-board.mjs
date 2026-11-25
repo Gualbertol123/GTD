@@ -572,7 +572,7 @@ section("board.layout", async (browser) => {
   await sleep(600);
   const pressed = await page.locator('[role=group] button', { hasText: /^Elenco$/ }).getAttribute("aria-pressed");
   check("list view: remembered after reload", pressed === "true");
-  await page.locator('[role=group] button', { hasText: /^Bacheca$/ }).click();
+  await page.locator('[role=group] button', { hasText: /^(Bacheca|Board)$/ }).click();
   await sleep(300);
 
   // drag between columns
@@ -646,7 +646,7 @@ section("board.quickadd", async (browser) => {
   const store = createStore();
   const { page, context } = await openApp(browser, { store, name: "qa" });
   await page.getByLabel("Nuova attività…").fill("QA full new task");
-  await page.locator('button[aria-expanded][title="Assegnatario"]').click();
+  await page.locator('button[aria-expanded][title="Assegnata a"]').click();
   await page.locator("button[aria-pressed]", { hasText: /^Chiara$/ }).first().click();
   const qrow = page.getByLabel("Nuova attività…").locator("xpath=..");
   await qrow.locator("select").filter({ has: page.locator("option[value=P1]") }).first().selectOption("P1");

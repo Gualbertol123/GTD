@@ -120,6 +120,8 @@ c = await colCard("Chiusura mensile novembre");
 check("remote step reorder updates the step label", /Passo 1\/2/.test(c?.text ?? ""), c?.text);
 
 // A language switch reaches the (memoised) cards
+// The language switch is in the header's Aspetto ▾ menu since 2026-11-25.
+await page.getByRole("button", { name: /^Aspetto/ }).click();
 await page.locator('[role="group"] button', { hasText: /^EN$/ }).first().click();
 await page.waitForTimeout(300);
 c = await colCard("Chiusura mensile novembre");
