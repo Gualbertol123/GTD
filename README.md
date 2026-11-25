@@ -99,17 +99,44 @@ same button shows these steps). It then opens full screen from its own icon,
 with long-press shortcuts **New task**, **Today** and **Agenda**. On iOS the
 installed app keeps its own login, so the team password is asked once more.
 
+The **New task** shortcut (`/?new=1#/board`) opens the add sheet on the
+phone layout; on the desktop it opens the Board and puts the cursor in its
+*Nuova attività…* field (`lib/newTaskShortcut.ts`).
+
 `public/manifest.webmanifest` describes it (name, colours, icons in
 `public/icons/`, shortcuts); `public/sw.js` is the service worker, registered
-in production only (`lib/pwa.ts`). It caches the app's **code only** — the
-HTML shell, the hashed `/assets` files, icons, fonts — so it opens fast and
-still opens offline (it then says it cannot reach the server). It never
-caches board data: Supabase is on another origin and is never intercepted,
-and only GET requests to the site itself are handled, so tasks, notes and
-reflections still live in memory only. Page loads go to the network first,
-so a new deploy shows up at once. To throw away every cached file, change
-`VERSION` in `sw.js`. Netlify serves `sw.js` and the manifest with
-`Cache-Control: no-cache` (`netlify.toml`).
+in production only (`lib/pwa.ts`).
+
+**What it caches: the app's code, never board data.** The first visit caches
+everything the app needs to start: the HTML shell, **every** built file under
+`/assets` (all the hashed JS/CSS chunks, lazily loaded screens included, and
+the bundled Inter font), the manifest and the icons. The build writes that
+list into `dist/sw.js` (`swPrecache` in `vite.config.ts`); about 1.6 MB
+today. Other files of the site (the report's PDF fonts in `public/fonts/`,
+the Word template) are cached the first time they are fetched. On each new
+build the worker re-installs, keeps the hashed files it already has, fetches
+the new ones and drops the old build's, so the cache never grows. Supabase
+(another origin), any other site (Google Fonts, YouTube), every non-GET
+request and `/.netlify/` are never intercepted. Page loads go to the network
+first, so a new deploy shows up at once; the cached shell is used only when
+the network fails. To throw away every cached file, change `VERSION` in
+`sw.js`. Netlify serves `sw.js` and the manifest with `Cache-Control:
+no-cache` (`netlify.toml`).
+
+**Offline: it opens, says so, and keeps no edits.** After one online visit
+the installed app (or the site) opens with no network: the loading screen
+says *Sei offline. La bacheca si apre da sola appena torna la connessione.*
+and the board loads by itself on the browser's `online` event (no reload).
+With the board open, the badge (or the phone header) reads **Offline**, and
+**Live** again once it reconnects. An edit made offline is **refused up
+front**: nothing changes on screen, nothing is sent, queued or stored, and
+the toast says *Modifica non fatta: sei offline. Rifalla quando torni
+online.* (screens with their own message, such as the phone sheets and the
+project page, say it there). The new-task field and the phone's add sheet
+keep what was typed, to add it once back online. Nothing is ever kept to
+replay later: the app is online-only by design. Fonts from Google Fonts are
+not cached, so offline the text falls back to the system fonts.
+`scripts/ux/offline-pwa.mjs` checks all of this against a production build.
 
 ### 1e. Music
 
@@ -532,7 +559,9 @@ Supabase project (free tier)
 (`web/src/lib/types.ts`) dispatched through `send(op)`:
 
 1. `useBoard.send(op)` applies the change **optimistically** in memory via
-   `applyOpLocal` (`localReducer.ts`) so the UI updates instantly.
+   `applyOpLocal` (`localReducer.ts`) so the UI updates instantly. When the
+   browser is offline it does not: the edit is refused up front and said on
+   screen like a refused write (§1d), nothing applied, sent or stored.
 2. `writeOp(op, board)` (`db.ts`) translates the op into the matching Supabase
    write(s), mapping camelCase app fields to snake_case columns. Writes go out
    **one at a time, in the order sent** (`optimisticSend.ts`), so an Undo that
@@ -565,7 +594,12 @@ converge even if a realtime packet is missed.
 into a PDF on the device; no report content is ever uploaded anywhere.
 
 **What is cached in the browser.** Board **data is never cached** — it lives in
-memory only, so closing the tab leaves no copy of any task. `localStorage` holds
+memory only, so closing the tab leaves no copy of any task, and an edit made
+offline is refused rather than stored (§1d). The service worker's Cache
+Storage holds the app's **code** only (`gtd-shell-*`: the HTML shell, the
+manifest, icons and other public files; `gtd-assets-*`: this build's hashed
+files under `/assets`), never a Supabase response. IndexedDB holds only the
+Spotify sign-in's device key (§1e), no board data. `localStorage` holds
 the **login session** (Supabase access + refresh token, never the password; key
 `gtd-session`, `supabaseClient.ts`) and **per-device UI preferences**
 (`prefs.ts`):
@@ -808,6 +842,7 @@ GTD/
         │   ├── rowSync.ts        ← folds one changed row (from realtime) into the board
         │   ├── history.ts        ← tabs / project / More page in the URL; Back closes sheets
         │   ├── pwa.ts            ← service worker registration + the install prompt
+        │   ├── newTaskShortcut.ts ← the installed app's "New task" shortcut (?new=1)
         │   ├── music.ts          ← the music player's state, defaults, link parsing, search
         │   ├── musicDb.ts        ← team playlists (music_playlists), live
         │   ├── spotifyAuth.ts    ← "Accedi con Spotify": PKCE in the browser, /callback, token in sessionStorage
