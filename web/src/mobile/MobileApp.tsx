@@ -141,7 +141,11 @@ function Shell({
   );
   const [taskId, setTaskId] = useState<string | null>(null);
   const [moveId, setMoveId] = useState<string | null>(null);
-  const [projectId, setProjectId] = useState<string | null>(null);
+  // A desktop project page (#/projects/<id>) opens as the project's sheet
+  // here, so switching to the phone layout keeps your place (README §1c).
+  const [projectId, setProjectId] = useState<string | null>(() =>
+    route.tab === "projects" && route.sub ? route.sub : null
+  );
   const [adding, setAdding] = useState<{ status?: Status; projectId?: string; dueDate?: string } | null>(null);
   const [meOpen, setMeOpen] = useState(false);
   const [mailOpen, setMailOpen] = useState(false);
