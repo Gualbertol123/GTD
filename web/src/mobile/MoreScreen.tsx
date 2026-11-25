@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { IconNote } from "../components/MusicIcons";
 import type { Board, Weekly } from "../lib/types";
 import { WEEKLY_COLUMNS, genId } from "../lib/constants";
@@ -10,15 +10,17 @@ import { readAppearanceChoice, readBlur, readSkin, writeAppearance, writeBlur, w
 import { COLOR_DEFAULT, COLOR_MAX, COLOR_MIN, readColor, writeColor } from "../lib/skin";
 import { WeeklyItemField } from "../components/WeeklyView";
 import { DailyReflection } from "../components/DailyReflection";
-import { SettingsView } from "../components/SettingsView";
-import { ReportView } from "../components/ReportView";
-import { ProductTreeView } from "../components/ProductTreeView";
 import { Avatar, Avatars, Sheet, useToast } from "./ui";
 import { useInstall } from "../lib/pwa";
 import { music } from "../lib/music";
 import { IconBack, IconChevron, IconClose, IconAuto, IconDesktop, IconDownload, IconMoon, IconSun, IconGear, IconLeaf, IconMail, IconReport, IconTree, IconUser, IconWeekly } from "./icons";
 import type { Send } from "./actions";
 import type { LayoutChoice } from "./useLayout";
+
+// Desktop screens shown under Altro load when opened (their own chunks).
+const SettingsView = lazy(() => import("../components/SettingsView").then((m) => ({ default: m.SettingsView })));
+const ReportView = lazy(() => import("../components/ReportView").then((m) => ({ default: m.ReportView })));
+const ProductTreeView = lazy(() => import("../components/ProductTreeView").then((m) => ({ default: m.ProductTreeView })));
 
 export type MorePage = "weekly" | "report" | "reflection" | "products" | "settings" | null;
 
@@ -59,6 +61,7 @@ export function MoreScreen({
     return (
       <div className="m-embed">
         {back}
+        <Suspense fallback={<div role="status" aria-busy="true" style={{ minHeight: "40vh" }} />}>
         {page === "report" && (
           <>
             <p className="m-sub" style={{ margin: "0 4px 12px" }}>
@@ -76,6 +79,7 @@ export function MoreScreen({
           </div>
         )}
         {page === "settings" && <SettingsView board={board} send={send} />}
+        </Suspense>
       </div>
     );
   }

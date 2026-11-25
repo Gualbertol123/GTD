@@ -7,10 +7,6 @@ import { Filters, type FilterState } from "./components/Filters";
 import { BoardView } from "./components/BoardView";
 import { ProjectsView } from "./components/ProjectsView";
 import { WeeklyView } from "./components/WeeklyView";
-import { ReportView } from "./components/ReportView";
-import { CalendarView } from "./components/CalendarView";
-import { SettingsView } from "./components/SettingsView";
-import { ProductTreeView } from "./components/ProductTreeView";
 import { isOwnedBy } from "./lib/owners";
 import { DailyReflection } from "./components/DailyReflection";
 import { MailModal } from "./components/MailModal";
@@ -23,11 +19,17 @@ import { ProjectsProvider } from "./lib/projectsContext";
 import { PHONE_QUERY, useLayout } from "./mobile/useLayout";
 import { MusicButton, MusicPlayer } from "./components/MusicPlayer";
 import { music } from "./lib/music";
-import { MusicTab } from "./components/MusicTab";
 import { UndoToastHost, showNotice } from "./components/TaskDetails";
 import { onSaveError } from "./lib/saveErrors";
 import { navigate, useRoute } from "./lib/history";
 
+// Screens other than the board load when first opened (each is its own
+// chunk): the first paint downloads the board and the shell only.
+const ReportView = lazy(() => import("./components/ReportView").then((m) => ({ default: m.ReportView })));
+const CalendarView = lazy(() => import("./components/CalendarView").then((m) => ({ default: m.CalendarView })));
+const SettingsView = lazy(() => import("./components/SettingsView").then((m) => ({ default: m.SettingsView })));
+const ProductTreeView = lazy(() => import("./components/ProductTreeView").then((m) => ({ default: m.ProductTreeView })));
+const MusicTab = lazy(() => import("./components/MusicTab").then((m) => ({ default: m.MusicTab })));
 // The phone layout is its own chunk: desktop visitors never download it.
 const MobileApp = lazy(() => import("./mobile/MobileApp").then((m) => ({ default: m.MobileApp })));
 
@@ -200,6 +202,7 @@ export default function App() {
       </nav>
 
       <main id="main" ref={mainRef} tabIndex={-1} className="max-w-[1500px] mx-auto px-4 mt-4 outline-none">
+        <Suspense fallback={<div role="status" aria-busy="true" className="min-h-[50vh]" />}>
         {tab === "board" && (
           <BoardView
             board={board}
@@ -231,6 +234,7 @@ export default function App() {
         )}
         {tab === "settings" && <SettingsView board={board} send={send} />}
         {tab === "music" && <MusicTab />}
+        </Suspense>
       </main>
 
       {mailOpen && <MailModal board={board} onClose={() => setMailOpen(false)} />}
