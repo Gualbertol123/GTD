@@ -1672,7 +1672,7 @@ function reportImport(done: Promise<SourceSaveResult>, source: NewSource | null,
 }
 
 /** README §1e: how the site admin adds Spotify's free keys. */
-const SPOTIFY_KEYS_HELP = "https://github.com/Gualbertol123/prova_sito_GTD#1e-music";
+const SPOTIFY_KEYS_HELP = "https://github.com/Gualbertol123/GTD#1e-music";
 
 /**
  * "Accedi con Spotify" (only when the site has VITE_SPOTIFY_CLIENT_ID), or

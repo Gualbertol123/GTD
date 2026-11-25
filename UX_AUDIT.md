@@ -7,7 +7,12 @@ four skin/appearance combinations — **Classic**, **Glass dark**, **Glass
 light**, **Glass with blur off** — on desktop (1440×900, 1024×768) and phone
 (390×844, 844×390).
 
-Branch: `claude/hopeful-noether-u6oblf`. Base: `3a4f672`.
+Branch at the time: `claude/hopeful-noether-u6oblf` (repo `prova_sito_GTD`, now
+`Gualbertol123/GTD` on `main`). Base: `3a4f672`.
+
+> The audit scripts (`web/scripts/ux/`) and screenshots (`ux-audit/shots/`)
+> were removed from the tree after the migration; they are still in git
+> history — `git checkout 48fc426 -- web/scripts/ux ux-audit` brings them back.
 
 ---
 

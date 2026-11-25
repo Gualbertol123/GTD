@@ -9,8 +9,7 @@ full file map, how to run and deploy it, and how to extend it.
 
 - **Stack:** React 18 + Vite + TypeScript + Tailwind CSS · Supabase (Postgres
   realtime, auto REST) · Netlify static hosting.
-- **Repo:** `Gualbertol123/prova_sito_GTD`. Active work is on branch
-  `claude/hopeful-noether-u6oblf` (Netlify currently deploys this branch). The
+- **Repo:** `Gualbertol123/GTD`, branch `main` (Netlify deploys `main`). The
   frontend lives entirely in `web/`; there is **no custom backend server** — the
   browser talks straight to Supabase.
 - **Look:** navy `#0A1931`, gold `#C9A96E`, cream backgrounds; **Cinzel**
@@ -736,11 +735,10 @@ merely empty.
 ## 4. Project structure
 
 ```
-prova_sito_GTD/
+GTD/
 ├── README.md                     ← this file
 ├── netlify.toml                  ← Netlify build (command, publish, SPA + noindex headers)
 ├── .gitignore
-├── legacy/original-artifact.html ← the original single-file app, kept for reference
 ├── supabase/
 │   ├── schema.sql                ← full schema for a fresh project
 │   ├── migration-002-settings.sql
@@ -1001,11 +999,9 @@ project set up as in §7 / §11 and log in with the team password.
 ### Part 2 — Netlify frontend
 
 1. **https://app.netlify.com** → **Add new site → Import an existing project →
-   GitHub** → pick `Gualbertol123/prova_sito_GTD`.
+   GitHub** → pick `Gualbertol123/GTD`.
 2. `netlify.toml` already sets the build (`npm --prefix web install && npm
-   --prefix web run build`, publish `web/dist`). Choose the branch that holds the
-   code (currently `claude/hopeful-noether-u6oblf`; switch to `main` after
-   merging).
+   --prefix web run build`, publish `web/dist`). Deploy branch: `main`.
 3. **Site configuration → Environment variables** → add `VITE_SUPABASE_URL`,
    `VITE_SUPABASE_ANON_KEY` and `VITE_TEAM_EMAIL` (the team user's e-mail). None
    is secret: the anon key is meant to ship in the browser and gets nothing
@@ -1089,7 +1085,6 @@ Because everything flows through the `Op` union, most changes follow one path:
   reflections and personal notes must be private *between teammates* too. With
   the shared account, every logged-in device downloads every reflection and
   note; only the Reflection password in the interface keeps them apart (§11).
-- Merge `claude/hopeful-noether-u6oblf` into `main` and point Netlify at `main`.
 - Drag-to-reorder for weekly items / members (subtasks already have it).
 - A weekly "learning digest" and per-member reflection streaks.
 
