@@ -30,7 +30,7 @@ checked by two tests; see *How it is enforced* at the end.
    never means an invisible focus.
 7. **Motion only follows something the user did on purpose**: open / close,
    select, drag, press. No hover transitions at all; state transitions are
-   short (≤ 150 ms, colour only, never layout), and everything respects
+   short (≤ 100 ms, colour only, never layout), and everything respects
    `prefers-reduced-motion` (one global rule in `index.css`).
 
 Pressing is not resting: a button may dim briefly while it is held down
@@ -50,10 +50,11 @@ drag is in progress. Neither happens under a resting pointer.
 
 ## Exceptions
 
-Each exception is listed here with its reason, and in the guard's allowlist.
+Each exception is listed here with its reason; the CSS one is also in the guard's allowlist.
 
 | Where | What | Why |
 | --- | --- | --- |
+| Open menus and suggestion lists (the song menu, Music's ⋯ and + menus, search suggestions, the report's highlight picker) | the item under the pointer is tinted | It marks what a click will choose, like the keyboard's active item, inside a surface the user just opened. Listed in `hover-rule.test.ts`. |
 | Undo toasts (`components/TaskDetails.tsx`, `CalendarView.tsx`) | the toast's countdown pauses while the pointer is over it | WCAG 2.2.1 (timing adjustable). Nothing on screen changes. |
 | ♪ button (`MusicPlayer.tsx`) | `onPointerEnter` warms the YouTube / Spotify player | A preload on intent; nothing on screen changes on a normal network. |
 

@@ -1,0 +1,3269 @@
+{
+ "date": "2026-11-25T10:09:10.366Z",
+ "mode": "desktop",
+ "step": 24,
+ "pages": [
+  {
+   "combo": "glass-dark",
+   "size": "1440x900",
+   "scenario": "board-card-open",
+   "screens": 3,
+   "changed": 91,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 90,
+   "mutations": 1,
+   "byVerdict": {
+    "appears": 31,
+    "rim": 33,
+    "text": 4,
+    "elsewhere": 1,
+    "field": 21
+   },
+   "recs": [
+    {
+     "el": "button.shrink-0.rounded-full.flex.items-center.justify-center \"Rinomina la bacheca\"",
+     "verdict": "appears",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)",
+      "opacity": "0.7 → 1"
+     },
+     "at": "button.shrink-0.rounded-full.flex.items-center.justify-center \"Rinomina la bacheca\"",
+     "n": 3
+    },
+    {
+     "el": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "border-right-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "border-left-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 3
+    },
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -207.227, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 165,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    },
+    {
+     "el": "button.tab.px-2.5.h-7.text-[11px].font-semibold \"EN\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.px-2.5.h-7.text-[11px].font-semibold \"EN\"",
+     "n": 3
+    },
+    {
+     "el": "button.glass-switch.inline-flex.items-center.gap-2.h-9 \"Liquid Glass attivo — clicca per tornare al tema classico\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.glass-switch.inline-flex.items-center.gap-2.h-9 \"Liquid Glass attivo — clicca per tornare al tema classico\"",
+     "n": 3
+    },
+    {
+     "el": "button.tab.h-8.w-8.text-[13px].leading-none \"Chiaro\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.h-8.w-8.text-[13px].leading-none \"Chiaro\"",
+     "n": 3
+    },
+    {
+     "el": "svg",
+     "verdict": "elsewhere",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)",
+      "outline-color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.h-8.w-8.text-[13px].leading-none \"Chiaro\"",
+     "n": 3
+    },
+    {
+     "el": "button.tab.h-8.w-8.text-[13px].leading-none \"Automatico (come il dispositivo)\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.h-8.w-8.text-[13px].leading-none \"Automatico (come il dispositivo)\"",
+     "n": 3
+    },
+    {
+     "el": "button.h-9.w-9.rounded-full.border.flex \"Sfocatura vetro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.flex \"Sfocatura vetro\"",
+     "n": 3
+    },
+    {
+     "el": "button.color-btn.relative.h-9.w-9.rounded-full \"Intensità dei colori su tutto il GTD (solo questo dispositivo) · 100%\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.color-btn.relative.h-9.w-9.rounded-full \"Intensità dei colori su tutto il GTD (solo questo dispositivo) · 100%\"",
+     "n": 3
+    },
+    {
+     "el": "button.inline-flex.items-center.gap-1.5.h-9.px-4 \"Aggiorna via mail\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.inline-flex.items-center.gap-1.5.h-9.px-4 \"Aggiorna via mail\"",
+     "n": 3
+    },
+    {
+     "el": "button.shrink-0.rounded-full.flex.items-center.justify-center \"Modifica il sottotitolo\"",
+     "verdict": "appears",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)",
+      "opacity": "0.7 → 1"
+     },
+     "at": "svg",
+     "n": 3
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"BOARD\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)",
+      "border-right-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)",
+      "border-bottom-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)",
+      "border-left-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"BOARD\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-8.px-3.text-[11px].font-semibold \"Elenco\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.h-8.px-3.text-[11px].font-semibold \"Elenco\"",
+     "n": 1
+    },
+    {
+     "el": "input.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Cerca attività…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "input.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Cerca attività…\"",
+     "n": 1
+    },
+    {
+     "el": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Assegnatario\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Assegnatario\"",
+     "n": 1
+    },
+    {
+     "el": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Priorità\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Priorità\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-9.px-4.rounded-full.text-[12px].font-semibold \"Focus P1\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-9.px-4.rounded-full.text-[12px].font-semibold \"Focus P1\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Modifica layout\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Modifica layout\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Modifica layout\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Modifica layout\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"",
+     "n": 1
+    },
+    {
+     "el": "input.qa-field.h-11.rounded-full.bg-white.border \"Nuova attività…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "input.qa-field.h-11.rounded-full.bg-white.border \"Nuova attività…\"",
+     "n": 1
+    },
+    {
+     "el": "button.qa-field.h-11.rounded-full.bg-white.border \"Assegnatario\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "button.qa-field.h-11.rounded-full.bg-white.border \"Assegnatario\"",
+     "n": 4
+    },
+    {
+     "el": "select.qa-field.h-11.rounded-full.bg-white.border \"Priorità\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.qa-field.h-11.rounded-full.bg-white.border \"Priorità\"",
+     "n": 1
+    },
+    {
+     "el": "select.qa-field.h-11.rounded-full.bg-white.border \"Stato\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.qa-field.h-11.rounded-full.bg-white.border \"Stato\"",
+     "n": 1
+    },
+    {
+     "el": "label.qa-field.h-11.rounded-full.bg-white.border \"Scadenza\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "label.qa-field.h-11.rounded-full.bg-white.border \"Scadenza\"",
+     "n": 3
+    },
+    {
+     "el": "label.qa-field.h-11.rounded-full.bg-white.border \"Ripeti\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "label.qa-field.h-11.rounded-full.bg-white.border \"Ripeti\"",
+     "n": 2
+    },
+    {
+     "el": "button.qa-field.h-11.rounded-full.bg-white.border \"Metti in evidenza\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "button.qa-field.h-11.rounded-full.bg-white.border \"Metti in evidenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.h-11.px-6.rounded-full.bg-[#0A1931].text-[#C9A96E] \"+ Aggiungi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-11.px-6.rounded-full.bg-[#0A1931].text-[#C9A96E] \"+ Aggiungi\"",
+     "n": 1
+    },
+    {
+     "el": "button.w-full.flex.items-center.justify-between.gap-4 \"Distribuzione per priorità\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.text-[#6B6B6B].text-[11px].transition-transform \"▶\"",
+     "n": 10
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.min-w-0 \"Comprimi “In evidenza”\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.min-w-0 \"Comprimi “In evidenza”\"",
+     "n": 3
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P2 • Alta:Report settim\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P2 • Alta:Report settim\"",
+     "n": 21
+    },
+    {
+     "el": "button.shrink-0.-m-0.5.p-0.5.rounded-full.outline-none \"Segna come fatta\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.shrink-0.-m-0.5.p-0.5.rounded-full.outline-none \"Segna come fatta\"",
+     "n": 9
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P1 • Urgente:Retail Q3 \"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P1 • Urgente:Retail Q3 \"",
+     "n": 18
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P2 • Alta:VUB - spostar\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P2 • Alta:VUB - spostar\"",
+     "n": 4
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P1 • Urgente:BU Pivot l\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P1 • Urgente:BU Pivot l\"",
+     "n": 12
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P1 • Urgente:Allineamen\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P1 • Urgente:Allineamen\"",
+     "n": 13
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P1 • Urgente:Integrazio\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P1 • Urgente:Integrazio\"",
+     "n": 9
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P2 • Alta:Chiusura mens\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P2 • Alta:Chiusura mens\"",
+     "n": 8
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P4 • Bassa:Chief dashbo\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P4 • Bassa:Chief dashbo\"",
+     "n": 7
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P3 • Media:BU_LOANS_DEP\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P3 • Media:BU_LOANS_DEP\"",
+     "n": 5
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P4 • Bassa:Mind Map mac\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P4 • Bassa:Mind Map mac\"",
+     "n": 4
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P2 • Alta:Review KPI tr\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P2 • Alta:Review KPI tr\"",
+     "n": 5
+    },
+    {
+     "el": "textarea.resize-none.overflow-hidden.break-words.w-full.font-semibold \"Titolo dell'attività\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "textarea.resize-none.overflow-hidden.break-words.w-full.font-semibold \"Titolo dell'attività\"",
+     "n": 1
+    },
+    {
+     "el": "button.shrink-0.-m-0.5.p-0.5.rounded-full.outline-none \"Riapri\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 1
+    },
+    {
+     "el": "button.inline-flex.items-center.gap-1.5.bg-[#F5F3EF].rounded-full \"Cambia chi se ne occupa\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "span.flex.-space-x-1.5 \"F\"",
+     "n": 2
+    },
+    {
+     "el": "label.inline-flex.flex-wrap.items-center.gap-x-1.5.min-w-0 \"Scadenza\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "label.inline-flex.flex-wrap.items-center.gap-x-1.5.min-w-0 \"Scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "label.inline-flex.items-center.gap-1.5.bg-[#F5F3EF].rounded-full \"Nessun progettoPricing 2027Chius\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "label.inline-flex.items-center.gap-1.5.bg-[#F5F3EF].rounded-full \"Nessun progettoPricing 2027Chius\"",
+     "n": 2
+    },
+    {
+     "el": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P3 • Media\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P3 • Media\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P1 • Urgente\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P1 • Urgente\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P2 • Alta\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P2 • Alta\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P4 • Bassa\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P4 • Bassa\"",
+     "n": 1
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P2 • Alta:Efficientare \"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "svg",
+     "n": 8
+    },
+    {
+     "el": "button.inline-flex.items-center.gap-1.5.rounded-full.h-8 \"Metti in evidenza\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "button.inline-flex.items-center.gap-1.5.rounded-full.h-8 \"Metti in evidenza\"",
+     "n": 1
+    },
+    {
+     "el": "label.inline-flex.items-center.gap-1.5.rounded-full.h-8 \"RipetiMaiOgni giornoOgni settima\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "label.inline-flex.items-center.gap-1.5.rounded-full.h-8 \"RipetiMaiOgni giornoOgni settima\"",
+     "n": 2
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P3 • Media:Backup carte\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "svg",
+     "n": 9
+    },
+    {
+     "el": "input.flex-1.min-w-0.h-8.rounded-full.bg-white \"Aggiungi sotto-attività…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "input.flex-1.min-w-0.h-8.rounded-full.bg-white \"Aggiungi sotto-attività…\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-8.w-8.shrink-0.flex.items-center \"+\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-8.w-8.shrink-0.flex.items-center \"+\"",
+     "n": 1
+    },
+    {
+     "el": "textarea.resize-none.overflow-hidden.break-words.w-full.min-h-[3.2rem] \"Aggiungi una descrizione…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "textarea.resize-none.overflow-hidden.break-words.w-full.min-h-[3.2rem] \"Aggiungi una descrizione…\"",
+     "n": 1
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P3 • Media:Cambiare cor\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P3 • Media:Cambiare cor\"",
+     "n": 7
+    },
+    {
+     "el": "textarea.resize-none.overflow-hidden.break-words.w-full.min-h-[3.2rem] \"Aggiungi una nota…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "textarea.resize-none.overflow-hidden.break-words.w-full.min-h-[3.2rem] \"Aggiungi una nota…\"",
+     "n": 1
+    },
+    {
+     "el": "button.mp-toast__btn \"Riprova\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.mp-toast__btn \"Riprova\"",
+     "n": 2
+    },
+    {
+     "el": "div.flex.items-center.gap-2.bg-[#F5F3EF].border \"Copia\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "div.flex.items-center.gap-2.bg-[#F5F3EF].border \"Copia\"",
+     "n": 3
+    },
+    {
+     "el": "button.w-8.h-8.rounded-full.border.border-[#E8E6E1] \"Stato precedente\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.w-8.h-8.rounded-full.border.border-[#E8E6E1] \"Stato precedente\"",
+     "n": 2
+    },
+    {
+     "el": "button.w-8.h-8.rounded-full.bg-[#0A1931].text-white \"Stato successivo\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.w-8.h-8.rounded-full.bg-[#0A1931].text-white \"Stato successivo\"",
+     "n": 2
+    },
+    {
+     "el": "select.h-8.rounded-full.bg-[#F5F3EF].border.border-[#E8E6E1] \"Stato\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.h-8.rounded-full.bg-[#F5F3EF].border.border-[#E8E6E1] \"Stato\"",
+     "n": 2
+    },
+    {
+     "el": "button.h-8.px-4.rounded-full.text-[12px].font-semibold \"Elimina\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-8.px-4.rounded-full.text-[12px].font-semibold \"Elimina\"",
+     "n": 2
+    },
+    {
+     "el": "button.w-full.flex.items-center.gap-2.text-left \"▶Fatte2Completate in questa sett\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.text-[#6B6B6B].text-[11px].transition-transform \"▶\"",
+     "n": 5
+    },
+    {
+     "el": "button.w-full.flex.items-center.gap-2.text-left \"▶Archiviate1Completate da più di\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.text-[#6B6B6B].text-[11px].transition-transform \"▶\"",
+     "n": 5
+    },
+    {
+     "el": "button.w-full.flex.items-center.gap-2.text-left \"▶Menu mensa3Oggi: Panino con ham\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.w-full.flex.items-center.gap-2.text-left \"▶Menu mensa3Oggi: Panino con ham\"",
+     "n": 3
+    }
+   ],
+   "mutList": [
+    {
+     "m": "added div.mp-toast.mp-toast--error \"YouTube non è raggiungibile in q\"",
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\""
+    }
+   ]
+  },
+  {
+   "combo": "glass-dark",
+   "size": "1440x900",
+   "scenario": "board-list",
+   "screens": 1,
+   "changed": 59,
+   "ok": 3,
+   "allowed": 1,
+   "violations": 55,
+   "mutations": 1,
+   "byVerdict": {
+    "appears": 15,
+    "rim": 25,
+    "text": 4,
+    "elsewhere": 1,
+    "field": 10
+   },
+   "recs": [
+    {
+     "el": "button.shrink-0.rounded-full.flex.items-center.justify-center \"Rinomina la bacheca\"",
+     "verdict": "appears",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)",
+      "opacity": "0.7 → 1"
+     },
+     "at": "button.shrink-0.rounded-full.flex.items-center.justify-center \"Rinomina la bacheca\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "border-right-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "border-left-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 1
+    },
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -207.227, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 138,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    },
+    {
+     "el": "button.tab.px-2.5.h-7.text-[11px].font-semibold \"EN\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.px-2.5.h-7.text-[11px].font-semibold \"EN\"",
+     "n": 1
+    },
+    {
+     "el": "button.glass-switch.inline-flex.items-center.gap-2.h-9 \"Liquid Glass attivo — clicca per tornare al tema classico\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.glass-switch.inline-flex.items-center.gap-2.h-9 \"Liquid Glass attivo — clicca per tornare al tema classico\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-8.w-8.text-[13px].leading-none \"Chiaro\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.h-8.w-8.text-[13px].leading-none \"Chiaro\"",
+     "n": 1
+    },
+    {
+     "el": "svg",
+     "verdict": "elsewhere",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)",
+      "outline-color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.h-8.w-8.text-[13px].leading-none \"Chiaro\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-8.w-8.text-[13px].leading-none \"Automatico (come il dispositivo)\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.h-8.w-8.text-[13px].leading-none \"Automatico (come il dispositivo)\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-9.w-9.rounded-full.border.flex \"Sfocatura vetro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.flex \"Sfocatura vetro\"",
+     "n": 1
+    },
+    {
+     "el": "button.color-btn.relative.h-9.w-9.rounded-full \"Intensità dei colori su tutto il GTD (solo questo dispositivo) · 100%\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.color-btn.relative.h-9.w-9.rounded-full \"Intensità dei colori su tutto il GTD (solo questo dispositivo) · 100%\"",
+     "n": 1
+    },
+    {
+     "el": "button.inline-flex.items-center.gap-1.5.h-9.px-4 \"Aggiorna via mail\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.inline-flex.items-center.gap-1.5.h-9.px-4 \"Aggiorna via mail\"",
+     "n": 1
+    },
+    {
+     "el": "button.shrink-0.rounded-full.flex.items-center.justify-center \"Modifica il sottotitolo\"",
+     "verdict": "appears",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)",
+      "opacity": "0.7 → 1"
+     },
+     "at": "svg",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"BOARD\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)",
+      "border-right-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)",
+      "border-bottom-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)",
+      "border-left-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"BOARD\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-8.px-3.text-[11px].font-semibold \"Bacheca\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.h-8.px-3.text-[11px].font-semibold \"Bacheca\"",
+     "n": 1
+    },
+    {
+     "el": "input.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Cerca attività…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "input.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Cerca attività…\"",
+     "n": 1
+    },
+    {
+     "el": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Assegnatario\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Assegnatario\"",
+     "n": 1
+    },
+    {
+     "el": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Priorità\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Priorità\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-9.px-4.rounded-full.text-[12px].font-semibold \"Focus P1\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-9.px-4.rounded-full.text-[12px].font-semibold \"Focus P1\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"",
+     "n": 1
+    },
+    {
+     "el": "input.qa-field.h-11.rounded-full.bg-white.border \"Nuova attività…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "input.qa-field.h-11.rounded-full.bg-white.border \"Nuova attività…\"",
+     "n": 1
+    },
+    {
+     "el": "button.qa-field.h-11.rounded-full.bg-white.border \"Assegnatario\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "button.qa-field.h-11.rounded-full.bg-white.border \"Assegnatario\"",
+     "n": 4
+    },
+    {
+     "el": "select.qa-field.h-11.rounded-full.bg-white.border \"Priorità\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.qa-field.h-11.rounded-full.bg-white.border \"Priorità\"",
+     "n": 1
+    },
+    {
+     "el": "select.qa-field.h-11.rounded-full.bg-white.border \"Stato\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.qa-field.h-11.rounded-full.bg-white.border \"Stato\"",
+     "n": 1
+    },
+    {
+     "el": "label.qa-field.h-11.rounded-full.bg-white.border \"Scadenza\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "label.qa-field.h-11.rounded-full.bg-white.border \"Scadenza\"",
+     "n": 3
+    },
+    {
+     "el": "label.qa-field.h-11.rounded-full.bg-white.border \"Ripeti\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "label.qa-field.h-11.rounded-full.bg-white.border \"Ripeti\"",
+     "n": 2
+    },
+    {
+     "el": "button.qa-field.h-11.rounded-full.bg-white.border \"Metti in evidenza\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "button.qa-field.h-11.rounded-full.bg-white.border \"Metti in evidenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.h-11.px-6.rounded-full.bg-[#0A1931].text-[#C9A96E] \"+ Aggiungi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-11.px-6.rounded-full.bg-[#0A1931].text-[#C9A96E] \"+ Aggiungi\"",
+     "n": 1
+    },
+    {
+     "el": "button.w-full.flex.items-center.justify-between.gap-4 \"Distribuzione per priorità\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.text-[#6B6B6B].text-[11px].transition-transform \"▶\"",
+     "n": 10
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.min-w-0 \"Comprimi “In evidenza”\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.min-w-0 \"Comprimi “In evidenza”\"",
+     "n": 3
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P2 • Alta:Report settim\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P2 • Alta:Report settim\"",
+     "n": 12
+    },
+    {
+     "el": "button.shrink-0.-m-0.5.p-0.5.rounded-full.outline-none \"Segna come fatta\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.shrink-0.-m-0.5.p-0.5.rounded-full.outline-none \"Segna come fatta\"",
+     "n": 1
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P1 • Urgente:Retail Q3 \"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P1 • Urgente:Retail Q3 \"",
+     "n": 9
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P1 • Urgente:BU Pivot l\"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:BU Pivot l\"",
+     "n": 7
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:BU Pivot l\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:BU Pivot l\"",
+     "n": 2
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P1 • Urgente:Retail Q3 \"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:Retail Q3 \"",
+     "n": 9
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:Retail Q3 \"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:Retail Q3 \"",
+     "n": 2
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P1 • Urgente:Integrazio\"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "span.w-2.h-2.rounded-full.shrink-0.mt-1",
+     "n": 9
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:Integrazio\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.w-2.h-2.rounded-full.shrink-0.mt-1",
+     "n": 2
+    }
+   ],
+   "mutList": [
+    {
+     "m": "added div.mp-toast.mp-toast--error \"YouTube non è raggiungibile in q\"",
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\""
+    }
+   ]
+  },
+  {
+   "combo": "glass-dark",
+   "size": "1024x768",
+   "scenario": "board-card-open",
+   "screens": 3,
+   "changed": 84,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 83,
+   "mutations": 1,
+   "byVerdict": {
+    "appears": 29,
+    "rim": 30,
+    "text": 4,
+    "field": 20
+   },
+   "recs": [
+    {
+     "el": "button.shrink-0.rounded-full.flex.items-center.justify-center \"Rinomina la bacheca\"",
+     "verdict": "appears",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)",
+      "opacity": "0.7 → 1"
+     },
+     "at": "button.shrink-0.rounded-full.flex.items-center.justify-center \"Rinomina la bacheca\"",
+     "n": 3
+    },
+    {
+     "el": "button.shrink-0.rounded-full.flex.items-center.justify-center \"Modifica il sottotitolo\"",
+     "verdict": "appears",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)",
+      "opacity": "0.7 → 1"
+     },
+     "at": "svg",
+     "n": 3
+    },
+    {
+     "el": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "border-right-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "border-left-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 3
+    },
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -207.227, 0)"
+     },
+     "at": "svg",
+     "n": 91,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    },
+    {
+     "el": "button.tab.px-2.5.h-7.text-[11px].font-semibold \"EN\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.px-2.5.h-7.text-[11px].font-semibold \"EN\"",
+     "n": 3
+    },
+    {
+     "el": "button.glass-switch.inline-flex.items-center.gap-2.h-9 \"Liquid Glass attivo — clicca per tornare al tema classico\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.relative.w-8.h-[18px].rounded-full.transition-colors",
+     "n": 9
+    },
+    {
+     "el": "button.tab.h-8.w-8.text-[13px].leading-none \"Chiaro\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "svg",
+     "n": 3
+    },
+    {
+     "el": "svg",
+     "verdict": "rim",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)",
+      "outline-color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "svg",
+     "n": 3
+    },
+    {
+     "el": "button.tab.h-8.w-8.text-[13px].leading-none \"Automatico (come il dispositivo)\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.h-8.w-8.text-[13px].leading-none \"Automatico (come il dispositivo)\"",
+     "n": 3
+    },
+    {
+     "el": "button.h-9.w-9.rounded-full.border.flex \"Sfocatura vetro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "circle",
+     "n": 3
+    },
+    {
+     "el": "button.color-btn.relative.h-9.w-9.rounded-full \"Intensità dei colori su tutto il GTD (solo questo dispositivo) · 100%\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.color-btn.relative.h-9.w-9.rounded-full \"Intensità dei colori su tutto il GTD (solo questo dispositivo) · 100%\"",
+     "n": 6
+    },
+    {
+     "el": "button.inline-flex.items-center.gap-1.5.h-9.px-4 \"Aggiorna via mail\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.inline-flex.items-center.gap-1.5.h-9.px-4 \"Aggiorna via mail\"",
+     "n": 6
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"BOARD\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)",
+      "border-right-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)",
+      "border-bottom-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)",
+      "border-left-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"BOARD\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"",
+     "n": 1
+    },
+    {
+     "el": "input.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Cerca attività…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "input.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Cerca attività…\"",
+     "n": 1
+    },
+    {
+     "el": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Assegnatario\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Assegnatario\"",
+     "n": 1
+    },
+    {
+     "el": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Priorità\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Priorità\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-9.px-4.rounded-full.text-[12px].font-semibold \"Focus P1\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-9.px-4.rounded-full.text-[12px].font-semibold \"Focus P1\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-8.px-3.text-[11px].font-semibold \"Elenco\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.h-8.px-3.text-[11px].font-semibold \"Elenco\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Modifica layout\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Modifica layout\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Modifica layout\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Modifica layout\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"",
+     "n": 1
+    },
+    {
+     "el": "input.qa-field.h-11.rounded-full.bg-white.border \"Nuova attività…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "input.qa-field.h-11.rounded-full.bg-white.border \"Nuova attività…\"",
+     "n": 1
+    },
+    {
+     "el": "button.qa-field.h-11.rounded-full.bg-white.border \"Assegnatario\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "span.w-7.h-7.rounded-full.bg-[#0A1931].text-white \"F\"",
+     "n": 3
+    },
+    {
+     "el": "select.qa-field.h-11.rounded-full.bg-white.border \"Priorità\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.qa-field.h-11.rounded-full.bg-white.border \"Priorità\"",
+     "n": 1
+    },
+    {
+     "el": "select.qa-field.h-11.rounded-full.bg-white.border \"Stato\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.qa-field.h-11.rounded-full.bg-white.border \"Stato\"",
+     "n": 1
+    },
+    {
+     "el": "label.qa-field.h-11.rounded-full.bg-white.border \"Scadenza\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "span.text-[12px] \"Scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "label.qa-field.h-11.rounded-full.bg-white.border \"Ripeti\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "label.qa-field.h-11.rounded-full.bg-white.border \"Ripeti\"",
+     "n": 2
+    },
+    {
+     "el": "button.qa-field.h-11.rounded-full.bg-white.border \"Metti in evidenza\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "button.qa-field.h-11.rounded-full.bg-white.border \"Metti in evidenza\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-11.px-6.rounded-full.bg-[#0A1931].text-[#C9A96E] \"+ Aggiungi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-11.px-6.rounded-full.bg-[#0A1931].text-[#C9A96E] \"+ Aggiungi\"",
+     "n": 1
+    },
+    {
+     "el": "button.w-full.flex.items-center.justify-between.gap-4 \"Distribuzione per priorità\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.text-[#6B6B6B].text-[11px].transition-transform \"▶\"",
+     "n": 9
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.min-w-0 \"Comprimi “In evidenza”\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.min-w-0 \"Comprimi “In evidenza”\"",
+     "n": 2
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P2 • Alta:Report settim\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P2 • Alta:Report settim\"",
+     "n": 18
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P1 • Urgente:Retail Q3 \"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P1 • Urgente:Retail Q3 \"",
+     "n": 10
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P2 • Alta:VUB - spostar\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P2 • Alta:VUB - spostar\"",
+     "n": 4
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P1 • Urgente:BU Pivot l\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P1 • Urgente:BU Pivot l\"",
+     "n": 7
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P1 • Urgente:Allineamen\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P1 • Urgente:Allineamen\"",
+     "n": 8
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P1 • Urgente:Integrazio\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P1 • Urgente:Integrazio\"",
+     "n": 7
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P2 • Alta:Chiusura mens\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P2 • Alta:Chiusura mens\"",
+     "n": 7
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P3 • Media:BU_LOANS_DEP\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.shrink-0.-m-0.5.p-0.5.rounded-full.outline-none \"Segna come fatta\"",
+     "n": 4
+    },
+    {
+     "el": "button.shrink-0.-m-0.5.p-0.5.rounded-full.outline-none \"Segna come fatta\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.shrink-0.-m-0.5.p-0.5.rounded-full.outline-none \"Segna come fatta\"",
+     "n": 6
+    },
+    {
+     "el": "textarea.resize-none.overflow-hidden.break-words.w-full.font-semibold \"Titolo dell'attività\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "textarea.resize-none.overflow-hidden.break-words.w-full.font-semibold \"Titolo dell'attività\"",
+     "n": 1
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P2 • Alta:Review KPI tr\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P2 • Alta:Review KPI tr\"",
+     "n": 4
+    },
+    {
+     "el": "button.inline-flex.items-center.gap-1.5.bg-[#F5F3EF].rounded-full \"Cambia chi se ne occupa\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "span.w-6.h-6.rounded-full.bg-[#0A1931].text-white \"F\"",
+     "n": 3
+    },
+    {
+     "el": "label.inline-flex.flex-wrap.items-center.gap-x-1.5.min-w-0 \"Scadenza\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "label.inline-flex.flex-wrap.items-center.gap-x-1.5.min-w-0 \"Scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.mp-toast__btn \"Riprova\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.mp-toast__btn \"Riprova\"",
+     "n": 2
+    },
+    {
+     "el": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P1 • Urgente\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P1 • Urgente\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P2 • Alta\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P2 • Alta\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P3 • Media\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P3 • Media\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P4 • Bassa\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.h-7.px-2.5.rounded-full.text-[11px].font-semibold \"P4 • Bassa\"",
+     "n": 1
+    },
+    {
+     "el": "button.inline-flex.items-center.gap-1.5.rounded-full.h-8 \"Metti in evidenza\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "button.inline-flex.items-center.gap-1.5.rounded-full.h-8 \"Metti in evidenza\"",
+     "n": 1
+    },
+    {
+     "el": "label.inline-flex.items-center.gap-1.5.rounded-full.h-8 \"RipetiMaiOgni giornoOgni settima\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "label.inline-flex.items-center.gap-1.5.rounded-full.h-8 \"RipetiMaiOgni giornoOgni settima\"",
+     "n": 2
+    },
+    {
+     "el": "input.flex-1.min-w-0.h-8.rounded-full.bg-white \"Aggiungi sotto-attività…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "input.flex-1.min-w-0.h-8.rounded-full.bg-white \"Aggiungi sotto-attività…\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-8.w-8.shrink-0.flex.items-center \"+\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-8.w-8.shrink-0.flex.items-center \"+\"",
+     "n": 1
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P2 • Alta:Efficientare \"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P2 • Alta:Efficientare \"",
+     "n": 7
+    },
+    {
+     "el": "textarea.resize-none.overflow-hidden.break-words.w-full.min-h-[3.2rem] \"Aggiungi una descrizione…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "textarea.resize-none.overflow-hidden.break-words.w-full.min-h-[3.2rem] \"Aggiungi una descrizione…\"",
+     "n": 1
+    },
+    {
+     "el": "textarea.resize-none.overflow-hidden.break-words.w-full.min-h-[3.2rem] \"Aggiungi una nota…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "textarea.resize-none.overflow-hidden.break-words.w-full.min-h-[3.2rem] \"Aggiungi una nota…\"",
+     "n": 1
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P3 • Media:Backup carte\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "svg",
+     "n": 10
+    },
+    {
+     "el": "div.flex.items-center.gap-2.bg-[#F5F3EF].border \"Copia\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "div.flex.items-center.gap-2.bg-[#F5F3EF].border \"Copia\"",
+     "n": 3
+    },
+    {
+     "el": "button.w-8.h-8.rounded-full.border.border-[#E8E6E1] \"Stato precedente\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.w-8.h-8.rounded-full.border.border-[#E8E6E1] \"Stato precedente\"",
+     "n": 1
+    },
+    {
+     "el": "button.w-8.h-8.rounded-full.bg-[#0A1931].text-white \"Stato successivo\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.w-8.h-8.rounded-full.bg-[#0A1931].text-white \"Stato successivo\"",
+     "n": 1
+    },
+    {
+     "el": "select.h-8.rounded-full.bg-[#F5F3EF].border.border-[#E8E6E1] \"Stato\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.h-8.rounded-full.bg-[#F5F3EF].border.border-[#E8E6E1] \"Stato\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-8.px-4.rounded-full.text-[12px].font-semibold \"Elimina\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-8.px-4.rounded-full.text-[12px].font-semibold \"Elimina\"",
+     "n": 1
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P3 • Media:Cambiare cor\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "svg",
+     "n": 6
+    }
+   ],
+   "mutList": [
+    {
+     "m": "added div.mp-toast.mp-toast--error \"YouTube non è raggiungibile in q\"",
+     "at": "svg"
+    }
+   ]
+  },
+  {
+   "combo": "glass-dark",
+   "size": "1024x768",
+   "scenario": "board-list",
+   "screens": 2,
+   "changed": 75,
+   "ok": 12,
+   "allowed": 1,
+   "violations": 62,
+   "mutations": 1,
+   "byVerdict": {
+    "appears": 15,
+    "rim": 33,
+    "text": 4,
+    "field": 10
+   },
+   "recs": [
+    {
+     "el": "button.shrink-0.rounded-full.flex.items-center.justify-center \"Rinomina la bacheca\"",
+     "verdict": "appears",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)",
+      "opacity": "0.7 → 1"
+     },
+     "at": "button.shrink-0.rounded-full.flex.items-center.justify-center \"Rinomina la bacheca\"",
+     "n": 2
+    },
+    {
+     "el": "button.shrink-0.rounded-full.flex.items-center.justify-center \"Modifica il sottotitolo\"",
+     "verdict": "appears",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)",
+      "opacity": "0.7 → 1"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "border-right-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "border-left-color": "rgba(255, 255, 255, 0.35) → rgb(201, 169, 110)",
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -207.227, 0)"
+     },
+     "at": "svg",
+     "n": 90,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    },
+    {
+     "el": "button.tab.px-2.5.h-7.text-[11px].font-semibold \"EN\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.px-2.5.h-7.text-[11px].font-semibold \"EN\"",
+     "n": 2
+    },
+    {
+     "el": "button.glass-switch.inline-flex.items-center.gap-2.h-9 \"Liquid Glass attivo — clicca per tornare al tema classico\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.relative.w-8.h-[18px].rounded-full.transition-colors",
+     "n": 6
+    },
+    {
+     "el": "button.tab.h-8.w-8.text-[13px].leading-none \"Chiaro\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "svg",
+     "verdict": "rim",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)",
+      "outline-color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.tab.h-8.w-8.text-[13px].leading-none \"Automatico (come il dispositivo)\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.h-8.w-8.text-[13px].leading-none \"Automatico (come il dispositivo)\"",
+     "n": 2
+    },
+    {
+     "el": "button.h-9.w-9.rounded-full.border.flex \"Sfocatura vetro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "circle",
+     "n": 2
+    },
+    {
+     "el": "button.color-btn.relative.h-9.w-9.rounded-full \"Intensità dei colori su tutto il GTD (solo questo dispositivo) · 100%\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.color-btn.relative.h-9.w-9.rounded-full \"Intensità dei colori su tutto il GTD (solo questo dispositivo) · 100%\"",
+     "n": 4
+    },
+    {
+     "el": "button.inline-flex.items-center.gap-1.5.h-9.px-4 \"Aggiorna via mail\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.inline-flex.items-center.gap-1.5.h-9.px-4 \"Aggiorna via mail\"",
+     "n": 4
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"BOARD\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)",
+      "border-right-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)",
+      "border-bottom-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)",
+      "border-left-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.18)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"BOARD\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PROGETTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"WEEKLY\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"REPORT\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"PRODOTTI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"CALENDARIO\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"RIFLESSIONE\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"MUSICA\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.px-4.h-9.text-[12px].font-semibold \"IMPOSTAZIONI\"",
+     "n": 1
+    },
+    {
+     "el": "input.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Cerca attività…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "input.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Cerca attività…\"",
+     "n": 1
+    },
+    {
+     "el": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Assegnatario\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Assegnatario\"",
+     "n": 1
+    },
+    {
+     "el": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Priorità\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.h-9.rounded-full.bg-white.border.border-[#E8E6E1] \"Priorità\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-9.px-4.rounded-full.text-[12px].font-semibold \"Focus P1\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-9.px-4.rounded-full.text-[12px].font-semibold \"Focus P1\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-8.px-3.text-[11px].font-semibold \"Bacheca\"",
+     "verdict": "text",
+     "changes": {
+      "color": "rgba(235, 235, 245, 0.72) → rgb(255, 255, 255)"
+     },
+     "at": "button.tab.h-8.px-3.text-[11px].font-semibold \"Bacheca\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"",
+     "n": 2
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Team4\"",
+     "n": 2
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Nascondi i nomi dei referenti sulla bacheca (utile per uno screenshot). Tornano visibili al ricaricamento.\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"",
+     "verdict": "rim",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-right-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)",
+      "border-left-color": "rgba(255, 255, 255, 0.18) → rgba(255, 255, 255, 0.6)"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"",
+     "n": 1
+    },
+    {
+     "el": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "button.tab.h-9.px-4.text-[12px].font-semibold \"Colonne\"",
+     "n": 1
+    },
+    {
+     "el": "input.qa-field.h-11.rounded-full.bg-white.border \"Nuova attività…\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "input.qa-field.h-11.rounded-full.bg-white.border \"Nuova attività…\"",
+     "n": 1
+    },
+    {
+     "el": "button.qa-field.h-11.rounded-full.bg-white.border \"Assegnatario\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "span.w-7.h-7.rounded-full.bg-[#0A1931].text-white \"F\"",
+     "n": 3
+    },
+    {
+     "el": "select.qa-field.h-11.rounded-full.bg-white.border \"Priorità\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.qa-field.h-11.rounded-full.bg-white.border \"Priorità\"",
+     "n": 1
+    },
+    {
+     "el": "select.qa-field.h-11.rounded-full.bg-white.border \"Stato\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "select.qa-field.h-11.rounded-full.bg-white.border \"Stato\"",
+     "n": 1
+    },
+    {
+     "el": "label.qa-field.h-11.rounded-full.bg-white.border \"Scadenza\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "span.text-[12px] \"Scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "label.qa-field.h-11.rounded-full.bg-white.border \"Ripeti\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "label.qa-field.h-11.rounded-full.bg-white.border \"Ripeti\"",
+     "n": 2
+    },
+    {
+     "el": "button.qa-field.h-11.rounded-full.bg-white.border \"Metti in evidenza\"",
+     "verdict": "field",
+     "changes": {
+      "border-top-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-right-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-bottom-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)",
+      "border-left-color": "rgba(255, 255, 255, 0.14) → rgba(255, 255, 255, 0.26)"
+     },
+     "at": "button.qa-field.h-11.rounded-full.bg-white.border \"Metti in evidenza\"",
+     "n": 1
+    },
+    {
+     "el": "button.h-11.px-6.rounded-full.bg-[#0A1931].text-[#C9A96E] \"+ Aggiungi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.h-11.px-6.rounded-full.bg-[#0A1931].text-[#C9A96E] \"+ Aggiungi\"",
+     "n": 1
+    },
+    {
+     "el": "button.w-full.flex.items-center.justify-between.gap-4 \"Distribuzione per priorità\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.text-[#6B6B6B].text-[11px].transition-transform \"▶\"",
+     "n": 9
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.min-w-0 \"Comprimi “In evidenza”\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.min-w-0 \"Comprimi “In evidenza”\"",
+     "n": 2
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P2 • Alta:Report settim\"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P2 • Alta:Report settim\"",
+     "n": 9
+    },
+    {
+     "el": "div.task-card.bg-white.rounded-[12px].border.transition-colors \"Priorità P1 • Urgente:Retail Q3 \"::after",
+     "verdict": "appears",
+     "changes": {
+      "opacity": "0 → 1"
+     },
+     "at": "div.p-3.flex.items-start.gap-2 \"Priorità P1 • Urgente:Retail Q3 \"",
+     "n": 3
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P1 • Urgente:BU Pivot l\"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:BU Pivot l\"",
+     "n": 9
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:BU Pivot l\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:BU Pivot l\"",
+     "n": 2
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P1 • Urgente:Retail Q3 \"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:Retail Q3 \"",
+     "n": 9
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:Retail Q3 \"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:Retail Q3 \"",
+     "n": 2
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P1 • Urgente:Integrazio\"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "span.w-2.h-2.rounded-full.shrink-0.mt-1",
+     "n": 9
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:Integrazio\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.w-2.h-2.rounded-full.shrink-0.mt-1",
+     "n": 2
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P1 • Urgente:Allineamen\"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "td.px-4.py-2.5 \"Priorità P1 • Urgente:Allineamen\"",
+     "n": 9
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P1 • Urgente:Allineamen\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.w-2.h-2.rounded-full.shrink-0.mt-1",
+     "n": 2
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P2 • Alta:Report settim\"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "td.px-4.py-2.5 \"Priorità P2 • Alta:Report settim\"",
+     "n": 9
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P2 • Alta:Report settim\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.w-2.h-2.rounded-full.shrink-0.mt-1",
+     "n": 2
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P2 • Alta:Completare ch\"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "td.px-4.py-2.5 \"Priorità P2 • Alta:Completare ch\"",
+     "n": 9
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P2 • Alta:Completare ch\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P2 • Alta:Completare ch\"",
+     "n": 2
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P2 • Alta:Efficientare \"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "td.px-4.py-2.5 \"Priorità P2 • Alta:Efficientare \"",
+     "n": 7
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P2 • Alta:VUB - spostar\"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P2 • Alta:VUB - spostar\"",
+     "n": 8
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P2 • Alta:VUB - spostar\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P2 • Alta:VUB - spostar\"",
+     "n": 2
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P2 • Alta:Chiusura mens\"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P2 • Alta:Chiusura mens\"",
+     "n": 8
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P2 • Alta:Chiusura mens\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P2 • Alta:Chiusura mens\"",
+     "n": 2
+    },
+    {
+     "el": "button.mp-toast__btn \"Riprova\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.mp-toast__btn \"Riprova\"",
+     "n": 1
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P2 • Alta:Review KPI tr\"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P2 • Alta:Review KPI tr\"",
+     "n": 9
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P2 • Alta:Review KPI tr\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P2 • Alta:Review KPI tr\"",
+     "n": 2
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P2 • Alta:Presentazione\"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "span.w-2.h-2.rounded-full.shrink-0.mt-1",
+     "n": 9
+    },
+    {
+     "el": "button.flex.items-center.gap-2.text-left.rounded-md \"Priorità P2 • Alta:Presentazione\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.w-2.h-2.rounded-full.shrink-0.mt-1",
+     "n": 2
+    },
+    {
+     "el": "tr.border-t.border-[#F0EDE8].cursor-pointer.hover:bg-[#C9A96E]/[0.07] \"Priorità P3 • Media:Backup carte\"",
+     "verdict": "ok-tint",
+     "changes": {
+      "background-color": "rgba(0, 0, 0, 0) → rgba(201, 169, 110, 0.07)"
+     },
+     "at": "td.px-4.py-2.5 \"Priorità P3 • Media:Backup carte\"",
+     "n": 6
+    }
+   ],
+   "mutList": [
+    {
+     "m": "added div.mp-toast.mp-toast--error \"YouTube non è raggiungibile in q\"",
+     "at": "svg"
+    }
+   ]
+  }
+ ],
+ "summary": {
+  "board-card-open": {
+   "changed": 175,
+   "ok": 0,
+   "violations": 173,
+   "mutations": 2
+  },
+  "board-list": {
+   "changed": 134,
+   "ok": 15,
+   "violations": 117,
+   "mutations": 2
+  }
+ }
+}

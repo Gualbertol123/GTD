@@ -1,0 +1,659 @@
+{
+ "date": "2026-11-25T11:29:20.520Z",
+ "mode": "desktop",
+ "step": 24,
+ "pages": [
+  {
+   "combo": "glass-light",
+   "size": "1440x900",
+   "scenario": "board",
+   "screens": 2,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 200,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1440x900",
+   "scenario": "board-card-open",
+   "screens": 3,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 204,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1440x900",
+   "scenario": "board-list",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 164,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1440x900",
+   "scenario": "projects",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 100,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1440x900",
+   "scenario": "project-page",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 116,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1440x900",
+   "scenario": "weekly",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 98,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1440x900",
+   "scenario": "report",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -207.227, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 47,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1440x900",
+   "scenario": "products",
+   "screens": 3,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 110,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1440x900",
+   "scenario": "calendar",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 141,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1440x900",
+   "scenario": "reflection",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 51,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1440x900",
+   "scenario": "music",
+   "screens": 1,
+   "changed": 0,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1440x900",
+   "scenario": "settings",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "button.h-9.w-9.rounded-full.border.text-[15px] \"Musica\"",
+     "n": 64,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1024x768",
+   "scenario": "board",
+   "screens": 3,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "svg",
+     "n": 121,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1024x768",
+   "scenario": "board-card-open",
+   "screens": 3,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "svg",
+     "n": 117,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1024x768",
+   "scenario": "board-list",
+   "screens": 2,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "svg",
+     "n": 110,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1024x768",
+   "scenario": "projects",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "svg",
+     "n": 105,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1024x768",
+   "scenario": "project-page",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "svg",
+     "n": 100,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1024x768",
+   "scenario": "weekly",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "svg",
+     "n": 89,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1024x768",
+   "scenario": "report",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -207.227, 0)"
+     },
+     "at": "svg",
+     "n": 44,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1024x768",
+   "scenario": "products",
+   "screens": 3,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "svg",
+     "n": 95,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1024x768",
+   "scenario": "calendar",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "svg",
+     "n": 134,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1024x768",
+   "scenario": "reflection",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "svg",
+     "n": 50,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1024x768",
+   "scenario": "music",
+   "screens": 1,
+   "changed": 0,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "1024x768",
+   "scenario": "settings",
+   "screens": 1,
+   "changed": 1,
+   "ok": 0,
+   "allowed": 1,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [
+    {
+     "el": "div.mp-toasts \"YouTube non è raggiungibile in q\"",
+     "verdict": "elsewhere",
+     "changes": {
+      "transform": "matrix(1, 0, 0, 1, 0, 0) → matrix(1, 0, 0, 1, -206.914, 0)"
+     },
+     "at": "svg",
+     "n": 62,
+     "allowed": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+    }
+   ],
+   "mutList": []
+  }
+ ],
+ "summary": {
+  "board": {
+   "changed": 2,
+   "ok": 0,
+   "violations": 0,
+   "mutations": 0
+  },
+  "board-card-open": {
+   "changed": 2,
+   "ok": 0,
+   "violations": 0,
+   "mutations": 0
+  },
+  "board-list": {
+   "changed": 2,
+   "ok": 0,
+   "violations": 0,
+   "mutations": 0
+  },
+  "projects": {
+   "changed": 2,
+   "ok": 0,
+   "violations": 0,
+   "mutations": 0
+  },
+  "project-page": {
+   "changed": 2,
+   "ok": 0,
+   "violations": 0,
+   "mutations": 0
+  },
+  "weekly": {
+   "changed": 2,
+   "ok": 0,
+   "violations": 0,
+   "mutations": 0
+  },
+  "report": {
+   "changed": 2,
+   "ok": 0,
+   "violations": 0,
+   "mutations": 0
+  },
+  "products": {
+   "changed": 2,
+   "ok": 0,
+   "violations": 0,
+   "mutations": 0
+  },
+  "calendar": {
+   "changed": 2,
+   "ok": 0,
+   "violations": 0,
+   "mutations": 0
+  },
+  "reflection": {
+   "changed": 2,
+   "ok": 0,
+   "violations": 0,
+   "mutations": 0
+  },
+  "music": {
+   "changed": 0,
+   "ok": 0,
+   "violations": 0,
+   "mutations": 0
+  },
+  "settings": {
+   "changed": 2,
+   "ok": 0,
+   "violations": 0,
+   "mutations": 0
+  }
+ }
+}

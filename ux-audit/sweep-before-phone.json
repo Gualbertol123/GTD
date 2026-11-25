@@ -1,0 +1,3405 @@
+{
+ "date": "2026-11-25T10:02:37.886Z",
+ "mode": "phone",
+ "step": 24,
+ "pages": [
+  {
+   "combo": "classic",
+   "size": "390x844",
+   "scenario": "m-today",
+   "screens": 1,
+   "changed": 0,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [],
+   "mutList": []
+  },
+  {
+   "combo": "classic",
+   "size": "390x844",
+   "scenario": "m-board",
+   "screens": 1,
+   "changed": 0,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [],
+   "mutList": []
+  },
+  {
+   "combo": "classic",
+   "size": "390x844",
+   "scenario": "m-projects",
+   "screens": 1,
+   "changed": 0,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [],
+   "mutList": []
+  },
+  {
+   "combo": "classic",
+   "size": "390x844",
+   "scenario": "m-agenda",
+   "screens": 2,
+   "changed": 0,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [],
+   "mutList": []
+  },
+  {
+   "combo": "classic",
+   "size": "390x844",
+   "scenario": "m-more",
+   "screens": 1,
+   "changed": 0,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [],
+   "mutList": []
+  },
+  {
+   "combo": "classic",
+   "size": "390x844",
+   "scenario": "m-weekly",
+   "screens": 1,
+   "changed": 0,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 0,
+   "mutations": 0,
+   "byVerdict": {},
+   "recs": [],
+   "mutList": []
+  },
+  {
+   "combo": "glass-dark",
+   "size": "390x844",
+   "scenario": "m-today",
+   "screens": 1,
+   "changed": 15,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 15,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 15
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-glass.m-stat \"1In ritardo\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-glass.m-stat \"1In ritardo\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-glass.m-stat \"0Per oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-glass.m-stat \"0Per oggi\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-glass.m-stat \"2Fatte in settimana\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-glass.m-stat \"2Fatte in settimana\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Report settimanale al management\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: BU Pivot loans\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-dark",
+   "size": "390x844",
+   "scenario": "m-board",
+   "screens": 1,
+   "changed": 24,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 24,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 24
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-pill \"Cerca\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"Colonne\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"Solo mie\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"Solo mie\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-pill \"P1\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"P1\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-pill \"P2\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"P2\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-pill \"Backlog2\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"Backlog2\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"Next6\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"Next6\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"In Progress2\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"In Progress2\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: Retail Q3 Ambition\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-check",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Report settimanale al management\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Efficientare l'update dei cambi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-check",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Efficientare l'update dei cambi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Efficientare l'update dei cambi\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Backup cartella condivisa\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Backup cartella condivisa\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Backup cartella condivisa\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-dark",
+   "size": "390x844",
+   "scenario": "m-projects",
+   "screens": 1,
+   "changed": 11,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 11,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 11
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button \"In corso · 2\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"In corso · 2\"",
+     "n": 1
+    },
+    {
+     "el": "button \"Completato · 0\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"Completato · 0\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-project \"50%Chiusure contabiliIn ritardo→\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg \"50% completato\"",
+     "n": 14
+    },
+    {
+     "el": "button.m-project \"0%Pricing 2027Nuovo modello di p\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-project \"0%Pricing 2027Nuovo modello di p\"",
+     "n": 11
+    },
+    {
+     "el": "button.m-btn.m-btn--block.m-btn--ghost \"Nuovo progetto\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-btn.m-btn--block.m-btn--ghost \"Nuovo progetto\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-dark",
+   "size": "390x844",
+   "scenario": "m-agenda",
+   "screens": 2,
+   "changed": 33,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 33,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 33
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 6
+    },
+    {
+     "el": "button.m-iconbtn \"Settimana precedente\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-iconbtn \"Settimana successiva\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"lunedì 23 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"lunedì 23 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"martedì 24 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"martedì 24 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"mercoledì 25 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"mercoledì 25 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"giovedì 26 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"giovedì 26 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"venerdì 27 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"venerdì 27 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"sabato 28 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"sabato 28 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"domenica 29 novembre\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"domenica 29 novembre\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"Oggi\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-pill \"Solo mie\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"Solo mie\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Integrazione DB esterno per PJT\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: Integrazione DB esterno per PJT\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Integrazione DB esterno per PJT\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Integrazione DB esterno per PJT\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-link \"Aggiungi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-link \"Aggiungi\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-check",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 6
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Allineamento pricing Q4\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Allineamento pricing Q4\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Allineamento pricing Q4\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: Report settimanale al management\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Completare check vs TBD per chief dashboard\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: Completare check vs TBD per chief dashboard\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Completare check vs TBD per chie\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Completare check vs TBD per chie\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Backup cartella condivisa\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Backup cartella condivisa\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Backup cartella condivisa\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Efficientare l'update dei cambi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "path",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Efficientare l'update dei cambi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Efficientare l'update dei cambi\"",
+     "n": 1
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-dark",
+   "size": "390x844",
+   "scenario": "m-more",
+   "screens": 1,
+   "changed": 18,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 18,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 18
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-panel.m-row \"FFrancescoNome, lingua, aspetto\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-panel.m-row \"FFrancescoNome, lingua, aspetto\"",
+     "n": 5
+    },
+    {
+     "el": "button \"Scuro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"Scuro\"",
+     "n": 2
+    },
+    {
+     "el": "button \"Chiaro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"Chiaro\"",
+     "n": 1
+    },
+    {
+     "el": "button \"Auto\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"Auto\"",
+     "n": 2
+    },
+    {
+     "el": "button \"Attiva\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"Attiva\"",
+     "n": 1
+    },
+    {
+     "el": "button \"Spenta\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"Spenta\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-row \"MusicaMix dei preferiti, ricerca\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-row \"MusicaMix dei preferiti, ricerca\"",
+     "n": 5
+    },
+    {
+     "el": "button.m-row \"WeeklyRecap, vittorie, blocchi, \"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-row \"WeeklyRecap, vittorie, blocchi, \"",
+     "n": 4
+    },
+    {
+     "el": "button.m-row \"Aggiorna via mailTesto pronto pe\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-row \"Aggiorna via mailTesto pronto pe\"",
+     "n": 5
+    },
+    {
+     "el": "button.m-row \"ReportReport settimanale e PDF\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-row__icon",
+     "n": 4
+    },
+    {
+     "el": "button.m-row \"RiflessioneDiario personale e no\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-row \"RiflessioneDiario personale e no\"",
+     "n": 5
+    },
+    {
+     "el": "button.m-row \"ProdottiAlbero prodotti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-row \"ProdottiAlbero prodotti\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-dark",
+   "size": "390x844",
+   "scenario": "m-weekly",
+   "screens": 1,
+   "changed": 9,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 9,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 9
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-iconbtn \"Indietro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-panel.m-row \"2Recap — Completate nella settim\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-panel.m-row \"2Recap — Completate nella settim\"",
+     "n": 5
+    },
+    {
+     "el": "button.m-hit \"Elimina\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "390x844",
+   "scenario": "m-today",
+   "screens": 1,
+   "changed": 15,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 15,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 15
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-glass.m-stat \"1In ritardo\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-glass.m-stat \"1In ritardo\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-glass.m-stat \"0Per oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-glass.m-stat \"0Per oggi\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-glass.m-stat \"2Fatte in settimana\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-glass.m-stat \"2Fatte in settimana\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"Report settimanale al management\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: BU Pivot loans\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "390x844",
+   "scenario": "m-board",
+   "screens": 1,
+   "changed": 24,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 24,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 24
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-pill \"Cerca\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"Colonne\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"Solo mie\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-pill \"Solo mie\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-pill \"P1\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-pill \"P1\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-pill \"P2\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-pill \"P2\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-pill \"Backlog2\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-pill \"Backlog2\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"Next6\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-pill \"Next6\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"In Progress2\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-pill \"In Progress2\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: Retail Q3 Ambition\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "span.m-check",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"Report settimanale al management\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Efficientare l'update dei cambi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "span.m-check",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Efficientare l'update dei cambi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"Efficientare l'update dei cambi\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Backup cartella condivisa\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Backup cartella condivisa\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"Backup cartella condivisa\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "390x844",
+   "scenario": "m-projects",
+   "screens": 1,
+   "changed": 11,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 11,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 11
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button \"In corso · 2\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button \"In corso · 2\"",
+     "n": 1
+    },
+    {
+     "el": "button \"Completato · 0\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button \"Completato · 0\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-project \"50%Chiusure contabiliIn ritardo→\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg \"50% completato\"",
+     "n": 14
+    },
+    {
+     "el": "button.m-project \"0%Pricing 2027Nuovo modello di p\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-project \"0%Pricing 2027Nuovo modello di p\"",
+     "n": 11
+    },
+    {
+     "el": "button.m-btn.m-btn--block.m-btn--ghost \"Nuovo progetto\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-btn.m-btn--block.m-btn--ghost \"Nuovo progetto\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "390x844",
+   "scenario": "m-agenda",
+   "screens": 2,
+   "changed": 33,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 33,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 33
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 6
+    },
+    {
+     "el": "button.m-iconbtn \"Settimana precedente\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-iconbtn \"Settimana successiva\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"lunedì 23 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-day \"lunedì 23 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"martedì 24 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-day \"martedì 24 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"mercoledì 25 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-day \"mercoledì 25 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"giovedì 26 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-day \"giovedì 26 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"venerdì 27 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-day \"venerdì 27 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"sabato 28 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-day \"sabato 28 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"domenica 29 novembre\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-day \"domenica 29 novembre\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-pill \"Oggi\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-pill \"Solo mie\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-pill \"Solo mie\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Integrazione DB esterno per PJT\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: Integrazione DB esterno per PJT\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Integrazione DB esterno per PJT\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"Integrazione DB esterno per PJT\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-link \"Aggiungi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-link \"Aggiungi\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "span.m-check",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 6
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Allineamento pricing Q4\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Allineamento pricing Q4\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"Allineamento pricing Q4\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: Report settimanale al management\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Completare check vs TBD per chief dashboard\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: Completare check vs TBD per chief dashboard\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Completare check vs TBD per chie\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"Completare check vs TBD per chie\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Backup cartella condivisa\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Backup cartella condivisa\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"Backup cartella condivisa\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Efficientare l'update dei cambi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "path",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Efficientare l'update dei cambi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-card__title.m-card__open \"Efficientare l'update dei cambi\"",
+     "n": 1
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "390x844",
+   "scenario": "m-more",
+   "screens": 1,
+   "changed": 18,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 18,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 18
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-panel.m-row \"FFrancescoNome, lingua, aspetto\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-panel.m-row \"FFrancescoNome, lingua, aspetto\"",
+     "n": 5
+    },
+    {
+     "el": "button \"Scuro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button \"Scuro\"",
+     "n": 2
+    },
+    {
+     "el": "button \"Chiaro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button \"Chiaro\"",
+     "n": 1
+    },
+    {
+     "el": "button \"Auto\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button \"Auto\"",
+     "n": 2
+    },
+    {
+     "el": "button \"Attiva\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button \"Attiva\"",
+     "n": 1
+    },
+    {
+     "el": "button \"Spenta\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button \"Spenta\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-row \"MusicaMix dei preferiti, ricerca\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-row \"MusicaMix dei preferiti, ricerca\"",
+     "n": 5
+    },
+    {
+     "el": "button.m-row \"WeeklyRecap, vittorie, blocchi, \"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-row \"WeeklyRecap, vittorie, blocchi, \"",
+     "n": 4
+    },
+    {
+     "el": "button.m-row \"Aggiorna via mailTesto pronto pe\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-row \"Aggiorna via mailTesto pronto pe\"",
+     "n": 5
+    },
+    {
+     "el": "button.m-row \"ReportReport settimanale e PDF\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "span.m-row__icon",
+     "n": 4
+    },
+    {
+     "el": "button.m-row \"RiflessioneDiario personale e no\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-row \"RiflessioneDiario personale e no\"",
+     "n": 5
+    },
+    {
+     "el": "button.m-row \"ProdottiAlbero prodotti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-row \"ProdottiAlbero prodotti\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-light",
+   "size": "390x844",
+   "scenario": "m-weekly",
+   "screens": 1,
+   "changed": 9,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 9,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 9
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-iconbtn \"Indietro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-panel.m-row \"2Recap — Completate nella settim\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-panel.m-row \"2Recap — Completate nella settim\"",
+     "n": 5
+    },
+    {
+     "el": "button.m-hit \"Elimina\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "svg",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.95)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-noblur",
+   "size": "390x844",
+   "scenario": "m-today",
+   "screens": 1,
+   "changed": 15,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 15,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 15
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-glass.m-stat \"1In ritardo\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-glass.m-stat \"1In ritardo\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-glass.m-stat \"0Per oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-glass.m-stat \"0Per oggi\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-glass.m-stat \"2Fatte in settimana\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-glass.m-stat \"2Fatte in settimana\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Report settimanale al management\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: BU Pivot loans\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-noblur",
+   "size": "390x844",
+   "scenario": "m-board",
+   "screens": 1,
+   "changed": 24,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 24,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 24
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-pill \"Cerca\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"Colonne\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"Solo mie\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"Solo mie\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-pill \"P1\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"P1\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-pill \"P2\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"P2\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-pill \"Backlog2\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"Backlog2\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"Next6\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"Next6\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"In Progress2\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"In Progress2\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: Retail Q3 Ambition\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-check",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Report settimanale al management\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Efficientare l'update dei cambi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-check",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Efficientare l'update dei cambi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Efficientare l'update dei cambi\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Backup cartella condivisa\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Backup cartella condivisa\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Backup cartella condivisa\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-noblur",
+   "size": "390x844",
+   "scenario": "m-projects",
+   "screens": 1,
+   "changed": 11,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 11,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 11
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button \"In corso · 2\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"In corso · 2\"",
+     "n": 1
+    },
+    {
+     "el": "button \"Completato · 0\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"Completato · 0\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-project \"50%Chiusure contabiliIn ritardo→\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg \"50% completato\"",
+     "n": 14
+    },
+    {
+     "el": "button.m-project \"0%Pricing 2027Nuovo modello di p\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-project \"0%Pricing 2027Nuovo modello di p\"",
+     "n": 11
+    },
+    {
+     "el": "button.m-btn.m-btn--block.m-btn--ghost \"Nuovo progetto\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-btn.m-btn--block.m-btn--ghost \"Nuovo progetto\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-noblur",
+   "size": "390x844",
+   "scenario": "m-agenda",
+   "screens": 2,
+   "changed": 33,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 33,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 33
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 6
+    },
+    {
+     "el": "button.m-iconbtn \"Settimana precedente\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-iconbtn \"Settimana successiva\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"lunedì 23 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"lunedì 23 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"martedì 24 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"martedì 24 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"mercoledì 25 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"mercoledì 25 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"giovedì 26 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"giovedì 26 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"venerdì 27 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"venerdì 27 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"sabato 28 novembre · 1 in scadenza\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"sabato 28 novembre · 1 in scadenza\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-day \"domenica 29 novembre\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-day \"domenica 29 novembre\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-pill \"Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"Oggi\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-pill \"Solo mie\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-pill \"Solo mie\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"BU Pivot loans\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Integrazione DB esterno per PJT\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: Integrazione DB esterno per PJT\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Integrazione DB esterno per PJT\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Integrazione DB esterno per PJT\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-link \"Aggiungi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-link \"Aggiungi\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-check",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Retail Q3 Ambition\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 6
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 4
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Allineamento pricing Q4\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Allineamento pricing Q4\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Allineamento pricing Q4\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Report settimanale al management\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: Report settimanale al management\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Completare check vs TBD per chief dashboard\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-hit.m-hit--check \"Segna come fatta: Completare check vs TBD per chief dashboard\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Completare check vs TBD per chie\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Completare check vs TBD per chie\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Backup cartella condivisa\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Backup cartella condivisa\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Backup cartella condivisa\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-hit.m-hit--check \"Segna come fatta: Efficientare l'update dei cambi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "path",
+     "n": 2
+    },
+    {
+     "el": "button.m-card__title.m-card__open \"Efficientare l'update dei cambi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-card__title.m-card__open \"Efficientare l'update dei cambi\"",
+     "n": 1
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-noblur",
+   "size": "390x844",
+   "scenario": "m-more",
+   "screens": 1,
+   "changed": 18,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 18,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 18
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-panel.m-row \"FFrancescoNome, lingua, aspetto\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-panel.m-row \"FFrancescoNome, lingua, aspetto\"",
+     "n": 5
+    },
+    {
+     "el": "button \"Scuro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"Scuro\"",
+     "n": 2
+    },
+    {
+     "el": "button \"Chiaro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"Chiaro\"",
+     "n": 1
+    },
+    {
+     "el": "button \"Auto\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"Auto\"",
+     "n": 2
+    },
+    {
+     "el": "button \"Attiva\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"Attiva\"",
+     "n": 1
+    },
+    {
+     "el": "button \"Spenta\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button \"Spenta\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-row \"MusicaMix dei preferiti, ricerca\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-row \"MusicaMix dei preferiti, ricerca\"",
+     "n": 5
+    },
+    {
+     "el": "button.m-row \"WeeklyRecap, vittorie, blocchi, \"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-row \"WeeklyRecap, vittorie, blocchi, \"",
+     "n": 4
+    },
+    {
+     "el": "button.m-row \"Aggiorna via mailTesto pronto pe\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-row \"Aggiorna via mailTesto pronto pe\"",
+     "n": 5
+    },
+    {
+     "el": "button.m-row \"ReportReport settimanale e PDF\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-row__icon",
+     "n": 4
+    },
+    {
+     "el": "button.m-row \"RiflessioneDiario personale e no\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-row \"RiflessioneDiario personale e no\"",
+     "n": 5
+    },
+    {
+     "el": "button.m-row \"ProdottiAlbero prodotti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-row \"ProdottiAlbero prodotti\"",
+     "n": 1
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  },
+  {
+   "combo": "glass-noblur",
+   "size": "390x844",
+   "scenario": "m-weekly",
+   "screens": 1,
+   "changed": 9,
+   "ok": 0,
+   "allowed": 0,
+   "violations": 9,
+   "mutations": 0,
+   "byVerdict": {
+    "rim": 9
+   },
+   "recs": [
+    {
+     "el": "button.m-menubtn \"Altro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "span.m-avatar.m-avatar--lg \"Francesco\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-iconbtn \"Indietro\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 2
+    },
+    {
+     "el": "button.m-panel.m-row \"2Recap — Completate nella settim\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-panel.m-row \"2Recap — Completate nella settim\"",
+     "n": 5
+    },
+    {
+     "el": "button.m-hit \"Elimina\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "svg",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"1Oggi\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"1Oggi\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Board\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Board\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab.m-tab--add \"Nuova attività\"",
+     "n": 3
+    },
+    {
+     "el": "button.m-tab \"Progetti\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Progetti\"",
+     "n": 2
+    },
+    {
+     "el": "button.m-tab \"Agenda\"",
+     "verdict": "rim",
+     "changes": {
+      "outline-color": "rgba(0, 0, 0, 0) → rgba(255, 255, 255, 0.55)"
+     },
+     "at": "button.m-tab \"Agenda\"",
+     "n": 2
+    }
+   ],
+   "mutList": []
+  }
+ ],
+ "summary": {
+  "m-today": {
+   "changed": 45,
+   "ok": 0,
+   "violations": 45,
+   "mutations": 0
+  },
+  "m-board": {
+   "changed": 72,
+   "ok": 0,
+   "violations": 72,
+   "mutations": 0
+  },
+  "m-projects": {
+   "changed": 33,
+   "ok": 0,
+   "violations": 33,
+   "mutations": 0
+  },
+  "m-agenda": {
+   "changed": 99,
+   "ok": 0,
+   "violations": 99,
+   "mutations": 0
+  },
+  "m-more": {
+   "changed": 54,
+   "ok": 0,
+   "violations": 54,
+   "mutations": 0
+  },
+  "m-weekly": {
+   "changed": 27,
+   "ok": 0,
+   "violations": 27,
+   "mutations": 0
+  }
+ }
+}
