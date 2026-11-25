@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { useBoard } from "./lib/useBoard";
 import { TABS, type TabId } from "./lib/constants";
 import { useT } from "./lib/i18n";
@@ -62,6 +62,16 @@ export default function App() {
 
   const members = board?.members ?? [];
   const mainRef = useRef<HTMLElement>(null);
+  // Changes only with what it carries, so a render of App for anything else
+  // does not re-render every useProjects() reader.
+  const projects = board?.projects;
+  const tasks = board?.tasks;
+  const projectsOn = !!board?.projectsV2Available;
+  const recurringOn = !!board?.recurringAvailable;
+  const projectsValue = useMemo(
+    () => ({ projects: projects ?? [], tasks: tasks ?? [], available: projectsOn, recurring: recurringOn }),
+    [projects, tasks, projectsOn, recurringOn]
+  );
 
   // The browser tab, history and Back/Forward entries name the section you
   // are on (both layouts: the phone's addresses map to the same tabs).
@@ -108,8 +118,6 @@ export default function App() {
       </div>
     );
   }
-
-  const projectsValue = { projects: board.projects, tasks: board.tasks, available: !!board.projectsV2Available, recurring: !!board.recurringAvailable };
 
   // The music player sits first, outside both layouts, so it keeps playing
   // when the layout switches (it is never re-mounted).

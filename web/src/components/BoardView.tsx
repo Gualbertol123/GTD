@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { boardTasks } from "../lib/projects";
-import type { Board, Op, Priority, Status, Task } from "../lib/types";
+import { boardTasks, projectSteps } from "../lib/projects";
+import type { Board, Op, Priority, Project, Status, Task } from "../lib/types";
 import { STATUS_ORDER, PRIORITY_ORDER, isArchived } from "../lib/constants";
 import { priorityLabel, statusLabel, useT } from "../lib/i18n";
 import { TaskCard } from "./TaskCard";
@@ -97,13 +97,31 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
   // Open cards per column: a column holding an open card grows so its editor
   // is not squeezed into a narrow strip.
   const [openCards, setOpenCards] = useState<Record<string, Status>>({});
-  const setCardOpen = (id: string, status: Status, open: boolean) =>
-    setOpenCards((prev) => {
-      const next = { ...prev };
-      if (open) next[id] = status;
-      else delete next[id];
-      return next;
-    });
+  // A column card's task is in the column of its status.
+  const onCardOpenChange = useCallback(
+    (tk: Task, open: boolean) =>
+      setOpenCards((prev) => {
+        const next = { ...prev };
+        if (open) next[tk.id] = tk.status;
+        else delete next[tk.id];
+        return next;
+      }),
+    []
+  );
+  // Card drag handlers, the same function for every card (TaskCard is
+  // memoised: a new handler per card per render re-rendered all of them).
+  const onCardDragStart = useCallback((id: string, e: React.DragEvent) => {
+    setDragId(id);
+    e.dataTransfer.setData("text/plain", id);
+    e.dataTransfer.effectAllowed = "move";
+    (e.currentTarget as HTMLElement).classList.add("dragging");
+  }, []);
+  const onCardDragEnd = useCallback((_id: string, e: React.DragEvent) => {
+    (e.currentTarget as HTMLElement).classList.remove("dragging");
+    setDragId(null);
+    setOverCol(null);
+    setOverBand(false);
+  }, []);
 
   const weightsRef = useRef(weights);
   weightsRef.current = weights;
@@ -136,6 +154,39 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
   // Project tasks kept off the board (project only, or later steps of a
   // sequential project) are left out of everything on this tab.
   const shown = useMemo(() => boardTasks(board), [board]);
+
+  // Each card's project and sequential step, worked out once per board.
+  const projectById = useMemo(() => {
+    const m = new Map<string, Project>();
+    for (const p of board.projects) if (!m.has(p.id)) m.set(p.id, p);
+    return m;
+  }, [board.projects]);
+  const steps = useMemo(() => projectSteps(board.projects, board.tasks), [board.projects, board.tasks]);
+  const multiAssign = board.assigneesAvailable !== false;
+  // One card. Column cards report open/close (the column widens) and have no
+  // status pill; the band and the Done / Archived bars show the status.
+  const card = (tk: Task, inColumn: boolean) => {
+    const project = tk.projectId ? projectById.get(tk.projectId) : undefined;
+    const step = project ? steps.get(tk.id) : undefined;
+    return (
+      <TaskCard
+        key={tk.id}
+        task={tk}
+        members={members}
+        send={send}
+        showNames={showNames}
+        multiAssign={multiAssign}
+        draggable={!editLayout}
+        showStatus={!inColumn}
+        onOpenChange={inColumn ? onCardOpenChange : undefined}
+        onDragStart={onCardDragStart}
+        onDragEnd={onCardDragEnd}
+        project={project}
+        stepN={step?.n}
+        stepTotal={step?.total}
+      />
+    );
+  };
 
   // Filter + priority-sort. passes() is also asked about a just-added task.
   const q = filters.search.trim().toLowerCase();
@@ -515,30 +566,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                         </div>
                       )}
                       <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2 items-start">
-                        {g.list.map((tk) => (
-                          <TaskCard
-                            multiAssign={board.assigneesAvailable !== false}
-                            key={tk.id}
-                            task={tk}
-                            members={members}
-                            send={send}
-                            showNames={showNames}
-                            draggable={!editLayout}
-                            showStatus
-                            onDragStart={(e) => {
-                              setDragId(tk.id);
-                              e.dataTransfer.setData("text/plain", tk.id);
-                              e.dataTransfer.effectAllowed = "move";
-                              (e.currentTarget as HTMLElement).classList.add("dragging");
-                            }}
-                            onDragEnd={(e) => {
-                              (e.currentTarget as HTMLElement).classList.remove("dragging");
-                              setDragId(null);
-                              setOverCol(null);
-                              setOverBand(false);
-                            }}
-                          />
-                        ))}
+                        {g.list.map((tk) => card(tk, false))}
                       </div>
                     </div>
                   ))}
@@ -607,29 +635,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                   </div>
 
                   <div className="space-y-2">
-                    {colTasks.map((tk) => (
-                      <TaskCard
-                        multiAssign={board.assigneesAvailable !== false}
-                        key={tk.id}
-                        task={tk}
-                        members={members}
-                        send={send}
-                        showNames={showNames}
-                        draggable={!editLayout}
-                        onOpenChange={(o) => setCardOpen(tk.id, status, o)}
-                        onDragStart={(e) => {
-                          setDragId(tk.id);
-                          e.dataTransfer.setData("text/plain", tk.id);
-                          e.dataTransfer.effectAllowed = "move";
-                          (e.currentTarget as HTMLElement).classList.add("dragging");
-                        }}
-                        onDragEnd={(e) => {
-                          (e.currentTarget as HTMLElement).classList.remove("dragging");
-                          setDragId(null);
-                          setOverCol(null);
-                        }}
-                      />
-                    ))}
+                    {colTasks.map((tk) => card(tk, true))}
                     {colTasks.length === 0 && (
                       <div className="text-[11px] text-ink-3 text-center py-6">
                         {status === "DONE" ? t("col.emptyDone") : t("col.empty")}
@@ -687,29 +693,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                   <div className="text-[12px] text-ink-3 py-2">{t("doneBar.none")}</div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                    {doneShown.map((tk) => (
-                      <TaskCard
-                        multiAssign={board.assigneesAvailable !== false}
-                        key={tk.id}
-                        task={tk}
-                        members={members}
-                        send={send}
-                        showNames={showNames}
-                        draggable={!editLayout}
-                        showStatus
-                        onDragStart={(e) => {
-                          setDragId(tk.id);
-                          e.dataTransfer.setData("text/plain", tk.id);
-                          e.dataTransfer.effectAllowed = "move";
-                          (e.currentTarget as HTMLElement).classList.add("dragging");
-                        }}
-                        onDragEnd={(e) => {
-                          (e.currentTarget as HTMLElement).classList.remove("dragging");
-                          setDragId(null);
-                          setOverCol(null);
-                        }}
-                      />
-                    ))}
+                    {doneShown.map((tk) => card(tk, false))}
                   </div>
                 )}
               </div>
@@ -750,29 +734,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
                   <div className="text-[12px] text-ink-3 py-2">{t("archived.none")}</div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                    {archivedShown.map((tk) => (
-                      <TaskCard
-                        multiAssign={board.assigneesAvailable !== false}
-                        key={tk.id}
-                        task={tk}
-                        members={members}
-                        send={send}
-                        showNames={showNames}
-                        draggable={!editLayout}
-                        showStatus
-                        onDragStart={(e) => {
-                          setDragId(tk.id);
-                          e.dataTransfer.setData("text/plain", tk.id);
-                          e.dataTransfer.effectAllowed = "move";
-                          (e.currentTarget as HTMLElement).classList.add("dragging");
-                        }}
-                        onDragEnd={(e) => {
-                          (e.currentTarget as HTMLElement).classList.remove("dragging");
-                          setDragId(null);
-                          setOverCol(null);
-                        }}
-                      />
-                    ))}
+                    {archivedShown.map((tk) => card(tk, false))}
                   </div>
                 )}
               </div>

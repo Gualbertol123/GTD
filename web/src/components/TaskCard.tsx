@@ -1,17 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { claimFocusAfterMove } from "../lib/focusAfterMove";
-import type { Op, Task } from "../lib/types";
+import type { Op, Project, Task } from "../lib/types";
 import { PRIORITY_DOT } from "../lib/constants";
 import { ownerLabel, priorityLabel, statusLabel, useT, localeCode } from "../lib/i18n";
 import { ownerInitial, ownersLabel, taskOwners } from "../lib/owners";
 import { daysSince, daysUntil } from "../lib/dates";
 import { TaskDetails, showUndo } from "./TaskDetails";
-import { useProjects } from "../lib/projectsContext";
-import { projectColor, stepOf } from "../lib/projects";
+import { projectColor } from "../lib/projects";
 import { nextDue, ruleLabel } from "../lib/recurrence";
 import { toISODate } from "../lib/dates";
 import { RepeatIcon, StarIcon } from "./RecurrenceControls";
 
+// A board shows hundreds of these, so the card is memoised: it re-renders only
+// when its own props change. Its parent keeps them steady: the task objects
+// are shared between board versions (lib/rowSync.ts reconcileBoard), the
+// handlers take the task id instead of being made per card, and the project
+// and step come in as props (computed once per board) instead of every card
+// reading all the tasks from context.
 interface Props {
   task: Task;
   members: string[];
@@ -19,12 +24,17 @@ interface Props {
   showNames?: boolean; // false hides owner names (screenshot mode)
   multiAssign?: boolean;
   draggable: boolean;
-  onDragStart: (e: React.DragEvent) => void;
-  onDragEnd: (e: React.DragEvent) => void;
+  onDragStart: (id: string, e: React.DragEvent) => void;
+  onDragEnd: (id: string, e: React.DragEvent) => void;
   /** Show the status pill (Done / Archived bars). A kanban column already says it. */
   showStatus?: boolean;
   /** Told when the card opens or closes (the board widens that column). */
-  onOpenChange?: (open: boolean) => void;
+  onOpenChange?: (task: Task, open: boolean) => void;
+  /** The task's project, if it has one. */
+  project?: Project;
+  /** "Step n of total" for a task of a sequential project (lib/projects.ts projectSteps). */
+  stepN?: number;
+  stepTotal?: number;
 }
 
 // The round "done" check, the same shape as the phone layout's.
@@ -43,7 +53,9 @@ function CheckIcon({ done }: { done: boolean }) {
   );
 }
 
-export function TaskCard({
+export const TaskCard = memo(TaskCardView);
+
+function TaskCardView({
   task,
   members,
   send,
@@ -54,22 +66,27 @@ export function TaskCard({
   onDragEnd,
   showStatus = false,
   onOpenChange,
+  project,
+  stepN,
+  stepTotal,
 }: Props) {
   const { t, lang } = useT();
   const [open, setOpenState] = useState(false);
   const headRef = useRef<HTMLButtonElement>(null);
   const setOpen = (v: boolean) => {
     setOpenState(v);
-    onOpenChange?.(v);
+    onOpenChange?.(task, v);
   };
   // Unmounting while open (moved, filtered out, deleted) counts as closing.
   const openRef = useRef(open);
   openRef.current = open;
   const openCb = useRef(onOpenChange);
   openCb.current = onOpenChange;
+  const taskRef = useRef(task);
+  taskRef.current = task;
   useEffect(
     () => () => {
-      if (openRef.current) openCb.current?.(false);
+      if (openRef.current) openCb.current?.(taskRef.current, false);
     },
     []
   );
@@ -114,15 +131,13 @@ export function TaskCard({
   const waiting = task.status === "WAITING" ? daysSince(task.waitingSince) : 0;
   const dueFmt = task.dueDate ? new Date(task.dueDate).toLocaleDateString(localeCode(lang)) : "";
   const owners = taskOwners(task);
-  const { projects, tasks: allTasks } = useProjects();
-  const project = task.projectId ? projects.find((p) => p.id === task.projectId) : undefined;
-  const step = project ? stepOf(task, projects, allTasks) : null;
+  const step = project && stepN !== undefined && stepTotal !== undefined ? { n: stepN, total: stepTotal } : null;
 
   return (
     <div
       draggable={draggable && !open}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      onDragStart={(e) => onDragStart(task.id, e)}
+      onDragEnd={(e) => onDragEnd(task.id, e)}
       // No hover state (docs/interaction-rules.md): the title is the "open"
       // button and the cursor says so.
       className={`task-card bg-white rounded-[12px] border border-[#E8E6E1] ${open ? "is-open" : ""} ${
@@ -268,3 +283,5 @@ export function TaskCard({
     </div>
   );
 }
+// The name React DevTools and scripts/ux/perf-rerender.mjs report.
+TaskCardView.displayName = "TaskCard";
