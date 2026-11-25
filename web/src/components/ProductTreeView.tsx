@@ -515,7 +515,7 @@ export function ProductTreeView() {
                     type="button"
                     onClick={() => toggle(node.id)}
                     aria-expanded={expanded}
-                    className={`w-full text-left flex items-center gap-2 rounded-lg px-2 py-[5px] min-h-[44px] md:min-h-[32px] hover:bg-black/[0.03] ${focusRing}`}
+                    className={`w-full text-left flex items-center gap-2 rounded-lg px-2 py-[5px] min-h-[44px] md:min-h-[32px] ${focusRing}`}
                   >
                     <span className="shrink-0 w-[18px] h-[18px] rounded-md bg-[#F5F3EF] text-[#6B6B6B] flex items-center justify-center">
                       <Chevron open={expanded} />
@@ -629,7 +629,7 @@ export function ProductTreeView() {
                 onClick={clearSearch}
                 aria-label={t("ux.products.clearSearch")}
                 title={t("ux.products.clearSearch")}
-                className={`absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-[#6B6B6B] hover:text-[#0A1931] ${focusRing}`}
+                className={`absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-[#6B6B6B] ${focusRing}`}
               >
                 <IconClose size={14} />
               </button>

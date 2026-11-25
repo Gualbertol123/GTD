@@ -42,7 +42,7 @@ export function GlassToggle() {
         className={`glass-switch inline-flex items-center gap-2 h-9 pl-2.5 pr-3 rounded-full border text-[11px] font-semibold tracking-wide transition-colors ${
           on
             ? "bg-white/15 border-white/35 text-white"
-            : "bg-transparent border-[#1E335E] text-[#8BA1C2] hover:border-[#C9A96E]"
+            : "bg-transparent border-[#1E335E] text-[#8BA1C2]"
         }`}
       >
         <span

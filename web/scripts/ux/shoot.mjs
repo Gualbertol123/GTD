@@ -9,7 +9,7 @@ const browser = await launch();
 for (const c of COMBOS.filter((c) => !only || only.split(",").includes(c.name))) {
   const W = +w, H = +h;
   const mobile = W <= 900 && H <= 900 && (W < 768 || H < 768);
-  const { page, context } = await openApp(browser, { ...c, path, viewport: { width: W, height: H }, isMobile: mobile, hasTouch: mobile });
+  const { page, context } = await openApp(browser, { ...c, path, viewport: { width: W, height: H }, isMobile: mobile, hasTouch: mobile, scale: +(process.env.SCALE ?? 2) });
   await page.waitForTimeout(600);
   if (action) { await eval(`(async()=>{${action}})()`); await page.waitForTimeout(400); }
   await page.screenshot({ path: `${out}-${c.name}.png`, fullPage: full });

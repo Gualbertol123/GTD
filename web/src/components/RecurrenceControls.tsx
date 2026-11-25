@@ -84,7 +84,7 @@ export function RecurrenceControls({ task, send, available }: Props) {
           className={`${pill} px-3 font-semibold transition-colors ${
             task.pinned
               ? "bg-[#FBF3E2] text-[#7A5F30] border-[#C9A96E]"
-              : "bg-[#F5F3EF] text-[#6B6B6B] border-[#E8E6E1] hover:border-[#C9A96E]"
+              : "bg-[#F5F3EF] text-[#6B6B6B] border-[#E8E6E1]"
           }`}
         >
           <span className={task.pinned ? "text-[#C9A96E]" : ""}>

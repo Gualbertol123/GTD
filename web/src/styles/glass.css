@@ -112,22 +112,19 @@ html[data-skin="glass"][data-appearance="dark"] {
   --chrome-shadow: 0 14px 44px rgba(0, 0, 0, 0.4);
   --chrome-rim: rgba(255, 255, 255, 0.35);
 
-  /* Field states (index.css): hover is a hairline one step brighter than the
-     separator; focus is systemBlue with a soft ring. */
+  /* Field states (index.css): focus is systemBlue with a soft ring. */
   --field-border: var(--separator);
-  --field-border-hover: rgba(255, 255, 255, 0.26);
   --field-border-focus: var(--ios-blue);
   --field-ring: rgba(10, 132, 255, 0.5);
   --field-invalid: var(--ios-red);
   --field-invalid-ring: rgba(255, 69, 58, 0.45);
 
   /* Tabs & segmented controls (styles/controls.css): thin glass capsules,
-     chosen = systemBlue, hover = a brighter rim. */
+     chosen = systemBlue. */
   --ctl-bg: var(--mat-thin);
   --ctl-border: var(--rim);
   --ctl-fg: var(--label);
   --ctl-fg-2: var(--label-2);
-  --ctl-hover-border: rgba(255, 255, 255, 0.6);
   --ctl-on-bg: var(--accent-fill);
   --ctl-on-fg: #ffffff;
   --ctl-on-border: transparent;
@@ -216,14 +213,10 @@ html[data-skin="glass"][data-appearance="light"] {
   --chrome-rim: rgba(255, 255, 255, 0.95);
 
   --field-border: var(--separator);
-  --field-border-hover: rgba(60, 60, 67, 0.3);
   --field-border-focus: var(--ios-blue);
   --field-ring: rgba(0, 122, 255, 0.4);
   --field-invalid: var(--ios-red);
   --field-invalid-ring: rgba(255, 59, 48, 0.35);
-
-  /* A white rim is invisible on white glass: hover darkens the rim instead. */
-  --ctl-hover-border: rgba(60, 60, 67, 0.35);
 
   --tint-ink: #11131a;
   --tint-mix: 42%;
@@ -664,28 +657,19 @@ html[data-skin="glass"] .border-\[\#1E335E\] {
 /* ---------------------------------------------------------------------------
    7. Motion.
    --------------------------------------------------------------------------- */
-/* Hover and press never MOVE anything: moving an element with a live blur
-   (backdrop-filter) makes the browser redraw the blur and leaves a thin light
-   seam across the panel, which came and went with the mouse. So hover lights
-   the rim (an outline, which follows the corners and touches neither the
-   blur, the shadows nor the background) and a press dims briefly. */
+/* A resting pointer changes nothing (docs/interaction-rules.md). This used
+   to light a rim (an outline) on EVERY glass button under the mouse: a box
+   around the "In evidenza" header's title, around a card's title, a white
+   ring left on a phone button after each tap. Gone; the cursor is the hover
+   feedback. A press still dims briefly, and only the press animates.
+   Nothing here moves: moving an element with a live blur makes the browser
+   redraw the blur and leaves a thin light seam across the panel. */
 html[data-skin="glass"] button {
-  transition:
-    outline-color 160ms ease,
-    opacity 120ms ease,
-    background-color 200ms ease;
-  outline: 1px solid transparent;
-  outline-offset: -1px;
-}
-/* …except a button drawn as a field (.field: the assignee picker, the date
-   pill): it takes the field's hover, a hairline border step, like the inputs
-   beside it. */
-html[data-skin="glass"] button:not(:disabled):not(.field):not(.tab):not(.card-head):hover {
-  outline-color: var(--rim-top);
+  transition: opacity 80ms ease;
 }
 /* A button with no rounding of its own (a whole task card, a row, a panel
-   header that is clickable) takes its container's corners: its hover rim then
-   follows the rounded card instead of drawing a square box around it.
+   header that is clickable) takes its container's corners, so its focus
+   ring follows the rounded card instead of drawing a square box around it.
    Inside :where() the rule weighs nothing, so any button rounded by its own
    stylesheet (the player's round controls, pills) keeps its own shape. */
 :where(html[data-skin="glass"] button:not([class*="rounded"])) {
@@ -821,7 +805,6 @@ html[data-skin="glass"][data-blur="off"] .bg-\[\#EFECE6\] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-skin="glass"] button:hover,
   html[data-skin="glass"] button:active {
     transform: none !important;
   }
@@ -841,7 +824,7 @@ html[data-skin="glass"] .qa-field {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
-html[data-skin="glass"] .qa-field:not(:hover):not(:focus-visible):not(:has(:focus-visible)):not([aria-invalid="true"]) {
+html[data-skin="glass"] .qa-field:not(:focus-visible):not(:has(:focus-visible)):not([aria-invalid="true"]) {
   border-color: var(--field-border);
 }
 html[data-skin="glass"] .qa-field::before { content: none !important; }
@@ -874,15 +857,15 @@ html[data-skin="glass"]
 }
 
 /* ---------------------------------------------------------------------------
-   11. Hover repaints stay off the blur.
-   Even with one blur per stack (section 10), anything that repaints INSIDE a
-   blurred surface — a button's hover rim, a card's hover border, a field —
-   made Chrome repaint that surface's layer and redraw its blur in tiles, and
-   the tile edges showed as thin straight lines (Chrome only; measured: hovering
-   the board repainted blurred layers 71 times). Each control inside a glass
-   surface gets its own compositing layer, so its repaints never touch the
-   blurred layer behind it. will-change: opacity (not transform) so fixed
-   popups inside keep the viewport as their containing block.
+   11. Repaints stay off the blur.
+   Anything that repaints INSIDE a blurred surface made Chrome repaint that
+   surface's layer and redraw its blur in tiles, and the tile edges showed as
+   thin straight lines (Chrome only; measured: hovering the board repainted
+   blurred layers 71 times). Hover no longer repaints anything at all (section
+   7), which removes the cause. What still repaints inside glass is a press,
+   focus, typing and a drag, so each control keeps a compositing layer of its
+   own. will-change: opacity (not transform) so fixed popups inside keep the
+   viewport as their containing block.
    --------------------------------------------------------------------------- */
 html[data-skin="glass"]:not([data-blur="off"])
   :is(
@@ -896,50 +879,6 @@ html[data-skin="glass"]:not([data-blur="off"])
   )
   :is(button, a[href], input, select, textarea, [draggable="true"]) {
   will-change: opacity;
-}
-
-/* Glass buttons that are a blurred surface themselves (the tab pills): their
-   hover rim is drawn on a separate layer that only fades in, so hovering never
-   repaints the blurred button (the outline of section 7 would). */
-html[data-skin="glass"]:not([data-blur="off"]) button.bg-white:not(:disabled):not(.field):hover {
-  outline-color: transparent;
-  border-color: var(--rim); /* the app's hover border would repaint the blur too */
-}
-html[data-skin="glass"]:not([data-blur="off"]) button.bg-white:not(.field)::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: inset 0 0 0 1px var(--rim-top);
-  opacity: 0;
-  transition: opacity 160ms ease;
-  will-change: opacity;
-  z-index: 2;
-}
-html[data-skin="glass"]:not([data-blur="off"]) button.bg-white:not(:disabled):not(.field):hover::after {
-  opacity: 1;
-}
-
-/* A task card's title is its "open" button. Its own hover rim (section 7)
-   drew a small rounded box around the title, which read as a text field
-   lighting up. The hover belongs to the whole card, as in Classic: a rim on
-   the card's own ::after layer that only fades, so the blurred card is never
-   repainted (section 11). Not while the card is open: then it holds fields. */
-html[data-skin="glass"] .task-card::after {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: inset 0 0 0 1px var(--ctl-hover-border);
-  opacity: 0;
-  transition: opacity 160ms ease;
-  will-change: opacity;
-  z-index: 2;
-}
-html[data-skin="glass"] .task-card:not(.is-open):hover::after {
-  opacity: 1;
 }
 
 /* ---------------------------------------------------------------------------

@@ -16,8 +16,8 @@
    pill that opens a panel (Team, Columns) — it reads as "on" while open.
 
      rest      surface + hairline (standalone) / transparent (in a track)
-     hover     standalone: gold border (Classic) or a brighter rim (Glass);
-               in a track: the label darkens. Nothing moves or resizes.
+     hover     nothing; the cursor is the only hover feedback
+               (docs/interaction-rules.md). Choosing one is what changes it.
      chosen    the brand accent fill: navy + gold (Classic),
                systemBlue + white (Glass). One look everywhere.
      focus     :focus-visible ring in the accent, 2px, offset 2px
@@ -32,7 +32,6 @@
   --ctl-border: #e8e6e1;
   --ctl-fg: #0a1931;
   --ctl-fg-2: #6b6b6b;
-  --ctl-hover-border: #c9a96e;
   --ctl-on-bg: #0a1931;
   --ctl-on-fg: #c9a96e;
   --ctl-on-border: #0a1931;
@@ -64,13 +63,11 @@
   background-color: var(--ctl-bg);
   color: var(--ctl-fg);
   white-space: nowrap;
+  /* Only a choice the user made animates (rule 7), and briefly. */
   transition:
-    border-color 150ms ease,
-    background-color 150ms ease,
-    color 150ms ease;
-}
-.tab:hover:not(:disabled):not([aria-current="page"]):not([aria-pressed="true"]):not([aria-selected="true"]):not([aria-expanded="true"]) {
-  border-color: var(--ctl-hover-border);
+    border-color 100ms ease,
+    background-color 100ms ease,
+    color 100ms ease;
 }
 .tab:is([aria-current="page"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) {
   background-color: var(--ctl-on-bg);
@@ -122,10 +119,6 @@
   background-color: transparent;
   color: var(--ctl-fg-2);
 }
-.seg > .tab:hover:not(:disabled):not([aria-current="page"]):not([aria-pressed="true"]):not([aria-selected="true"]):not([aria-expanded="true"]) {
-  border-color: transparent;
-  color: var(--ctl-fg);
-}
 .seg > .tab:is([aria-current="page"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) {
   background-color: var(--ctl-on-bg);
   color: var(--ctl-on-fg);
@@ -136,8 +129,8 @@
    Glass material. A standalone tab is a thin glass capsule floating on the
    wallpaper; a track is an inset well (no blur of its own: one live blur per
    stack, glass.css §10).
-   Hover never repaints the blurred capsule (glass.css §7, §11): the rim is a
-   separate ::after layer that only fades in, and the border stays put.
+   Nothing changes under the pointer, so nothing ever repaints the blurred
+   capsule (glass.css §11).
    --------------------------------------------------------------------------- */
 html[data-skin="glass"] .tab:not(.seg > .tab) {
   box-shadow: var(--lift-sm), inset 0 1px 0 0 var(--rim-top);
@@ -146,23 +139,6 @@ html[data-skin="glass"] .tab:not(.seg > .tab) {
 }
 html[data-skin="glass"] .tab:is([aria-current="page"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) {
   box-shadow: var(--lift-sm), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
-}
-html[data-skin="glass"] .tab:not(.seg > .tab):hover:not(:disabled) {
-  border-color: var(--ctl-border);
-}
-html[data-skin="glass"] .tab:not(.seg > .tab)::after {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: inset 0 0 0 1px var(--ctl-hover-border);
-  opacity: 0;
-  transition: opacity 160ms ease;
-  will-change: opacity;
-}
-html[data-skin="glass"] .tab:not(.seg > .tab):hover:not(:disabled):not([aria-current="page"]):not([aria-pressed="true"]):not([aria-selected="true"]):not([aria-expanded="true"])::after {
-  opacity: 1;
 }
 html[data-skin="glass"] .seg {
   box-shadow: inset 0 0 0 1px var(--separator);
@@ -181,8 +157,7 @@ html[data-skin="glass"] .color-pop {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tab,
-  .tab::after {
+  .tab {
     transition: none !important;
   }
 }

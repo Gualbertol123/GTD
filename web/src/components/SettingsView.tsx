@@ -60,7 +60,7 @@ function ConfirmInline({ text, onYes, onNo }: { text: string; onYes: () => void;
   return (
     <span className="inline-flex items-center gap-2 flex-wrap text-[12px]">
       <span className="text-[#C81E1E]">{text}</span>
-      <button ref={yesRef} type="button" onClick={onYes} className="h-8 px-3 rounded-full font-semibold text-[#C81E1E] border border-[#FECACA] hover:bg-[#FEF2F2]">
+      <button ref={yesRef} type="button" onClick={onYes} className="h-8 px-3 rounded-full font-semibold text-[#C81E1E] border border-[#FECACA]">
         {t("task.yes")}
       </button>
       <button type="button" onClick={onNo} className="h-8 px-3 rounded-full font-semibold text-[#6B6B6B] border border-[#E8E6E1]">
@@ -242,7 +242,7 @@ export function SettingsView({ board, send }: Props) {
         ) : (
           <button
             onClick={() => setConfirm("logout")}
-            className="h-10 px-4 rounded-full text-[12px] font-semibold text-[#C81E1E] border border-[#FECACA] hover:bg-[#FEF2F2]"
+            className="h-10 px-4 rounded-full text-[12px] font-semibold text-[#C81E1E] border border-[#FECACA]"
           >
             {t("settings.logoutNow")}
           </button>

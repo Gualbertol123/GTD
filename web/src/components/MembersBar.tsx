@@ -105,7 +105,7 @@ export function MembersBar({ board, send }: Props) {
                 <button
                   type="button"
                   onClick={() => setConfirm(m)}
-                  className="shrink-0 w-5 h-5 rounded-full inline-flex items-center justify-center text-ink-3 hover:text-[#C81E1E] outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]"
+                  className="shrink-0 w-5 h-5 rounded-full inline-flex items-center justify-center text-ink-3 outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E]"
                   title={t("ux.board.removeMemberLabel", { name: m })}
                   aria-label={t("ux.board.removeMemberLabel", { name: m })}
                 >
@@ -138,7 +138,7 @@ export function MembersBar({ board, send }: Props) {
       ) : (
         <button
           onClick={() => setAdding(true)}
-          className="h-8 px-3 rounded-full border border-dashed border-[#C9A96E] text-[#7A5F30] text-[12px] font-semibold hover:bg-[#FFFBF2]"
+          className="h-8 px-3 rounded-full border border-dashed border-[#C9A96E] text-[#7A5F30] text-[12px] font-semibold"
         >
           + {t("members.add")}
         </button>

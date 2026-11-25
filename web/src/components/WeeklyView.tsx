@@ -49,7 +49,7 @@ function rangeLabel(loc: string, start: number, end: number): string {
 }
 
 const chevBtn =
-  "h-7 w-7 rounded-full flex items-center justify-center bg-white border border-[#A7F3D0] text-[#065F46] hover:border-[#065F46] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[#A7F3D0]";
+  "h-7 w-7 rounded-full flex items-center justify-center bg-white border border-[#A7F3D0] text-[#065F46] disabled:opacity-40 disabled:cursor-not-allowed";
 
 export function WeeklyView({ board, send }: Props) {
   const { t, lang } = useT();
@@ -220,14 +220,14 @@ export function WeeklyView({ board, send }: Props) {
               type="button"
               autoFocus
               onClick={cancelClear}
-              className="h-8 px-3 rounded-full font-semibold bg-white text-[#0A1931] border border-[#E8E6E1] hover:border-[#C9A96E]"
+              className="h-8 px-3 rounded-full font-semibold bg-white text-[#0A1931] border border-[#E8E6E1]"
             >
               {t("task.no")}
             </button>
             <button
               type="button"
               onClick={clearAll}
-              className="h-8 px-3 rounded-full font-semibold text-[#C81E1E] border border-[#FECACA] bg-[#FEF2F2] hover:border-[#DC2626]"
+              className="h-8 px-3 rounded-full font-semibold text-[#C81E1E] border border-[#FECACA] bg-[#FEF2F2]"
             >
               {t("task.yes")}
             </button>
@@ -239,7 +239,7 @@ export function WeeklyView({ board, send }: Props) {
             onClick={() => setConfirmClear(true)}
             disabled={itemCount === 0}
             title={itemCount === 0 ? t("weekly.clearEmpty") : undefined}
-            className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1] hover:border-[#DC2626] hover:text-[#C81E1E] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-[#E8E6E1] disabled:hover:text-[#6B6B6B]"
+            className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("weekly.clear")}
           </button>
@@ -297,7 +297,7 @@ export function WeeklyView({ board, send }: Props) {
               <button
                 type="button"
                 onClick={() => setOffset(0)}
-                className="h-7 px-3 rounded-full text-[11px] font-semibold bg-white border border-[#A7F3D0] text-[#065F46] hover:border-[#065F46]"
+                className="h-7 px-3 rounded-full text-[11px] font-semibold bg-white border border-[#A7F3D0] text-[#065F46]"
               >
                 {t("weekly.thisWeek")}
               </button>
@@ -423,7 +423,7 @@ export function WeeklyView({ board, send }: Props) {
                 <button
                   type="button"
                   onClick={() => setArchAll((a) => !a)}
-                  className="mt-2 text-[12px] font-semibold text-[#6B6B6B] hover:text-[#0A1931] underline-offset-2 hover:underline"
+                  className="mt-2 text-[12px] font-semibold text-[#6B6B6B] underline-offset-2"
                 >
                   {archAll
                     ? t("weekly.showLess")
@@ -506,7 +506,7 @@ function WeeklyColumn({
               onClick={() => onRemove(colKey, it, true)}
               aria-label={t("weekly.deleteItem")}
               title={t("weekly.deleteItem")}
-              className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 text-[#C81E1E] h-6 w-6 mt-1 rounded-full flex items-center justify-center shrink-0 hover:bg-[#FEF2F2]"
+              className="text-ink-3 h-6 w-6 mt-1 rounded-full flex items-center justify-center shrink-0"
             >
               <IconClose size={13} />
             </button>

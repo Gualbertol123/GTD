@@ -219,7 +219,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <button
               type="submit"
               disabled={busy || !pwd}
-              className="mt-4 w-full h-11 rounded-full bg-[#0A1931] text-[#C9A96E] text-[13px] font-semibold tracking-wide hover:bg-[#112040] disabled:opacity-60"
+              className="mt-4 w-full h-11 rounded-full bg-[#0A1931] text-[#C9A96E] text-[13px] font-semibold tracking-wide disabled:opacity-60"
             >
               {busy ? t("auth.checking") : t("auth.enter")}
             </button>

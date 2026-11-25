@@ -270,7 +270,7 @@ export function ReportView({ board, send }: Props) {
   // One visible keyboard focus for every control, in both skins and themes.
   const control = "h-9 rounded-full bg-white border border-[#E8E6E1] text-[13px] field px-3";
   const primaryBtn = `h-9 px-5 rounded-full bg-[#0A1931] text-[#C9A96E] text-[12px] font-semibold disabled:opacity-40`;
-  const ghostBtn = `h-9 px-4 rounded-full bg-white text-[#0A1931] border border-[#E8E6E1] text-[12px] font-semibold hover:border-[#C9A96E] disabled:opacity-40`;
+  const ghostBtn = `h-9 px-4 rounded-full bg-white text-[#0A1931] border border-[#E8E6E1] text-[12px] font-semibold disabled:opacity-40`;
   const views = ["report", "excluded"] as const;
 
   return (
@@ -450,7 +450,7 @@ export function ReportView({ board, send }: Props) {
               type="button"
               onClick={resetReport}
               disabled={busy !== null || !hasDraft}
-              className={`${ghostBtn} text-[#C81E1E] border-[#FECACA] hover:border-[#DC2626] inline-flex items-center gap-1.5`}
+              className={`${ghostBtn} text-[#C81E1E] border-[#FECACA] inline-flex items-center gap-1.5`}
               title={t("report.resetHint")}
             >
               <IconUndo />
@@ -461,7 +461,7 @@ export function ReportView({ board, send }: Props) {
             <button
               type="button"
               onClick={() => actionsRef.current?.showHidden()}
-              className={`h-9 px-2 rounded-full text-[12px] font-semibold text-[#007AFF] hover:underline`}
+              className={`h-9 px-2 rounded-full text-[12px] font-semibold text-[#007AFF]`}
             >
               {t("ux.report.showHidden", { n: hiddenCount })}
             </button>
@@ -542,7 +542,7 @@ export function ReportView({ board, send }: Props) {
                   toast.undo?.();
                   setToast(null);
                 }}
-                className="shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold text-[#E9C989] hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
+                className="shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold text-[#E9C989] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
               >
                 {t("ux.report.undo")}
               </button>
@@ -551,7 +551,7 @@ export function ReportView({ board, send }: Props) {
               type="button"
               onClick={() => setToast(null)}
               aria-label={t("ux.report.dismiss")}
-              className="shrink-0 h-8 w-8 rounded-full inline-flex items-center justify-center text-white/70 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
+              className="shrink-0 h-8 w-8 rounded-full inline-flex items-center justify-center text-white/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
             >
               <IconClose />
             </button>

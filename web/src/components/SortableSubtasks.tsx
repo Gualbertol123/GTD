@@ -346,7 +346,7 @@ function SubtaskRow({
         onClick={onDelete}
         aria-label={t("ux.board.subtaskDelete")}
         title={t("ux.board.subtaskDelete")}
-        className={`${lead} px-0.5 rounded-sm opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-60 text-[#C81E1E] outline-none focus-visible:ring-2 focus-visible:ring-[#DC2626]/50`}
+        className={`${lead} px-0.5 rounded-sm text-ink-3 outline-none focus-visible:ring-2 focus-visible:ring-[#DC2626]/50`}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
           <path d="M6 6l12 12M18 6 6 18" />

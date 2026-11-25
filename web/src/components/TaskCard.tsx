@@ -113,11 +113,11 @@ export function TaskCard({
       draggable={draggable && !open}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      // The hover border says "open me"; once open it holds fields, and a
-      // border that lights up under every text box read as the box highlighting.
-      className={`task-card bg-white rounded-[12px] border transition-colors ${
-        open ? "border-[#E8E6E1] is-open" : "border-[#E8E6E1] hover:border-[#C9A96E]"
-      } ${task.pinned && !isDone ? "is-pinned" : ""}`}
+      // No hover state (docs/interaction-rules.md): the title is the "open"
+      // button and the cursor says so.
+      className={`task-card bg-white rounded-[12px] border border-[#E8E6E1] ${open ? "is-open" : ""} ${
+        task.pinned && !isDone ? "is-pinned" : ""
+      }`}
     >
       <div className="p-3 flex items-start gap-2">
         <button
@@ -129,7 +129,7 @@ export function TaskCard({
           aria-label={t(isDone ? "ux.board.reopen" : "ux.board.markDone")}
           title={t(isDone ? "ux.board.reopen" : "ux.board.markDone")}
           className={`shrink-0 -m-0.5 p-0.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#C9A96E] transition-colors ${
-            isDone ? "text-[#065F46]" : "text-[#C9C5BE] hover:text-[#065F46]"
+            isDone ? "text-[#065F46]" : "text-ink-3"
           }`}
         >
           <CheckIcon done={isDone} />

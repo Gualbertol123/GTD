@@ -75,7 +75,7 @@
   text-align: left;
 }
 .mt-nav span { width: 20px; text-align: center; font-size: 18px; }
-.mt-nav:hover, .mt-nav.is-on { color: var(--mt-text) !important; }
+.mt-nav.is-on { color: var(--mt-text) !important; }
 .mt-nav.is-on { background: var(--mt-hover); }
 
 .mt-lib { flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -97,7 +97,6 @@
   border-radius: 8px;
   text-align: left;
 }
-.mt-libitem:hover { background: var(--mt-hover); }
 .mt-libitem.is-on { background: var(--mt-box-2); }
 .mt-libitem > span:last-child { min-width: 0; }
 .mt-libitem b { display: block; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -111,7 +110,6 @@
   line-height: 1;
   color: var(--mt-text-2) !important;
 }
-.mt-round:hover { background: var(--mt-hover); color: var(--mt-text) !important; }
 
 .mt-avatar {
   display: inline-grid;
@@ -170,7 +168,6 @@
   text-align: left;
   font-size: 14px;
 }
-.mt-qtile:hover { background: rgba(255, 255, 255, 0.13); }
 .mt-qtile b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mt-qtile .mt-avatar, .mt-qtile .mt-mosaic { border-radius: 0; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35); }
 .mt-qtile__art { width: 64px; height: 64px; display: grid; place-items: center; font-size: 24px; flex-shrink: 0; }
@@ -181,7 +178,6 @@
 
 .mt-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin: 0 -12px; }
 .mt-card { padding: 12px; border-radius: 10px; cursor: pointer; }
-.mt-card:hover { background: var(--mt-box-2); }
 .mt-card b { display: block; margin-top: 10px; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mt-card small { display: block; color: var(--mt-text-2); font-size: 13px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mt-card__art { position: relative; aspect-ratio: 1; display: grid; place-items: center; }
@@ -200,9 +196,7 @@
   font-size: 14px;
   font-weight: 800;
   flex-shrink: 0;
-  transition: transform 0.15s ease, opacity 0.2s ease;
 }
-.mt-play:hover:not(:disabled) { transform: scale(1.06); }
 .mt-play--big { width: 56px; height: 56px; font-size: 20px; }
 .mt-play--float {
   position: absolute;
@@ -211,12 +205,10 @@
   width: 48px;
   height: 48px;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
-  opacity: 0;
-  transform: translateY(8px);
 }
-.mt-card:hover .mt-play--float, .mt-play--float:focus-visible { opacity: 1; transform: none; }
-.mt-play--tile { position: absolute; right: 10px; width: 36px; height: 36px; opacity: 0; }
-.mt-qtile:hover .mt-play--tile, .mt-play--tile.is-on { opacity: 1; }
+/* Play buttons on cards and tiles are always there (docs/interaction-rules.md:
+   nothing appears under the pointer). */
+.mt-play--tile { position: absolute; right: 10px; width: 36px; height: 36px; }
 
 .mt-actions { display: flex; align-items: center; gap: 16px; padding: 20px 0 8px; }
 .mt-ghost {
@@ -227,7 +219,6 @@
   font-weight: 700;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
 }
-.mt-ghost:hover { box-shadow: inset 0 0 0 1px #fff; }
 .mt-ghost.is-on { color: var(--mt-gold) !important; box-shadow: inset 0 0 0 1px var(--mt-gold); }
 .mt-ghost--danger { color: #ff6961 !important; box-shadow: inset 0 0 0 1px #ff6961; }
 
@@ -268,7 +259,6 @@
   align-content: start;
   display: grid;
 }
-.mt-genre:hover { filter: brightness(1.1); }
 .mt-spin { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--mt-text-2); border-top-color: transparent; animation: mt-spin 0.8s linear infinite; }
 .mt-spin--block { margin: 30px auto; width: 28px; height: 28px; }
 @keyframes mt-spin { to { transform: rotate(360deg); } }
@@ -284,7 +274,6 @@
   padding: 0 8px;
   border-radius: 6px;
 }
-.mt-tr:hover:not(.mt-tr--head) { background: var(--mt-hover); }
 .mt-tr--head {
   min-height: 36px;
   border-bottom: 1px solid var(--mt-line);
@@ -297,10 +286,11 @@
   border-radius: 0;
 }
 .mt-tr__n { position: relative; text-align: center; color: var(--mt-text-2); font-variant-numeric: tabular-nums; }
-/* The row's play icon: hidden, not removed (one click on the row plays too). */
+/* The row's play icon: shown for keyboard focus only. One click on the row
+   plays, so the pointer needs no icon appearing under it. */
 .mt-tr__play { position: absolute; inset: -8px 0; display: grid; place-items: center; font-size: 13px; opacity: 0; pointer-events: none; }
-.mt-tr:hover .mt-tr__play, .mt-tr:focus-visible .mt-tr__play { opacity: 1; pointer-events: auto; }
-.mt-tr:hover .mt-tr__num, .mt-tr:focus-visible .mt-tr__num { visibility: hidden; }
+.mt-tr:focus-visible .mt-tr__play { opacity: 1; pointer-events: auto; }
+.mt-tr:focus-visible .mt-tr__num { visibility: hidden; }
 .mt-tr:not(.mt-tr--head) { cursor: pointer; content-visibility: auto; contain-intrinsic-size: auto 56px; }
 .mt-tr.is-on .mt-tr__num, .mt-tr.is-on .mt-tr__title b { color: var(--mt-gold); }
 .mt-tr__title { display: flex; align-items: center; gap: 12px; min-width: 0; }
@@ -308,10 +298,10 @@
 .mt-tr__title > span { min-width: 0; }
 .mt-tr__title b { display: block; font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mt-tr__title small { display: block; color: var(--mt-text-2); font-size: 13px; margin-top: 2px; }
-.mt-tr__act { display: flex; align-items: center; gap: 2px; opacity: 0.6; }
+.mt-tr__act { display: flex; align-items: center; gap: 2px; opacity: 0.75; }
 /* Remove sits apart from "+", so a slip doesn't take a song away from the team. */
 .mt-iconbtn--remove { margin-left: 10px; }
-.mt-tr:hover .mt-tr__act, .mt-tr__act:focus-within { opacity: 1; }
+.mt-tr__act:focus-within { opacity: 1; }
 
 .mt-iconbtn {
   width: 34px;
@@ -322,7 +312,6 @@
   font-size: 16px;
   color: var(--mt-text-2) !important;
 }
-.mt-iconbtn:hover:not(:disabled) { color: var(--mt-text) !important; background: var(--mt-hover); }
 .mt-iconbtn.is-on { color: var(--mt-gold) !important; }
 
 .mt-add { position: relative; }
@@ -360,9 +349,6 @@
 .mt-queue { display: flex; flex-direction: column; gap: 2px; }
 .mt-qitem { display: flex; align-items: center; gap: 4px; padding: 0 4px 0 0; border-radius: 6px; }
 .mt-qitem__main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 6px; text-align: left; }
-.mt-qitem .mt-more { opacity: 0; }
-.mt-qitem:hover .mt-more, .mt-qitem:focus-within .mt-more { opacity: 1; }
-.mt-qitem:hover { background: var(--mt-hover); }
 .mt-qitem img { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
 .mt-qitem > span { min-width: 0; }
 .mt-qitem b { display: block; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -412,12 +398,9 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
   color: var(--mt-text) !important;
 }
-.mt-pill:hover:not(:disabled) { box-shadow: inset 0 0 0 1px #fff; }
 .mt-pill--solid { background: var(--mt-gold) !important; color: #0a1931 !important; box-shadow: none; }
-.mt-pill--solid:hover:not(:disabled) { filter: brightness(1.08); box-shadow: none; }
 .mt-pill:disabled { opacity: 0.45; cursor: default; }
 .mt-link { color: var(--mt-text-2) !important; font-weight: 700; font-size: 13px; padding: 0; }
-.mt-link:hover { color: var(--mt-text) !important; text-decoration: underline; }
 .mt-page { position: relative; }
 /* "← Importa" sits in the top corner of the coloured header below it. */
 .mt-page > .mt-link:first-child { position: absolute; top: 16px; left: 24px; z-index: 1; color: rgba(255, 255, 255, 0.85) !important; }
@@ -432,7 +415,6 @@
   background: var(--mt-box-2) !important;
   color: var(--mt-text) !important;
 }
-.mt-chip:hover { background: var(--mt-hover) !important; box-shadow: inset 0 0 0 1px var(--mt-line); }
 .mt-chip.is-on { background: var(--mt-text) !important; color: var(--mt-bg) !important; }
 /* YouTube playlist covers are 16:9: crop them square like an album. */
 .mt-card__img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
@@ -451,15 +433,12 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
 /* Trends: numbered songs in two columns */
 .mt-tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2px 18px; }
 .mt-trow { display: flex; align-items: center; gap: 10px; border-radius: 6px; padding: 0 6px 0 10px; }
-.mt-trow:hover { background: var(--mt-hover); }
 .mt-trow.is-on b { color: var(--mt-gold); }
 .mt-trow__n { width: 18px; text-align: right; font-size: 14px; color: var(--mt-text-2); font-variant-numeric: tabular-nums; flex: none; }
 .mt-trow__main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 8px 0; text-align: left; }
 .mt-trow__main > span { min-width: 0; }
 .mt-trow__main b { display: block; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mt-trow__main small { display: block; font-size: 12.5px; color: var(--mt-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mt-trow .mt-radio { opacity: 0; }
-.mt-trow:hover .mt-radio, .mt-trow .mt-radio:focus-visible { opacity: 1; }
 /* 16:9 song cards (new music videos) */
 .mt-card__art--wide { aspect-ratio: 16 / 9; }
 .mt-card__img--round, .mt-hero__img--round { border-radius: 50% !important; }
@@ -498,7 +477,6 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
 }
 .mi { display: block; flex: none; }
 .mt-iconbtn { background: transparent; transition: background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease; }
-.mt-iconbtn:hover:not(:disabled) { background: var(--gl-fill-hi) !important; box-shadow: var(--gl-rim), 0 4px 12px rgba(0, 0, 0, 0.25); }
 .mt-bar__controls .mt-iconbtn, .mt-bar__right .mt-iconbtn { background: var(--gl-fill); box-shadow: var(--gl-rim); }
 .mt-iconbtn.is-on { box-shadow: var(--gl-rim), 0 0 0 1px rgba(212, 180, 122, 0.45); }
 /* The gold play button: a lens of gold glass with a sheen on top. */
@@ -507,7 +485,6 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
     linear-gradient(180deg, #f0d7a4 0%, #d4b47a 55%, #b38f55 100%) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 -2px 4px rgba(120, 85, 30, 0.35), 0 6px 18px rgba(212, 180, 122, 0.35);
 }
-.mt-play:hover:not(:disabled) { filter: brightness(1.06); }
 .mt-play:disabled { opacity: 0.5; }
 .mt-play .mi { margin-left: 1px; }
 .mt-nav .mi { opacity: 0.85; }
@@ -543,7 +520,6 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 10px 28px rgba(16, 140, 70, 0.35);
   transition: filter 0.15s ease;
 }
-.mt-spotify:hover { filter: brightness(1.06); }
 .mt-spotify b { display: block; font-size: 16px; font-weight: 800; }
 .mt-spotify small { display: block; font-size: 13px; opacity: 0.9; margin-top: 2px; }
 .mt-spotify__icon {
@@ -612,12 +588,9 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
 }
 .mt-card { position: relative; }
 
-/* "⋯": in rows and cards, shown on hover / focus; always there for the keyboard. */
+/* "⋯": in rows and cards, always shown (README: every song has a ⋯ button). */
 .mt-more { flex: none; }
-.mt-trow .mt-more { opacity: 0; }
-.mt-trow:hover .mt-more, .mt-trow:focus-within .mt-more { opacity: 1; }
-.mt-card__more { position: absolute; top: 6px; right: 6px; opacity: 0; transition: opacity 0.15s ease; }
-.mt-card:hover .mt-card__more, .mt-card:focus-within .mt-card__more { opacity: 1; }
+.mt-card__more { position: absolute; top: 6px; right: 6px; }
 .mt-card__more .mt-iconbtn { color: #fff !important; background: rgba(10, 14, 28, 0.55); box-shadow: var(--gl-rim); }
 
 /* Play buttons with a loading ring (status from the player). */
@@ -674,7 +647,6 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
 .mt-hero__text { min-width: 0; }
 .mt-title { display: flex; align-items: center; gap: 10px; }
 .mt-title__text { cursor: text; border-radius: 6px; }
-.mt-title__text:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; text-decoration-color: rgba(255, 255, 255, 0.45); }
 .mt-title__edit { flex: none; color: rgba(255, 255, 255, 0.85) !important; background: var(--gl-fill) !important; box-shadow: var(--gl-rim); }
 
 /* A radio playlist (updated daily): the badge, "Stacca", the note under them. */
@@ -754,7 +726,6 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
   animation: mt-tap-pulse 1.6s ease-in-out infinite;
 }
 .mt-taphint svg { flex-shrink: 0; }
-.mt-taphint:hover { filter: brightness(1.1); }
 .mt-taphint:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 @keyframes mt-tap-pulse { 50% { box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 0 4px rgba(10, 132, 255, 0.35); } }
 @media (prefers-reduced-motion: reduce) { .mt-taphint { animation: none; } }
@@ -803,7 +774,6 @@ p.mt-splogin { gap: 6px; font-size: 13px; }
 }
 .spl-open { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
 .spl-openicon { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; color: var(--mt-text-2) !important; flex: none; }
-.spl-openicon:hover { color: var(--mt-text) !important; }
 .spl-card { display: flex; flex-direction: column; cursor: default; }
 .spl-card__main { display: block; width: 100%; text-align: left; color: inherit; background: none; padding: 0; cursor: pointer; border-radius: 8px; }
 .spl-card__main:focus-visible { outline: 2px solid var(--mt-gold); outline-offset: 4px; }
@@ -888,7 +858,6 @@ p.mt-splogin { gap: 6px; font-size: 13px; }
 .oc-sum.is-ok { color: #3ddc84; }
 .oc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; max-height: 420px; overflow: auto; }
 .oc-row { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 10px; }
-.oc-row:hover { background: rgba(255, 255, 255, 0.04); }
 .oc-row__icon { display: inline-grid; place-items: center; width: 24px; flex: none; color: var(--mt-text-2); }
 .oc-row.is-added .oc-row__icon { color: #3ddc84; }
 .oc-row.is-incomplete .oc-row__icon { color: #f5c451; }
@@ -910,5 +879,4 @@ p.mt-splogin { gap: 6px; font-size: 13px; }
 }
 /* aria-disabled (kept focusable while an import runs) looks like disabled. */
 .mt .mt-pill[aria-disabled="true"] { opacity: 0.55; cursor: default; }
-.mt .mt-pill[aria-disabled="true"]:hover { box-shadow: none; }
 .oc-wait { display: block; margin: 4px 0 0; font-size: 13px; }

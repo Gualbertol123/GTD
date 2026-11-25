@@ -155,7 +155,7 @@ export function PersonalNotes({ board, me, send }: Props) {
                         setEditing(note.id);
                         setEditBody(note.body);
                       }}
-                      className="text-[11px] text-[#6B6B6B] hover:text-[#0A1931] ml-auto"
+                      className="text-[11px] text-[#6B6B6B] ml-auto"
                     >
                       {t("notes.edit")}
                     </button>
@@ -175,7 +175,7 @@ export function PersonalNotes({ board, me, send }: Props) {
                     ) : (
                       <button
                         onClick={() => setConfirmId(note.id)}
-                        className="text-[11px] text-[#6B6B6B] hover:text-[#C81E1E]"
+                        className="text-[11px] text-[#6B6B6B]"
                       >
                         {t("notes.delete")}
                       </button>

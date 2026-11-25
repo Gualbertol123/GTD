@@ -532,13 +532,13 @@ html[data-skin="glass"] .gr-root * {
   place-items: center;
   padding: 0;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s ease;
+  /* Always shown on screen, at a quiet weight (never printed or exported):
+     nothing appears under the pointer (docs/interaction-rules.md). */
+  opacity: 0.7;
   /* On a page scaled down to the phone, partly undo the scaling. */
   transform: scale(min(var(--gr-inv, 1), 1.5));
   transform-origin: top right;
 }
-.gr-col-item:hover > .gr-item-hide,
 .gr-col-item:focus-within > .gr-item-hide,
 .gr-item-hide:focus-visible { opacity: 1; }
 /* ---- Highlight picker (screen only) -------------------------------------------- */
@@ -611,11 +611,8 @@ html[data-skin="glass"] .gr-root * {
 .gr-ed[contenteditable="true"] {
   outline: none;
   border-radius: 6px;
-  transition: box-shadow 0.15s ease, background-color 0.15s ease;
-  cursor: text;
-}
-.gr-ed[contenteditable="true"]:hover {
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+  transition: box-shadow 0.1s ease;
+  cursor: text; /* the cursor says it can be edited; no hover ring */
 }
 /* Ring only: a background colour would also paint over gradient lettering. */
 .gr-ed[contenteditable="true"]:focus {
@@ -642,20 +639,13 @@ html[data-skin="glass"] .gr-root * {
   place-items: center;
   padding: 0;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s ease;
+  opacity: 0.85; /* always shown on screen; never printed or exported */
   /* On a page scaled down to fit the phone, the button keeps its real size. */
   transform: scale(min(var(--gr-inv, 1), 1.8));
   transform-origin: top right;
 }
-.gr-glass:hover > .gr-hide,
 .gr-glass:focus-within > .gr-hide,
 .gr-hide:focus-visible { opacity: 1; }
-.gr-hide:hover,
-.gr-item-hide:hover {
-  background: rgba(60, 60, 67, 0.2);
-  color: #1d1d1f;
-}
 .gr-hide:focus-visible,
 .gr-item-hide:focus-visible,
 .gr-picker-btn:focus-visible {
@@ -663,7 +653,7 @@ html[data-skin="glass"] .gr-root * {
   outline-offset: 2px;
 }
 
-/* Touch screens have no hover: keep the × visible and big enough to tap. */
+/* Touch screens: the × big enough to tap. */
 @media (hover: none) {
   .gr-hide,
   .gr-item-hide { opacity: 0.85; }

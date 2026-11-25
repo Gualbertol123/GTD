@@ -136,7 +136,7 @@ export function ProjectTimeline({
                         aria-label={t("ux.projects.health", { h: health })}
                         title={t("ux.projects.health", { h: health })}
                       />
-                      <span className="truncate text-[12px] font-semibold text-[#0A1931] group-hover:underline">
+                      <span className="truncate text-[12px] font-semibold text-[#0A1931]">
                         {p.name || "—"}
                       </span>
                     </span>
@@ -182,7 +182,7 @@ function Undated({ list, onOpen }: { list: Project[]; onOpen: (id: string) => vo
         <button
           key={p.id}
           onClick={() => onOpen(p.id)}
-          className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] text-[12px] text-[#0A1931] hover:border-[#C9A96E]"
+          className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] text-[12px] text-[#0A1931]"
         >
           <span className="w-2 h-2 rounded-full" style={{ background: projectColor(p) }} />
           {p.name || "—"}

@@ -34,7 +34,7 @@ function IconMail() {
 
 // The rename affordance: visible, focusable, works with Enter/Space and touch.
 const pencilBtn =
-  "shrink-0 rounded-full flex items-center justify-center text-[#8BA1C2] opacity-70 hover:opacity-100 focus-visible:opacity-100 transition-opacity";
+  "shrink-0 rounded-full flex items-center justify-center text-[#8BA1C2]";
 
 export function TopBar({ board, onRename, onOpenMail, send, rightSlot }: Props) {
   const { t, lang } = useT();
@@ -158,7 +158,7 @@ export function TopBar({ board, onRename, onOpenMail, send, rightSlot }: Props) 
           {rightSlot}
           <button
             onClick={onOpenMail}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-[#C9A96E] text-[#0A1931] text-[12px] font-semibold hover:bg-[#D8BC8A] transition-colors"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-[#C9A96E] text-[#0A1931] text-[12px] font-semibold transition-colors"
           >
             <IconMail />
             {t("app.mail")}

@@ -238,7 +238,7 @@ export function QuickAdd({
       <button
         type="button"
         onClick={create}
-        className="h-11 px-6 rounded-full bg-[#0A1931] text-[#C9A96E] text-[13px] font-semibold tracking-wide hover:bg-[#112040] uppercase"
+        className="h-11 px-6 rounded-full bg-[#0A1931] text-[#C9A96E] text-[13px] font-semibold tracking-wide uppercase"
       >
         + {t("quick.add")}
       </button>
@@ -267,7 +267,7 @@ export function QuickAdd({
                       onReveal(added.task);
                       setAdded({ ...added, filtered: false, column: false });
                     }}
-                    className="h-7 px-3 rounded-full text-[11px] font-semibold bg-white text-[#0A1931] border border-[#E8E6E1] hover:border-[#C9A96E]"
+                    className="h-7 px-3 rounded-full text-[11px] font-semibold bg-white text-[#0A1931] border border-[#E8E6E1]"
                   >
                     {t("ux.board.show")}
                   </button>

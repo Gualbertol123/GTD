@@ -324,7 +324,7 @@ export function ProjectTasks({
                           disabled={n === 0}
                           title={t("projects.step.up")}
                           aria-label={t("projects.step.up")}
-                          className="w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:bg-[#F5F3EF] disabled:opacity-25"
+                          className="w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] disabled:opacity-25"
                         >
                           <Icon name="up" size={14} />
                         </button>
@@ -333,7 +333,7 @@ export function ProjectTasks({
                           disabled={n === s.tasks.length - 1}
                           title={t("projects.step.down")}
                           aria-label={t("projects.step.down")}
-                          className="w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:bg-[#F5F3EF] disabled:opacity-25"
+                          className="w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] disabled:opacity-25"
                         >
                           <Icon name="down" size={14} />
                         </button>
@@ -496,7 +496,7 @@ function TaskRow({
           onClick={onUnlink}
           title={t("projects.tasks.unlink")}
           aria-label={t("projects.tasks.unlink")}
-          className="shrink-0 w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:text-[#C81E1E] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
+          className="shrink-0 w-7 h-7 rounded-full inline-flex items-center justify-center text-ink-3"
         >
           <Icon name="x" size={13} />
         </button>
@@ -608,7 +608,7 @@ function MiniBoard({
                       }
                     }}
                     className={`group rounded-[10px] bg-white border p-2 cursor-grab active:cursor-grabbing space-y-1 outline-none focus-visible:border-[#C9A96E] focus-visible:ring-2 focus-visible:ring-[#C9A96E]/50 ${
-                      openId === task.id ? "border-[#C9A96E]" : "border-[#E8E6E1] hover:border-[#C9A96E]"
+                      openId === task.id ? "border-[#C9A96E]" : "border-[#E8E6E1]"
                     }`}
                   >
                     <div className="flex items-start gap-1.5">
@@ -627,7 +627,7 @@ function MiniBoard({
                         }}
                         title={t("projects.tasks.unlink")}
                         aria-label={t("projects.tasks.unlink")}
-                        className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:text-[#C81E1E] sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
+                        className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-full inline-flex items-center justify-center text-ink-3"
                       >
                         <Icon name="x" size={12} />
                       </button>
@@ -668,7 +668,7 @@ function MiniBoard({
               onClick={() => closeEditor(opened.id)}
               aria-label={t("common.close")}
               title={t("common.close")}
-              className="w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B] hover:bg-[#F5F3EF] hover:text-[#0A1931]"
+              className="w-7 h-7 rounded-full inline-flex items-center justify-center text-[#6B6B6B]"
             >
               <Icon name="x" size={14} />
             </button>

@@ -216,7 +216,7 @@ export function DailyReflection({ board, members, send }: Props) {
             forgetAuth(me);
             bump();
           }}
-          className="h-8 px-4 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1] hover:border-[#DC2626] hover:text-[#C81E1E]"
+          className="h-8 px-4 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1]"
         >
           {t("reflAuth.logout")}
         </button>
@@ -667,7 +667,7 @@ function SpacedReview({
           <Icon d={ICON_REVIEW} /> {t("review.title")}
         </h4>
         {pool.length > 0 && (
-          <button onClick={rollRandom} className="h-7 px-3 rounded-full text-[11px] font-semibold bg-[#F5F3EF] border border-[#E8E6E1] text-[#6B6B6B] hover:border-[#C9A96E]">
+          <button onClick={rollRandom} className="h-7 px-3 rounded-full text-[11px] font-semibold bg-[#F5F3EF] border border-[#E8E6E1] text-[#6B6B6B]">
             <span className="inline-flex items-center gap-1.5"><Icon d={ICON_SHUFFLE} size={12} />{t("review.random")}</span>
           </button>
         )}

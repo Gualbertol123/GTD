@@ -195,7 +195,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
             onClick={onClose}
             aria-label={t("ux.report.mailClose")}
             title={t("ux.report.mailClose")}
-            className={`-mr-1.5 -mt-1 h-9 w-9 shrink-0 grid place-items-center rounded-full text-[#6B6B6B] hover:text-[#0A1931]`}
+            className={`-mr-1.5 -mt-1 h-9 w-9 shrink-0 grid place-items-center rounded-full text-[#6B6B6B]`}
           >
             <svg {...ICON} width={16} height={16}>
               <path d="M6 6l12 12M18 6L6 18" />
@@ -230,7 +230,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
                     areaRef.current?.focus();
                   }}
                   title={t("ux.report.mailRegenerateHint")}
-                  className={`h-7 px-2 rounded-full text-[12px] font-semibold text-[#007AFF] hover:underline`}
+                  className={`h-7 px-2 rounded-full text-[12px] font-semibold text-[#007AFF]`}
                 >
                   {t("ux.report.mailRegenerate")}
                 </button>
@@ -260,7 +260,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
         <div className="p-4 border-t border-[#E8E6E1] flex justify-end gap-2 flex-wrap">
           <a
             href={href}
-            className={`h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#0A1931] border border-[#E8E6E1] hover:border-[#C9A96E] flex items-center`}
+            className={`h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#0A1931] border border-[#E8E6E1] flex items-center`}
           >
             {t("mail.openClient")}
           </a>
@@ -268,7 +268,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
             ref={copyRef}
             type="button"
             onClick={copy}
-            className={`h-9 px-5 rounded-full text-[12px] font-semibold bg-[#C9A96E] text-[#0A1931] hover:bg-[#D8BC8A] inline-flex items-center gap-1.5`}
+            className={`h-9 px-5 rounded-full text-[12px] font-semibold bg-[#C9A96E] text-[#0A1931] inline-flex items-center gap-1.5`}
           >
             {copied ? (
               <>

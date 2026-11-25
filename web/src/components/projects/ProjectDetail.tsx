@@ -82,7 +82,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
       <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={onBack}
-          className="h-9 px-4 rounded-full bg-white border border-[#E8E6E1] text-[12px] font-semibold text-[#0A1931] hover:border-[#C9A96E]"
+          className="h-9 px-4 rounded-full bg-white border border-[#E8E6E1] text-[12px] font-semibold text-[#0A1931]"
         >
           ← {t("projects.back")}
         </button>
@@ -91,7 +91,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
           disabled={!prevId}
           title={t("projects.prev")}
           aria-label={t("projects.prev")}
-          className="w-9 h-9 rounded-full bg-white border border-[#E8E6E1] text-[#0A1931] disabled:opacity-30 hover:border-[#C9A96E]"
+          className="w-9 h-9 rounded-full bg-white border border-[#E8E6E1] text-[#0A1931] disabled:opacity-30"
         >
           ‹
         </button>
@@ -100,7 +100,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
           disabled={!nextId}
           title={t("projects.next")}
           aria-label={t("projects.next")}
-          className="w-9 h-9 rounded-full bg-white border border-[#E8E6E1] text-[#0A1931] disabled:opacity-30 hover:border-[#C9A96E]"
+          className="w-9 h-9 rounded-full bg-white border border-[#E8E6E1] text-[#0A1931] disabled:opacity-30"
         >
           ›
         </button>
@@ -145,7 +145,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
           <button
             ref={delBtn}
             onClick={() => setConfirmDel(true)}
-            className="h-9 px-3 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1] hover:text-[#C81E1E] hover:border-[#FECACA]"
+            className="h-9 px-3 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1]"
           >
             {t("projects.delete")}
           </button>
@@ -265,7 +265,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
                         className="group/sw p-0.5 rounded-full"
                       >
                         <span
-                          className="block w-5 h-5 rounded-full group-hover/sw:ring-2 group-hover/sw:ring-white/70"
+                          className="block w-5 h-5 rounded-full"
                           style={{ background: c, boxShadow: color === c ? `0 0 0 2px #fff, 0 0 0 4px ${c}` : undefined }}
                         />
                       </button>

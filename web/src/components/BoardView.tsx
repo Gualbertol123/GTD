@@ -307,7 +307,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
             aria-pressed={filters.focusP1}
             onClick={() => setFilters((f) => ({ ...f, focusP1: !f.focusP1 }))}
             className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors ${
-              filters.focusP1 ? "bg-[#DC2626] text-white border-[#DC2626]" : "bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA] hover:border-[#DC2626]"
+              filters.focusP1 ? "bg-[#DC2626] text-white border-[#DC2626]" : "bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA]"
             }`}
           >
             {t("filters.focusP1")}
@@ -316,7 +316,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
             <button
               type="button"
               onClick={resetFilters}
-              className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1] hover:border-[#C9A96E]"
+              className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1]"
             >
               {t("ux.board.resetFilters")}
             </button>
@@ -398,7 +398,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
         {editLayout && view === "board" && (
           <div className="mt-3 pt-3 border-t border-[#E8E6E1] flex items-center justify-between gap-2 flex-wrap">
             <span className="text-[11px] text-[#7A5F30]">{t("view.editHint")}</span>
-            <button onClick={resetWidths} className="h-8 px-3 rounded-full text-[11px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1] hover:border-[#C9A96E]">
+            <button onClick={resetWidths} className="h-8 px-3 rounded-full text-[11px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1]">
               {t("view.resetWidths")}
             </button>
           </div>
@@ -439,7 +439,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
           <button
             type="button"
             onClick={resetFilters}
-            className="h-8 px-3 rounded-full text-[12px] font-semibold bg-white text-[#0A1931] border border-[#E8E6E1] hover:border-[#C9A96E]"
+            className="h-8 px-3 rounded-full text-[12px] font-semibold bg-white text-[#0A1931] border border-[#E8E6E1]"
           >
             {t("ux.board.resetFilters")}
           </button>

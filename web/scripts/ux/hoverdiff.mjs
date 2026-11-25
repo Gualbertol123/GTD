@@ -66,7 +66,7 @@ const DESKTOP = [
       await page.waitForTimeout(300);
     },
   },
-  { name: "board-list", path: "#/board", act: async (page) => { await page.getByRole("button", { name: /^(Lista|List)$/ }).click(); } },
+  { name: "board-list", path: "#/board", act: async (page) => { await page.getByRole("button", { name: /^(Elenco|List)$/ }).click(); } },
   { name: "projects", path: "#/projects" },
   { name: "project-page", path: "#/projects/p1" },
   { name: "weekly", path: "#/weekly" },
@@ -311,7 +311,9 @@ async function sweepPage(page, scen) {
     const a = ALLOW.find((a) => (!a.scenario || new RegExp(a.scenario).test(scen)) && new RegExp(a.el).test(r.el) && (!a.verdict || a.verdict === r.verdict));
     if (a && !r.verdict.startsWith("ok")) r.allowed = a.reason;
   }
-  const mutList = [...muts.entries()].map(([m, at]) => ({ m, at }));
+  const mutList = [...muts.entries()]
+    .filter(([m]) => !ALLOW.some((a) => a.dom && new RegExp(a.dom).test(m)))
+    .map(([m, at]) => ({ m, at }));
   return { recs, mutList, screens };
 }
 
@@ -330,6 +332,7 @@ for (const c of combos) {
     await page.evaluate(install);
     for (const scen of scenarios) {
       await page.goto(page.url().split("#")[0] + scen.path);
+      await page.reload();
       await page.waitForTimeout(700);
       if (!(await page.evaluate(() => !!window.__sweep))) await page.evaluate(install);
       try {

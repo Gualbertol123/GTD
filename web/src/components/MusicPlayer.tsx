@@ -1348,7 +1348,7 @@ export function MusicButton() {
       title={t("music.title")}
       aria-label={t("music.title")}
       className={`h-9 w-9 rounded-full border text-[15px] leading-none flex items-center justify-center transition-colors ${
-        view !== "closed" ? "bg-[#C9A96E] text-[#0A1931] border-[#C9A96E]" : "bg-transparent text-white border-white/35 hover:border-[#C9A96E]"
+        view !== "closed" ? "bg-[#C9A96E] text-[#0A1931] border-[#C9A96E]" : "bg-transparent text-white border-white/35"
       }`}
     >
       <IconNote size={17} />

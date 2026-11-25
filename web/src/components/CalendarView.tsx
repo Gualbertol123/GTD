@@ -177,7 +177,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
   };
 
   const rowClass = (tk: Task) =>
-    `w-full text-left flex items-center gap-2 bg-[#F5F3EF] rounded-lg border px-2 py-1.5 cursor-pointer hover:border-[#C9A96E] ${
+    `w-full text-left flex items-center gap-2 bg-[#F5F3EF] rounded-lg border px-2 py-1.5 cursor-pointer ${
       selectedId === tk.id ? "border-[#C9A96E]" : "border-[#E8E6E1]"
     }`;
 
@@ -208,7 +208,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                   onClick={closeDetails}
                   aria-label={t("cal.closeDetails")}
                   title={t("cal.closeDetails")}
-                  className="h-7 w-7 -my-1 inline-flex items-center justify-center rounded-full text-[#6B6B6B] hover:text-[#0A1931] border border-transparent hover:border-[#E8E6E1]"
+                  className="h-7 w-7 -my-1 inline-flex items-center justify-center rounded-full text-[#6B6B6B] border border-transparent"
                 >
                   <IconClose size={16} />
                 </button>
@@ -238,7 +238,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                   onClick={() => setSelectedDay(null)}
                   aria-label={t("cal.closeDay")}
                   title={t("cal.closeDay")}
-                  className="h-7 w-7 -my-1 inline-flex items-center justify-center rounded-full text-[#6B6B6B] hover:text-[#0A1931] border border-transparent hover:border-[#E8E6E1]"
+                  className="h-7 w-7 -my-1 inline-flex items-center justify-center rounded-full text-[#6B6B6B] border border-transparent"
                 >
                   <IconClose size={16} />
                 </button>
@@ -325,7 +325,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
               onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
               aria-label={t("cal.prevMonth")}
               title={t("cal.prevMonth")}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-full border border-[#E8E6E1] hover:border-[#C9A96E] text-[#0A1931]"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-full border border-[#E8E6E1] text-[#0A1931]"
             >
               <IconBack size={16} />
             </button>
@@ -352,7 +352,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
               onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
               aria-label={t("cal.nextMonth")}
               title={t("cal.nextMonth")}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-full border border-[#E8E6E1] hover:border-[#C9A96E] text-[#0A1931]"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-full border border-[#E8E6E1] text-[#0A1931]"
             >
               <IconChevron size={16} />
             </button>
@@ -421,7 +421,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                           title={tk.title}
                           aria-label={chipLabel(tk, key)}
                           className={`w-full flex items-center gap-1 rounded px-1 py-0.5 cursor-pointer text-left ${
-                            isSel ? "bg-[#0A1931]" : "bg-[#F5F3EF] hover:bg-[#EFECE6]"
+                            isSel ? "bg-[#0A1931]" : "bg-[#F5F3EF]"
                           } ${overdue ? "border-l-2 border-[#DC2626]" : ""}`}
                         >
                           <span title={tk.priority} className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITY_DOT[tk.priority]}`} />
@@ -440,7 +440,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                         type="button"
                         onClick={() => setSelectedDay(key)}
                         aria-label={`${t("cal.more", { n: hidden })}, ${longDate(key)}`}
-                        className={`w-full text-left rounded px-1 py-0.5 text-[11px] font-semibold hover:bg-[#EFECE6] ${
+                        className={`w-full text-left rounded px-1 py-0.5 text-[11px] font-semibold ${
                           selectedDay === key ? "text-[#0A1931] underline" : "text-[#7A5F30]"
                         }`}
                       >
@@ -490,7 +490,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
               }}
               aria-label={t("cal.dismiss")}
               title={t("cal.dismiss")}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-full text-[#6B6B6B] hover:text-[#0A1931] shrink-0"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-full text-[#6B6B6B] shrink-0"
             >
               <IconClose size={16} />
             </button>

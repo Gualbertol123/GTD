@@ -117,7 +117,7 @@ export function UndoToastHost() {
               toast.onUndo();
               clearToast(toast.id);
             }}
-            className="shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold text-[#E9C989] hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
+            className="shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold text-[#E9C989] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
           >
             {t("ux.board.undo")}
           </button>
@@ -125,7 +125,7 @@ export function UndoToastHost() {
             type="button"
             onClick={() => clearToast(toast.id)}
             aria-label={t("ux.board.dismiss")}
-            className="shrink-0 h-8 w-8 rounded-full inline-flex items-center justify-center text-white/70 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
+            className="shrink-0 h-8 w-8 rounded-full inline-flex items-center justify-center text-white/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
               <path d="M6 6l12 12M18 6 6 18" />
@@ -411,7 +411,7 @@ export function TaskDetails({
                   : p === "P3"
                   ? "bg-[#C9C5BE] text-[#0A1931] border-[#C9C5BE]"
                   : "bg-[#0A1931] text-white border-[#0A1931]"
-                : "bg-white text-[#6B6B6B] border-[#E8E6E1] hover:border-[#C9A96E]"
+                : "bg-white text-[#6B6B6B] border-[#E8E6E1]"
             }`}
           >
             {p}
@@ -545,7 +545,7 @@ export function TaskDetails({
             onClick={() => move(-1)}
             disabled={idx <= 0}
             title={t("task.prev")}
-            className="w-8 h-8 rounded-full border border-[#E8E6E1] text-[#0A1931] disabled:opacity-30 hover:border-[#C9A96E]"
+            className="w-8 h-8 rounded-full border border-[#E8E6E1] text-[#0A1931] disabled:opacity-30"
           >
             ‹
           </button>
@@ -609,7 +609,7 @@ export function TaskDetails({
             ref={delRef}
             type="button"
             onClick={() => setConfirmDel(true)}
-            className="h-8 px-4 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1] hover:text-[#C81E1E] hover:border-[#FECACA]"
+            className="h-8 px-4 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1]"
           >
             {t("task.delete")}
           </button>

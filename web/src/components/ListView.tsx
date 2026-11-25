@@ -58,7 +58,7 @@ export function ListView({ tasks, members, send, showNames = true, multiAssign =
                   <tr
                     onClick={toggle}
                     className={`border-t border-[#F0EDE8] cursor-pointer ${
-                      isOpen ? "bg-[#F5F3EF]" : "hover:bg-[#C9A96E]/[0.07]"
+                      isOpen ? "bg-[#F5F3EF]" : ""
                     }`}
                   >
                     <td className="px-4 py-2.5">

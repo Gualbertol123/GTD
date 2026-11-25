@@ -417,7 +417,7 @@ function Figure({
     <button
       onClick={onClick}
       aria-pressed={pressed ? true : undefined}
-      className={`text-left rounded-[12px] bg-[#F5F3EF] border px-3 py-2.5 hover:border-[#C9A96E] transition-colors ${
+      className={`text-left rounded-[12px] bg-[#F5F3EF] border px-3 py-2.5 transition-colors ${
         pressed ? "border-[#C9A96E] ring-1 ring-[#C9A96E]" : "border-[#E8E6E1]"
       }`}
     >
@@ -463,7 +463,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
   return (
     <button
       onClick={onOpen}
-      className="group relative text-left bg-white rounded-[14px] border border-[#E8E6E1] hover:border-[#C9A96E] transition-colors overflow-hidden flex flex-col"
+      className="group relative text-left bg-white rounded-[14px] border border-[#E8E6E1] transition-colors overflow-hidden flex flex-col"
     >
       <span className="absolute left-0 top-0 bottom-0 w-1.5" style={{ background: color }} />
       <div className="p-4 pl-5 flex-1 flex flex-col gap-3 w-full">
@@ -545,7 +545,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
 function OlderRow({ project: p, stats: s, onOpen }: { project: Project; stats: ProjectStats; onOpen: () => void }) {
   const { t, lang } = useT();
   return (
-    <button onClick={onOpen} className="w-full flex items-center gap-3 px-1 py-2.5 text-left hover:bg-[#F5F3EF] rounded-lg">
+    <button onClick={onOpen} className="w-full flex items-center gap-3 px-1 py-2.5 text-left rounded-lg">
       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: projectColor(p) }} />
       <span className="flex-1 min-w-0 truncate text-[13px] font-medium text-[#0A1931]">{p.name || "—"}</span>
       <span className="hidden sm:inline text-[11px] text-[#6B6B6B] tabular-nums">{t("projects.tasksCount", { n: s.total })}</span>

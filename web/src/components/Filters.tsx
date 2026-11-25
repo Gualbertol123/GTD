@@ -66,7 +66,7 @@ export function Filters({ filters, setFilters, members }: Props) {
         className={`h-9 px-4 rounded-full text-[12px] font-semibold border transition-colors ${
           filters.focusP1
             ? "bg-[#DC2626] text-white border-[#DC2626]"
-            : "bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA] hover:border-[#DC2626]"
+            : "bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA]"
         }`}
       >
         {t("filters.focusP1")}
@@ -74,7 +74,7 @@ export function Filters({ filters, setFilters, members }: Props) {
       <button
         type="button"
         onClick={reset}
-        className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1] hover:border-[#C9A96E]"
+        className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1]"
       >
         {t("ux.board.resetFilters")}
       </button>
