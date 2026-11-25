@@ -80,8 +80,12 @@ export function SettingsView({ board, send }: Props) {
     }
   };
 
-  const normDays = Math.max(1, Math.min(365, parseInt(days, 10) || DEFAULT_LOGIN_DAYS));
+  const typedDays = parseInt(days, 10);
+  // Out of range clamps to 1…365 (0 is 1, not the default); empty or not a
+  // number keeps the default.
+  const normDays = Number.isFinite(typedDays) ? Math.max(1, Math.min(365, typedDays)) : DEFAULT_LOGIN_DAYS;
   const daysUnchanged = normDays === savedDays;
+  const daysOut = days.trim() !== "" && (!Number.isFinite(typedDays) || typedDays < 1 || typedDays > 365);
 
   const input =
     "w-full h-10 rounded-lg bg-[#F5F3EF] border border-[#E8E6E1] px-3 text-[13px] field";
@@ -179,7 +183,11 @@ export function SettingsView({ board, send }: Props) {
       <section className="bg-white rounded-[14px] border border-[#E8E6E1] p-5 space-y-3">
         <h3 className="font-trajan text-[11px] uppercase tracking-widest text-[#7A5F30]">{t("settings.access")}</h3>
         <TeamPasswordForm input={input} saveBtn={saveBtn} />
+        {/* The app checks the range itself (noValidate): the browser's own
+            bubble blocked the save, in the browser's language. Out of range,
+            a note says what will be saved; leaving the field clamps it. */}
         <form
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
             if (daysUnchanged) return;
@@ -199,6 +207,9 @@ export function SettingsView({ board, send }: Props) {
                 setDays(e.target.value);
                 daysSave.reset();
               }}
+              onBlur={() => setDays(String(normDays))}
+              aria-invalid={daysOut || undefined}
+              aria-describedby={daysOut ? "settings-login-days-range" : undefined}
               className={input}
             />
             <button
@@ -210,7 +221,15 @@ export function SettingsView({ board, send }: Props) {
               {t("settings.save")}
             </button>
           </div>
-          <div className="mt-1 min-h-[18px]"><SaveNote status={daysSave.status} /></div>
+          <div className="mt-1 min-h-[18px]">
+            {daysOut ? (
+              <span id="settings-login-days-range" className="text-[12px] text-[#92400E]">
+                {t("settings.daysRange", { n: normDays })}
+              </span>
+            ) : (
+              <SaveNote status={daysSave.status} />
+            )}
+          </div>
         </form>
 
         {confirm === "logout" ? (
