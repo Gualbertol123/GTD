@@ -5,6 +5,7 @@ import { useMe } from "../lib/identity";
 import { toISODate } from "../lib/dates";
 import { reflectionLogin, reflectionChangePassword, outcomeKey } from "../lib/auth";
 import { PersonalNotes } from "./PersonalNotes";
+import { showUndo } from "./TaskDetails";
 import {
   readReviewedToday,
   writeReviewedToday,
@@ -247,7 +248,7 @@ export function DailyReflection({ board, members, send }: Props) {
 
           <SpacedReview me={me} today={today} reflections={board.reflections} />
 
-          <RecentList reflections={board.reflections} member={me} lang={lang} />
+          <RecentList reflections={board.reflections} member={me} lang={lang} send={send} />
         </>
       ) : (
         <PersonalNotes board={board} me={me} send={send} />
@@ -716,10 +717,12 @@ function RecentList({
   reflections,
   member,
   lang,
+  send,
 }: {
   reflections: Reflection[];
   member: string;
   lang: Lang;
+  send: (op: Op, onError?: (message: string) => void) => void;
 }) {
   const { t } = useT();
   const recent = useMemo(
@@ -759,6 +762,24 @@ function RecentList({
               </span>
               <span className="text-[12px] font-semibold text-[#0A1931]">{r.member}</span>
               <span className="text-[10px] text-ink-3 ml-auto">{dayLabel(r.date, lang, t)}</span>
+              {/* An entry can be deleted (it never could), at once with
+                  Annulla, which puts the same row back (owner's rule). */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  send({ type: "reflectionDelete", id: r.id });
+                  showUndo(
+                    t("reflection.deleted", { date: dayLabel(r.date, lang, t) }),
+                    () => send({ type: "reflectionSave", reflection: r }),
+                    8000,
+                    { focus: e.detail === 0 }
+                  );
+                }}
+                aria-label={t("reflection.deleteLabel", { date: dayLabel(r.date, lang, t) })}
+                className="h-6 px-2 rounded-full text-[11px] text-[#6B6B6B]"
+              >
+                {t("notes.delete")}
+              </button>
             </div>
             <div className="space-y-1.5">
               {row(t("reflection.done"), r.done, "text-[#065F46]")}

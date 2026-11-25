@@ -163,14 +163,14 @@ export function ProjectsView({ board, send }: Props) {
         nextId={idx >= 0 && idx < list.length - 1 ? list[idx + 1].id : null}
         onOpen={open}
         notify={notify}
-        onDeleted={(p, taskIds) =>
-          notify(t("ux.projects.deleted", { name: p.name || "—" }), () => {
+        onDeleted={(p, taskIds, viaKeyboard) =>
+          showUndo(t("ux.projects.deleted", { name: p.name || "—" }), () => {
             send({ type: "projectAdd", project: p });
             // projectAdd does not write report_hidden.
             if (p.reportHidden) send({ type: "projectReportHidden", id: p.id, hidden: true });
             for (const id of taskIds) send({ type: "updateTask", id, patch: { projectId: p.id } });
             open(p.id);
-          })
+          }, 8000, { focus: viaKeyboard })
         }
       />
       </>

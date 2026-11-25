@@ -56,11 +56,8 @@ export function WeeklyView({ board, send }: Props) {
   const loc = localeCode(lang);
   const [offset, setOffset] = useState(0);
   const [grouping, setGrouping] = useState<Grouping>(readGrouping);
-  const [confirmClear, setConfirmClear] = useState(false);
   const [archOpen, setArchOpen] = useState(false);
   const [archAll, setArchAll] = useState(false);
-  const clearBtnRef = useRef<HTMLButtonElement>(null);
-  const refocusClear = useRef(false);
 
   // The Recap follows the Monday–Sunday week, like the Report tab. Everything
   // done before the week shown sits in Archiviate, so nothing falls in between.
@@ -108,18 +105,6 @@ export function WeeklyView({ board, send }: Props) {
   );
 
 
-  // The Clear button remounts when the confirmation closes: give it focus back.
-  useEffect(() => {
-    if (!confirmClear && refocusClear.current) {
-      refocusClear.current = false;
-      clearBtnRef.current?.focus();
-    }
-  }, [confirmClear]);
-
-  const cancelClear = () => {
-    refocusClear.current = true;
-    setConfirmClear(false);
-  };
 
   const removeItem = (column: ColKey, item: WeeklyItem, focus: boolean) => {
     send({ type: "weeklyDelete", column, id: item.id });
@@ -132,8 +117,8 @@ export function WeeklyView({ board, send }: Props) {
     for (const c of WEEKLY_COLUMNS)
       for (const item of board.weekly[c.key])
         snapshot.push({ column: c.key, item });
+    // At once, with Annulla (owner's rule, 2026-11-25): it used to ask first too.
     send({ type: "weeklyClear" });
-    setConfirmClear(false);
     showUndo(t("weekly.cleared", { n: snapshot.length }), () => restore(snapshot), UNDO_MS, { focus: true });
   };
 
@@ -201,49 +186,15 @@ export function WeeklyView({ board, send }: Props) {
         <div className="text-[12px] text-[#6B6B6B] max-w-[760px]">
           {t("weekly.helpV2")}
         </div>
-        {confirmClear ? (
-          <div
-            role="alertdialog"
-            aria-labelledby="weekly-clear-q"
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.stopPropagation();
-                cancelClear();
-              }
-            }}
-            className="flex items-center gap-2 text-[12px]"
-          >
-            <span id="weekly-clear-q" className="text-[#C81E1E]">
-              {t("weekly.confirmClearN", { n: itemCount })}
-            </span>
-            <button
-              type="button"
-              autoFocus
-              onClick={cancelClear}
-              className="h-8 px-3 rounded-full font-semibold bg-white text-[#0A1931] border border-[#E8E6E1]"
-            >
-              {t("task.no")}
-            </button>
-            <button
-              type="button"
-              onClick={clearAll}
-              className="h-8 px-3 rounded-full font-semibold text-[#C81E1E] border border-[#FECACA] bg-[#FEF2F2]"
-            >
-              {t("task.yes")}
-            </button>
-          </div>
-        ) : (
-          <button
-            ref={clearBtnRef}
-            type="button"
-            onClick={() => setConfirmClear(true)}
-            disabled={itemCount === 0}
-            title={itemCount === 0 ? t("weekly.clearEmpty") : undefined}
-            className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {t("weekly.clear")}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={clearAll}
+          disabled={itemCount === 0}
+          title={itemCount === 0 ? t("weekly.clearEmpty") : undefined}
+          className="h-9 px-4 rounded-full text-[12px] font-semibold bg-white text-[#6B6B6B] border border-[#E8E6E1] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {t("weekly.clear")}
+        </button>
       </div>
 
       {/* Recap of the week shown (auto, from DONE tasks) */}

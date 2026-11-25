@@ -482,12 +482,16 @@ groups.reflection = async () => {
       await page.locator("main button", { hasText: /^Salva/ }).first().click();
       await wait(page, 600);
       ok("notes: edit saves", db.personal_notes.some((n) => n.body === "Nota QA modificata"));
-      await page.locator("main button", { hasText: /^Elimina/ }).first().click();
-      await wait(page, 300);
-      await page.locator("main button", { hasText: /^Sì|^Elimina$/ }).last().click();
+      // Since 2026-11-25: deleted at once, with Annulla (no confirm).
+      const delNote = () => page.locator("main button", { hasText: /^Elimina$/ }).last().click();
+      await delNote();
       await wait(page, 600);
-      ok("notes: delete (inline confirm) removes the note", db.personal_notes.length === 0);
-      info("notes: Undo after delete", (await page.locator("[role=status]", { hasText: "Annulla" }).count()) ? "yes" : "no Undo offered");
+      ok("notes: delete removes the note at once", db.personal_notes.length === 0);
+      await page.locator("[role=status] button", { hasText: "Annulla" }).click();
+      await wait(page, 700);
+      ok("notes: Annulla brings the note back", db.personal_notes.some((n) => n.body === "Nota QA modificata"));
+      await delNote();
+      await wait(page, 600);
       await refuse(context, "personal_notes");
       await page.locator("main textarea").first().fill("Nota rifiutata");
       await page.locator("main button", { hasText: /Aggiungi/ }).first().click();

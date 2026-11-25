@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { IconNote } from "../components/MusicIcons";
 import type { Board, Weekly } from "../lib/types";
 import { WEEKLY_COLUMNS, genId } from "../lib/constants";
@@ -147,10 +147,7 @@ export function MoreScreen({
 function WeeklyPage({ board, send }: { board: Board; send: Send }) {
   const { t } = useT();
   const toast = useToast();
-  const [confirm, setConfirm] = useState(false);
   const [showDone, setShowDone] = useState(false);
-  const clearBtn = useRef<HTMLButtonElement>(null);
-  const refocusClear = useRef(false);
 
   // The same Monday–Sunday week as the desktop Recap and the Report.
   const { start, end } = periodBounds(weekPeriod(0));
@@ -164,21 +161,11 @@ function WeeklyPage({ board, send }: { board: Board; send: Send }) {
 
   const itemCount = WEEKLY_COLUMNS.reduce((n, c) => n + board.weekly[c.key].length, 0);
 
-  useEffect(() => {
-    if (!confirm && refocusClear.current) {
-      refocusClear.current = false;
-      clearBtn.current?.focus();
-    }
-  }, [confirm]);
-  const cancelClear = () => {
-    refocusClear.current = true;
-    setConfirm(false);
-  };
   const clearAll = () => {
     const snapshot: { column: keyof Weekly; item: { id: string; text: string } }[] = [];
     for (const c of WEEKLY_COLUMNS) for (const item of board.weekly[c.key]) snapshot.push({ column: c.key, item });
+    // At once, with Annulla (owner's rule, 2026-11-25), as on the desktop.
     send({ type: "weeklyClear" });
-    setConfirm(false);
     // Undo puts every line back, in its order.
     toast(t("weekly.cleared", { n: snapshot.length }), () => {
       for (const r of snapshot) send({ type: "weeklyAdd", column: r.column, item: { ...r.item } });
@@ -232,40 +219,14 @@ function WeeklyPage({ board, send }: { board: Board; send: Send }) {
       ))}
 
       <div style={{ marginTop: 26 }}>
-        {confirm ? (
-          <div
-            role="alertdialog"
-            aria-labelledby="m-weekly-clear-q"
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.stopPropagation();
-                cancelClear();
-              }
-            }}
-          >
-            <p id="m-weekly-clear-q" className="m-sub" style={{ margin: "0 4px 10px", color: "var(--m-red)" }}>
-              {t("weekly.confirmClearN", { n: itemCount })}
-            </p>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button className="m-btn" style={{ flex: 1 }} autoFocus onClick={cancelClear}>
-                {t("task.no")}
-              </button>
-              <button className="m-btn m-btn--danger" style={{ flex: 1.4 }} onClick={clearAll}>
-                {t("m.clearYes")}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            ref={clearBtn}
-            className="m-btn m-btn--block"
-            onClick={() => setConfirm(true)}
-            disabled={itemCount === 0}
-            title={itemCount === 0 ? t("weekly.clearEmpty") : undefined}
-          >
-            {t("weekly.clear")}
-          </button>
-        )}
+        <button
+          className="m-btn m-btn--block"
+          onClick={clearAll}
+          disabled={itemCount === 0}
+          title={itemCount === 0 ? t("weekly.clearEmpty") : undefined}
+        >
+          {t("weekly.clear")}
+        </button>
       </div>
     </>
   );

@@ -25,9 +25,8 @@ export const UX_BOARD_IT: Record<string, string> = {
   "ux.board.subtaskDeleted": "Sottoattività eliminata",
   "ux.board.subtaskMove": "Sposta sottoattività {n} (frecce su e giù)",
   "ux.board.subtaskMoved": "Spostata in posizione {n} di {total}",
-  "ux.board.removeMember": "Rimuovere {name}? Verrà tolto da {n} attività.",
-  "ux.board.removeMemberNone": "Rimuovere {name}?",
   "ux.board.memberRemoved": "{name} rimosso dal team",
+  "ux.board.memberRemovedN": "{name} rimosso dal team e da {n} attività",
   "ux.board.removeMemberLabel": "Rimuovi {name}",
   "ux.board.columnsPanel": "Colonne visibili",
 };
@@ -57,9 +56,8 @@ export const UX_BOARD_EN: Record<string, string> = {
   "ux.board.subtaskDeleted": "Subtask deleted",
   "ux.board.subtaskMove": "Move subtask {n} (up and down arrows)",
   "ux.board.subtaskMoved": "Moved to position {n} of {total}",
-  "ux.board.removeMember": "Remove {name}? They will be taken off {n} tasks.",
-  "ux.board.removeMemberNone": "Remove {name}?",
   "ux.board.memberRemoved": "{name} removed from the team",
+  "ux.board.memberRemovedN": "{name} removed from the team and {n} tasks",
   "ux.board.removeMemberLabel": "Remove {name}",
   "ux.board.columnsPanel": "Visible columns",
 };

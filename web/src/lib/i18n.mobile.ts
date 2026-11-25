@@ -157,7 +157,6 @@ export const M_IT: Dict = {
   "m.weekly.improve": "Da migliorare",
   "m.weekly.blockers": "Blocchi",
   "m.weekly.focus": "Focus prossima settimana",
-  "m.clearYes": "Sì, svuota la weekly",
 
   "m.me": "Tu",
   "m.meHint": "Nome, lingua, aspetto",
@@ -314,7 +313,6 @@ export const M_EN: Dict = {
   "m.weekly.improve": "To improve",
   "m.weekly.blockers": "Blockers",
   "m.weekly.focus": "Focus next week",
-  "m.clearYes": "Yes, clear the weekly",
 
   "m.me": "You",
   "m.meHint": "Name, language, appearance",

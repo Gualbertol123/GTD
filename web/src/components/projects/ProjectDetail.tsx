@@ -31,7 +31,7 @@ interface Props {
   nextId: string | null;
   onOpen: (id: string) => void;
   /** Called just before the project is deleted, with the ids of its linked tasks (for Undo). */
-  onDeleted?: (project: Project, taskIds: string[]) => void;
+  onDeleted?: (project: Project, taskIds: string[], viaKeyboard: boolean) => void;
   /** Offers an Undo for a reversible action (shown by ProjectsView, which stays mounted). */
   notify?: (text: string, undo: () => void) => void;
 }
@@ -42,13 +42,10 @@ const card = "bg-white rounded-[14px] border border-[#E8E6E1]";
 export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, prevId, nextId, onOpen, onDeleted, notify }: Props) {
   const { t, lang } = useT();
   const [err, setErr] = useState<string | null>(null);
-  const [confirmDel, setConfirmDel] = useState(false);
   const color = projectColor(p);
   const done = s.status === "done";
   const name = useSyncedField(p.name);
   const desc = useSyncedField(p.description ?? "");
-  const delBtn = useRef<HTMLButtonElement>(null);
-  const restoreDelFocus = useRef(false);
 
   const save = (op: Op) => {
     setErr(null);
@@ -60,16 +57,6 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
   const nameSave = useAutosave(name.value, p.name, (v) => patch({ name: v }), { debounce: false, trim: true });
   const descSave = useAutosave(desc.value, p.description ?? "", (v) => patch({ description: v }));
 
-  const closeConfirm = () => {
-    restoreDelFocus.current = true;
-    setConfirmDel(false);
-  };
-  useEffect(() => {
-    if (!confirmDel && restoreDelFocus.current) {
-      restoreDelFocus.current = false;
-      delBtn.current?.focus();
-    }
-  }, [confirmDel]);
 
   const toggleOwner = (m: string) => {
     const cur = p.owners ?? [];
@@ -123,42 +110,18 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
         >
           {p.reportHidden ? `○ ${t("projects.notInReport")}` : `● ${t("projects.inReport")}`}
         </button>
-        {confirmDel ? (
-          <span
-            role="group"
-            aria-label={t("projects.confirmDelete")}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.stopPropagation();
-                closeConfirm();
-              }
-            }}
-            className="flex items-center gap-2 text-[12px] bg-[#FEF2F2] border border-[#FECACA] rounded-full pl-3 pr-1 h-9"
-          >
-            <span className="text-[#C81E1E] font-semibold">{t("projects.confirmDelete")}</span>
-            <button
-              onClick={() => {
-                onDeleted?.(p, board.tasks.filter((x) => x.projectId === p.id).map((x) => x.id));
-                save({ type: "projectDelete", id: p.id });
-                onBack();
-              }}
-              className="h-7 px-3 rounded-full bg-[#DC2626] text-white font-semibold"
-            >
-              {t("task.yes")}
-            </button>
-            <button autoFocus onClick={closeConfirm} className="h-7 px-3 rounded-full bg-white text-[#6B6B6B] border border-[#E8E6E1]">
-              {t("task.no")}
-            </button>
-          </span>
-        ) : (
-          <button
-            ref={delBtn}
-            onClick={() => setConfirmDel(true)}
-            className="h-9 px-3 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1]"
-          >
-            {t("projects.delete")}
-          </button>
-        )}
+        {/* Deleted at once, with Annulla (owner's rule, 2026-11-25): its tasks are
+            unlinked and kept, and Annulla links them back. */}
+        <button
+          onClick={(e) => {
+            onDeleted?.(p, board.tasks.filter((x) => x.projectId === p.id).map((x) => x.id), e.detail === 0);
+            save({ type: "projectDelete", id: p.id });
+            onBack();
+          }}
+          className="h-9 px-3 rounded-full text-[12px] font-semibold text-[#6B6B6B] border border-[#E8E6E1]"
+        >
+          {t("projects.delete")}
+        </button>
       </div>
 
       {!v2 && (

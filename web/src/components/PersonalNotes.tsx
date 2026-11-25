@@ -3,6 +3,7 @@ import type { Board, Op, PersonalNote } from "../lib/types";
 import { genId } from "../lib/constants";
 import { localeCode, useT } from "../lib/i18n";
 import { AutoTextarea } from "./AutoTextarea";
+import { showUndo } from "./TaskDetails";
 
 interface Props {
   board: Board;
@@ -21,7 +22,6 @@ export function PersonalNotes({ board, me, send }: Props) {
   const [draft, setDraft] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
-  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
 
   const unavailable = board.personalNotesError;
@@ -50,10 +50,12 @@ export function PersonalNotes({ board, me, send }: Props) {
     send({ type: "noteUpdate", id: note.id, body }, setFailed);
   };
 
-  const remove = (id: string) => {
-    setConfirmId(null);
+  // Deleted at once, with Annulla (owner's rule, 2026-11-25): the note comes
+  // back whole, with its id and dates.
+  const remove = (note: PersonalNote, viaKeyboard: boolean) => {
     setFailed(null);
-    send({ type: "noteDelete", id }, setFailed);
+    send({ type: "noteDelete", id: note.id }, setFailed);
+    showUndo(t("notes.deleted"), () => send({ type: "noteAdd", note }, setFailed), 8000, { focus: viaKeyboard });
   };
 
   const stamp = (n: PersonalNote) =>
@@ -159,27 +161,9 @@ export function PersonalNotes({ board, me, send }: Props) {
                     >
                       {t("notes.edit")}
                     </button>
-                    {confirmId === note.id ? (
-                      <span className="flex items-center gap-2 text-[11px]">
-                        <span className="text-[#C81E1E]">{t("notes.confirmDelete")}</span>
-                        <button
-                          onClick={() => remove(note.id)}
-                          className="font-semibold text-[#C81E1E]"
-                        >
-                          {t("task.yes")}
-                        </button>
-                        <button onClick={() => setConfirmId(null)} className="text-[#6B6B6B]">
-                          {t("task.no")}
-                        </button>
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmId(note.id)}
-                        className="text-[11px] text-[#6B6B6B]"
-                      >
-                        {t("notes.delete")}
-                      </button>
-                    )}
+                    <button onClick={(e) => remove(note, e.detail === 0)} className="text-[11px] text-[#6B6B6B]">
+                      {t("notes.delete")}
+                    </button>
                   </div>
                 </>
               )}

@@ -2062,15 +2062,10 @@ function PlaylistPage({ id, go }: { id: string; go: Go }) {
   const p = usePlaylist(id);
   const { loaded } = usePlaylists();
   const shuffle = useMusicSel((s) => s.shuffle);
-  const [confirm, setConfirm] = useState(false);
   const [editing, setEditing] = useState(() => renameOnOpen === id);
   useEffect(() => {
     if (renameOnOpen === id) renameOnOpen = null;
   }, [id]);
-  const confirmRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (confirm) confirmRef.current?.focus();
-  }, [confirm]);
 
   if (!p)
     return (
@@ -2081,9 +2076,9 @@ function PlaylistPage({ id, go }: { id: string; go: Go }) {
     );
   const srcKey = `pl:${p.id}`;
 
+  // At once, with Annulla (owner's rule, 2026-11-25; it used to ask first too).
   const remove = () => {
     const snap = p;
-    setConfirm(false);
     reportWrite(deletePlaylist(p.id), t);
     // Back must not land on a playlist that is gone: replace this entry.
     go({ kind: "home" }, { replace: true });
@@ -2151,21 +2146,9 @@ function PlaylistPage({ id, go }: { id: string; go: Go }) {
           <IconShuffle size={16} /> {t("mt.shuffle")}
         </button>
         <span style={{ flex: 1 }} />
-        {confirm ? (
-          <div className="mt-confirm" role="alertdialog" aria-label={t("mt.deleteQ")} onKeyDown={(e) => e.key === "Escape" && setConfirm(false)}>
-            <span className="mt-hint">{t("mt.deleteQ")}</span>
-            <button ref={confirmRef} className="mt-ghost mt-ghost--danger" onClick={remove}>
-              {t("mt.delete")}
-            </button>
-            <button className="mt-ghost" onClick={() => setConfirm(false)}>
-              {t("mt.cancel")}
-            </button>
-          </div>
-        ) : (
-          <button className="mt-ghost" onClick={() => setConfirm(true)}>
-            {t("mt.delete")}
-          </button>
-        )}
+        <button className="mt-ghost" onClick={remove}>
+          {t("mt.delete")}
+        </button>
       </div>
       <SyncMissingList id={p.id} go={go} />
       {p.tracks.length === 0 ? <p className="mt-hint">{t("mt.emptyPlaylist")}</p> : <TrackTable tracks={p.tracks} label={p.name} srcKey={srcKey} playlistId={p.id} />}
