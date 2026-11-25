@@ -30,9 +30,19 @@ export interface SendDeps {
 // to (a recurring task's completion + its next occurrence) are a group: if
 // one is refused, the rest of the group is not sent, so a refused completion
 // no longer leaves a second copy of the task behind.
-export function createSend(deps: SendDeps) {
+export type Send = ((op: Op, onError?: (message: string) => void) => void) & {
+  /** Ops sent but not yet confirmed by the server, oldest first. */
+  pending: () => Op[];
+};
+
+export function createSend(deps: SendDeps): Send {
   let queue: Promise<void> = Promise.resolve();
-  return (op: Op, onError?: (message: string) => void): void => {
+  const unconfirmed: Op[] = [];
+  const settle = (op: Op) => {
+    const i = unconfirmed.indexOf(op);
+    if (i >= 0) unconfirmed.splice(i, 1);
+  };
+  const send = (op: Op, onError?: (message: string) => void): void => {
     const first = deps.cell.current;
     if (!first) return;
     // A recurring task's completion also adds its next occurrence (lib/recurrence.ts).
@@ -43,12 +53,15 @@ export function createSend(deps: SendDeps) {
       steps.push({ op: o, before });
     }
     deps.publish(deps.cell.current!);
+    unconfirmed.push(...steps.map((s) => s.op));
     queue = queue.then(async () => {
       for (let i = 0; i < steps.length; i++) {
         const s = steps[i];
         try {
           await deps.write(s.op, s.before);
+          settle(s.op);
         } catch (e: unknown) {
+          for (const r of steps.slice(i)) settle(r.op); // refused, and the rest of the group is dropped
           const message = errMsg(e);
           // Part of a group already went through (a recurring completion
           // whose next occurrence was refused): put the completion back, so
@@ -68,6 +81,18 @@ export function createSend(deps: SendDeps) {
       }
     });
   };
+  send.pending = () => unconfirmed.slice();
+  return send;
+}
+
+// Ops that set values, so applying one again on top of a row re-read from
+// the server is harmless: used to keep a pending local change on screen when
+// the echo of an earlier write (or a poll) brings back the row without it.
+const REAPPLY = new Set<Op["type"]>(["updateTask", "moveTask", "setDueDate", "updateSubtask", "reorderSubtasks", "deleteSubtask", "deleteTask", "weeklyUpdate", "weeklyDelete", "projectUpdate", "noteUpdate", "noteDelete"]);
+
+/** `board` (fresh from the server) with the still-unconfirmed local ops on top. */
+export function withPending(board: Board, ops: Op[]): Board {
+  return ops.reduce((b, op) => (REAPPLY.has(op.type) ? applyOpLocal(b, op) : b), board);
 }
 
 export function errMsg(e: unknown): string {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createSend, type BoardCell } from "../optimisticSend";
+import { createSend, withPending, type BoardCell } from "../optimisticSend";
 import type { Board, Op } from "../types";
 import { board, task } from "./fixtures";
 
@@ -91,6 +91,16 @@ describe("createSend", () => {
     await flush();
     expect(s.writes.map((w) => w.op.type)).toEqual(["moveTask"]); // the next one was never inserted
     expect(s.onFail).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a pending local change on top of a row re-read from the server", async () => {
+    const s = setup(board({ tasks: [task("a", { title: "old" })] }));
+    s.send({ type: "updateTask", id: "a", patch: { title: "new" } });
+    // The server row arrives (an echo of an earlier write) before this write lands.
+    const fromServer = board({ tasks: [task("a", { title: "old" })] });
+    expect(withPending(fromServer, s.send.pending()).tasks[0].title).toBe("new");
+    await flush();
+    expect(s.send.pending()).toEqual([]); // confirmed: nothing to re-apply any more
   });
 
   it("does nothing before the board has loaded", () => {

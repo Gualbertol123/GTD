@@ -3,7 +3,7 @@ import { reportSaveError } from "./saveErrors";
 import type { Board, Op } from "./types";
 import { fetchBoard, fetchChange, seedIfEmpty, writeOp, type ChangedTable } from "./db";
 import { applyRowChange, type RowChange } from "./rowSync";
-import { createSend, errMsg, type BoardCell } from "./optimisticSend";
+import { createSend, errMsg, withPending, type BoardCell } from "./optimisticSend";
 import { supabase } from "./supabaseClient";
 import { isConfigured } from "./supabaseConfig";
 import { requestAuthCheck } from "./auth";
@@ -45,7 +45,13 @@ export function useBoard(): UseBoard {
   // The newest board, ahead of render: every change goes through `commit`, so
   // an op sent right after another one (same tick) starts from it.
   const boardRef = useRef<BoardCell>({ current: null }).current;
-  const commit = useCallback((next: Board) => {
+  // Local ops not yet confirmed by the server (set once `send` exists).
+  const pendingOps = useRef<() => Op[]>(() => []);
+  // Server rows in (a full reload or a realtime re-read). A local write still
+  // in flight is re-applied on top: the echo of an earlier write used to bring
+  // back a row without it, so a box just ticked un-ticked for a moment.
+  const commit = useCallback((server: Board) => {
+    const next = withPending(server, pendingOps.current());
     boardRef.current = next;
     setBoard(next);
   }, [boardRef]);
@@ -193,9 +199,8 @@ export function useBoard(): UseBoard {
     };
   }, [reload, commit, boardRef]);
 
-  const send = useMemo(
-    () =>
-      createSend({
+  const send = useMemo(() => {
+    const s = createSend({
         cell: boardRef,
         publish: setBoard,
         // Persist; realtime + poll reconcile to authoritative state.
@@ -206,9 +211,10 @@ export function useBoard(): UseBoard {
           requestAuthCheck();
           reload(); // undo a failed optimistic change
         },
-      }),
-    [boardRef, reload]
-  );
+      });
+    pendingOps.current = s.pending;
+    return s;
+  }, [boardRef, reload]);
 
   return { board, conn, error, send, reload };
 }
