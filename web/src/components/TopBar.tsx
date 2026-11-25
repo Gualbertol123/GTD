@@ -158,7 +158,9 @@ export function TopBar({ board, onRename, onOpenMail, send, rightSlot }: Props) 
           {rightSlot}
           <button
             onClick={onOpenMail}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-[#C9A96E] text-[#0A1931] text-[12px] font-semibold transition-colors"
+            // An occasional action: an outlined pill like its neighbours, not the
+            // loudest fill on the page (it competed with every primary button).
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full border bg-transparent text-white border-white/35 text-[12px] font-semibold"
           >
             <IconMail />
             {t("app.mail")}

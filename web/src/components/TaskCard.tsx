@@ -161,7 +161,7 @@ export function TaskCard({
             </span>
           )}
           {showStatus && (
-            <span className="shrink-0 text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-[#F5F3EF] text-[#6B6B6B] border border-[#E8E6E1]">
+            <span className="shrink-0 text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-[#F5F3EF] text-[#6B6B6B] border border-transparent">
               {statusLabel(lang, task.status)}
             </span>
           )}
@@ -192,14 +192,14 @@ export function TaskCard({
                   ? "bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA]"
                   : until !== null && until <= 2
                   ? "bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]"
-                  : "bg-[#F5F3EF] text-[#6B6B6B] border-[#E8E6E1]"
+                  : "bg-[#F5F3EF] text-[#6B6B6B] border-transparent"
               }`}
             >
               {dueFmt}
             </span>
           )}
           {task.status === "WAITING" && task.waitingSince && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F3EF] text-[#6B6B6B] border border-[#E8E6E1]">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F3EF] text-[#6B6B6B] border border-transparent">
               {waiting} {t("task.days")}
             </span>
           )}
@@ -213,7 +213,7 @@ export function TaskCard({
             </span>
           )}
           {total > 0 && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F3EF] text-[#6B6B6B] border border-[#E8E6E1]">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F3EF] text-[#6B6B6B] border border-transparent">
               ☑ {done}/{total}
             </span>
           )}

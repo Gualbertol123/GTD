@@ -649,7 +649,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
 
           {/* Done — this week's completed DONE tasks, mirroring the DONE column
               as a full-width searchable bar (a duplicate view, not a move). */}
-          <div className="bg-[#EFECE6] rounded-[14px] border border-[#E3DFD7] p-3">
+          <div className="bg-[#EFECE6] rounded-[14px] border border-transparent p-3">
             <button
               type="button"
               aria-expanded={doneOpen}
@@ -712,7 +712,7 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
           </div>
 
           {/* Archived — DONE tasks completed more than a week ago (always shown) */}
-          <div className="bg-[#EFECE6] rounded-[14px] border border-[#E3DFD7] p-3">
+          <div className="bg-[#EFECE6] rounded-[14px] border border-transparent p-3">
             <button
               type="button"
               aria-expanded={archOpen}

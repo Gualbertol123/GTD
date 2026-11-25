@@ -31,7 +31,7 @@ export function MenuBar() {
   const todayDish = days[0]?.date === today ? days[0].courses.find((c) => c.course === "daily")?.items[0]?.name : undefined;
 
   return (
-    <div className="bg-[#EFECE6] rounded-[14px] border border-[#E3DFD7] p-3">
+    <div className="bg-[#EFECE6] rounded-[14px] border border-transparent p-3">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

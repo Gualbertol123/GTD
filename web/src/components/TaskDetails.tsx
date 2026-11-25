@@ -429,7 +429,7 @@ export function TaskDetails({
       )}
 
       {/* Subtasks — styled like a small kanban column */}
-      <div className="bg-[#EFECE6] rounded-[12px] border border-[#E3DFD7] p-2.5">
+      <div className="bg-[#EFECE6] rounded-[12px] border border-transparent p-2.5">
         <div className="flex items-center justify-between mb-2 px-1">
           <span className="font-trajan text-[10px] uppercase tracking-wide text-[#6B6B6B]">
             {t("task.subtasks")} {total ? `${done}/${total} · ${pct}%` : ""}
