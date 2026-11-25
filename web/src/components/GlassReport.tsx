@@ -1,20 +1,24 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { Board, Priority, Status, Subtask, Task } from "../lib/types";
+import type { Board, Priority, Subtask, Task } from "../lib/types";
 import type { PlannerColumn, ReportData } from "../lib/reportData";
 import { statusLabel, useT } from "../lib/i18n";
 import {
   PRIORITY_COLOR,
   STATUS_COLOR,
   SECTION_COLOR,
+  MAX_HIGHLIGHTS,
   buildBlocks,
   coverStats,
+  highlightCandidates,
+  starredHighlights,
   type Block,
+  type HighlightGroup,
   reportPdfName,
   reportProjectTasks,
   type CoverStats,
 } from "../lib/glassReportModel";
 import { buildReportDoc, type ReportDoc } from "../lib/reportDoc";
-import { PROJECT_STATUS_COLOR, boardTasks } from "../lib/projects";
+import { PROJECT_STATUS_COLOR } from "../lib/projects";
 import { shortDate } from "../lib/dates";
 import { readReportDraft, writeReportDraft } from "../lib/prefs";
 
@@ -532,20 +536,9 @@ function PlannerPage({
 
 // ---- Cover --------------------------------------------------------------------
 
-/** Tasks that can be put in the cover's highlights, grouped as on the board. */
-function highlightCandidates(board: Board, data: ReportData): { status: Status; tasks: Task[] }[] {
-  const doneIds = new Set(data.done.map((r) => r.task.id));
-  return [
-    { status: "DONE" as Status, tasks: data.done.map((r) => r.task) },
-    ...(["IN PROGRESS", "NEXT", "WAITING"] as Status[]).map((status) => ({
-      status,
-      tasks: boardTasks(board).filter((t) => t.status === status && !doneIds.has(t.id)),
-    })),
-  ].filter((g) => g.tasks.length > 0);
-}
-
-const MAX_HIGHLIGHTS = 8;
-
+// «Da sottolineare»: the tasks to point out on the cover, chosen with
+// «Scegli attività» (lib/glassReportModel.ts). Until the person picks, it is
+// the board's ★ tasks among those offered.
 function HighlightPicker({
   id,
   groups,
@@ -555,7 +548,7 @@ function HighlightPicker({
   toggleRef,
 }: {
   id: string;
-  groups: { status: Status; tasks: Task[] }[];
+  groups: HighlightGroup[];
   selected: string[];
   onChange: (ids: string[]) => void;
   /** refocus: give focus back to the toggle (not after a click elsewhere). */
@@ -604,7 +597,10 @@ function HighlightPicker({
   return (
     <div ref={boxRef} id={id} className="gr-picker gr-noexport" role="group" aria-label={t("gr.pick.open")}>
       <div className="gr-picker-head">
-        <span>{t("gr.pick.title", { n: selected.length, max: MAX_HIGHLIGHTS })}</span>
+        <span className="gr-picker-title">
+          <span>{t("gr.pick.title", { n: selected.length, max: MAX_HIGHLIGHTS })}</span>
+          <span className="gr-picker-hint">{t("gr.pick.fromPins")}</span>
+        </span>
         <button type="button" className="gr-picker-btn" onClick={() => onClose(true)}>
           {t("gr.pick.done")}
         </button>
@@ -641,6 +637,7 @@ function HighlightPicker({
 function Cover({
   board,
   data,
+  groups,
   stats,
   periodText,
   edit,
@@ -649,6 +646,7 @@ function Cover({
 }: {
   board: Board;
   data: ReportData;
+  groups: HighlightGroup[];
   stats: CoverStats;
   periodText: string;
   edit: EditCtx;
@@ -662,7 +660,6 @@ function Cover({
     setPicking(false);
     if (refocus) toggleRef.current?.focus();
   }, []);
-  const groups = useMemo(() => highlightCandidates(board, data), [board, data]);
   const byId = useMemo(() => new Map(groups.flatMap((g) => g.tasks.map((task) => [task.id, task] as const))), [groups]);
   const chosen = highlights.map((id) => byId.get(id)).filter((x): x is Task => !!x);
   const doneIds = useMemo(() => new Set(data.done.map((r) => r.task.id)), [data]);
@@ -834,24 +831,22 @@ export function GlassReport({
   const [draft] = useState(() => readReportDraft(draftKey));
   const [edits, setEdits] = useState<Record<string, string>>(() => draft?.edits ?? {});
   const [hidden, setHidden] = useState<Set<string>>(() => new Set(draft?.hidden ?? []));
-  const [highlights, setHighlights] = useState<string[]>(
-    () =>
-      draft?.highlights ??
-      [...data.done]
-        .sort((a, b) => a.task.priority.localeCompare(b.task.priority))
-        .slice(0, 4)
-        .map((r) => r.task.id)
-  );
+  // «Da sottolineare»: the person's own choice once they make one (kept in
+  // the draft, so a week with a saved choice keeps it); until then, null, and
+  // the list follows the board's ★ tasks.
+  const [picked, setPicked] = useState<string[] | null>(() => draft?.highlights ?? null);
+  const groups = useMemo(() => highlightCandidates(board, data), [board, data]);
+  const highlights = useMemo(() => picked ?? starredHighlights(groups), [picked, groups]);
 
   // Every change is written for this week straight away (inside the change
   // itself, so leaving the tab right after an edit cannot lose it).
-  const latest = useRef({ edits, hidden, highlights });
-  latest.current = { edits, hidden, highlights };
+  const latest = useRef({ edits, hidden, picked });
+  latest.current = { edits, hidden, picked };
   const save = useCallback(
-    (next: Partial<{ edits: Record<string, string>; hidden: Set<string>; highlights: string[] }>) => {
+    (next: Partial<{ edits: Record<string, string>; hidden: Set<string>; picked: string[] | null }>) => {
       const cur = { ...latest.current, ...next };
       latest.current = cur;
-      writeReportDraft(draftKey, { edits: cur.edits, hidden: [...cur.hidden], highlights: cur.highlights });
+      writeReportDraft(draftKey, { edits: cur.edits, hidden: [...cur.hidden], highlights: cur.picked });
       onDraftChange?.(true);
     },
     [draftKey, onDraftChange]
@@ -862,8 +857,8 @@ export function GlassReport({
   }, []);
   const chooseHighlights = useCallback(
     (ids: string[]) => {
-      setHighlights(ids);
-      save({ highlights: ids });
+      setPicked(ids);
+      save({ picked: ids });
     },
     [save]
   );
@@ -1008,6 +1003,7 @@ export function GlassReport({
           <Cover
             board={board}
             data={data}
+            groups={groups}
             stats={stats}
             periodText={periodText}
             edit={edit}

@@ -191,13 +191,14 @@ function readJson<T>(key: keyof typeof KEYS, fallback: T): T {
 }
 
 // ---- Weekly report drafts -----------------------------------------------------
-// The edits made to one week's report (texts, hidden cards, chosen highlights),
+// The edits made to one week's report (texts, hidden cards, «Da sottolineare»),
 // kept on this device so they survive leaving the REPORT tab or reloading.
 // One draft per report period; a draft expires 7 days after its last change.
 
 export interface ReportDraft {
   edits: Record<string, string>;
   hidden: string[];
+  /** «Da sottolineare» as chosen; null until chosen (the list then follows the board's ★). */
   highlights: string[] | null;
   savedAt: number;
 }

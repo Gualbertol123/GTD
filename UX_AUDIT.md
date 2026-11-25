@@ -276,7 +276,9 @@ means reproduced, fixed, and re-checked with the script named (in
    ~190 places.
 6. **"In evidenza" means two things**: the board's ★ band and the report
    cover's picked tasks. Rename the report's ("Da sottolineare"), or fill it
-   from ★?
+   from ★? — *Decided: both.* The cover's list is now «Da sottolineare»
+   (EN "Worth a mention") and starts from the board's ★ tasks; a choice
+   saved in a period's draft is kept.
 7. **"Questa settimana" (F11).** The board's Done bar is the last 7 days;
    Weekly is the calendar week. One definition, or the copy fix
    already made (the Done bar now says "negli ultimi 7 giorni").

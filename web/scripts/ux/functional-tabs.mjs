@@ -180,6 +180,14 @@ groups.report = async () => {
     await wait(page, 2500);
     const pages = await page.locator(".gr-page, [class*=gr-page]").count();
     ok("report: Generate lays out pages", pages > 0, `${pages} page nodes`);
+    // The cover's list is «Da sottolineare» (not the board's "In evidenza"),
+    // and a new report starts it from the board's ★ tasks (seed tasks 2 and 3).
+    const hlTitle = (await page.locator('.gr-pages [data-ed-id="cover.highlightsTitle"]').first().textContent())?.trim();
+    ok("report: the cover's list is called 'Da sottolineare'", hlTitle === "Da sottolineare", `title="${hlTitle}"`);
+    const hlItems = async () => page.locator(".gr-pages .gr-highlights li").allTextContents();
+    const starredTitles = db.tasks.filter((t) => t.pinned).map((t) => t.title);
+    const pre = await hlItems();
+    ok("report: 'Da sottolineare' starts with the board's ★ tasks", pre.length === starredTitles.length && starredTitles.every((x) => pre.some((p) => p.includes(x))), `list=${pre.join(" | ")}; ★=${starredTitles.join(" | ")}`);
     await page.screenshot({ path: `${OUT}/report-generated.png` });
     // Edit text in place
     const ed = page.locator("[data-ed-id][contenteditable=true]").first();
@@ -217,6 +225,15 @@ groups.report = async () => {
       await wait(page, 600);
       const d2 = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("gtd-report-draft:")).map((k) => localStorage.getItem(k)).join(""));
       ok("report: highlight choice kept in the draft", /"highlights":\[/.test(d2), d2.match(/"highlights":[^\]]*\]?/)?.[0] ?? "");
+      // A saved choice stays the week's choice, even when the board's ★ change.
+      const chosen = await hlItems();
+      const t2 = db.tasks.find((t) => t.id === "2");
+      t2.pinned = false;
+      await page.reload();
+      await wait(page, 2500);
+      const after = await hlItems();
+      ok("report: a saved choice is kept when the board's ★ change", after.length === chosen.length && chosen.length === starredTitles.length + 1 && after.some((x) => x.includes(t2.title)), `chosen=${chosen.join(" | ")}; after reload=${after.join(" | ")}`);
+      t2.pinned = true;
     } else ok("report: 'Scegli attività' button found", false);
     await page.screenshot({ path: `${OUT}/report-edited.png` });
     // Leave the tab and come back: draft reopens
@@ -281,6 +298,9 @@ groups.report = async () => {
       await wait(page, 1500);
       const alert = await page.locator("main [role=alert]").allInnerTexts();
       ok("report: Download PDF POSTs to the function with a bearer token", !!req && req.method() === "POST" && /^Bearer /.test(req.headers()["authorization"] ?? ""));
+      // The server PDF is drawn from this document: it must carry the list's new name.
+      const docHl = (() => { try { return JSON.parse(req.postData()).cover.highlights; } catch { return null; } })();
+      ok("report: the PDF document titles the list 'Da sottolineare'", docHl?.title === "Da sottolineare" && docHl.items.length > 0, JSON.stringify(docHl)?.slice(0, 200));
       ok("report: PDF failure is reported in the UI", alert.length > 0, alert.join(" / ").replace(/\n/g, " ").slice(0, 200));
       const busy = await pdfBtn.isDisabled();
       ok("report: PDF button re-enabled after failure", !busy);

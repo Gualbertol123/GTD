@@ -134,3 +134,37 @@ export function reportProjectTasks(block: Extract<Block, { kind: "project" }>): 
 export function reportPdfName(data: ReportData): string {
   return `Weekly_Report_${data.period.from}_${data.period.to}.pdf`;
 }
+
+// ---- The cover's «Da sottolineare» list -------------------------------------------
+// A few tasks the person wants to point out, picked with «Scegli attività».
+// Not the board's ★ band ("In evidenza"), but it starts from it.
+
+export const MAX_HIGHLIGHTS = 8;
+
+export interface HighlightGroup {
+  status: Status;
+  tasks: Task[];
+}
+
+/** Tasks the picker offers, grouped and ordered as it shows them: completed
+ *  in the period, then in progress, next and waiting on the board. */
+export function highlightCandidates(board: Board, data: ReportData): HighlightGroup[] {
+  const doneIds = new Set(data.done.map((r) => r.task.id));
+  return [
+    { status: "DONE" as Status, tasks: data.done.map((r) => r.task) },
+    ...(["IN PROGRESS", "NEXT", "WAITING"] as Status[]).map((status) => ({
+      status,
+      tasks: boardTasks(board).filter((t) => t.status === status && !doneIds.has(t.id)),
+    })),
+  ].filter((g) => g.tasks.length > 0);
+}
+
+/** The list before anyone picks: the board's ★ tasks among those the picker
+ *  offers, in the picker's order, at most MAX_HIGHLIGHTS. */
+export function starredHighlights(groups: HighlightGroup[]): string[] {
+  return groups
+    .flatMap((g) => g.tasks)
+    .filter((t) => t.pinned)
+    .slice(0, MAX_HIGHLIGHTS)
+    .map((t) => t.id);
+}

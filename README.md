@@ -920,7 +920,7 @@ REPORT tab ─▶ pick a week (or a custom period) ─▶ Generate report
 
 | Page | Content |
 | --- | --- |
-| Cover | board name and period, an editable headline and subtitle, tiles for completed tasks, closed subtasks, in progress, next and waiting, an **In evidenza** list whose tasks you pick with **Scegli attività** (up to 8, from the completed, in-progress, next and waiting tasks; left out of the PDF when empty), and an editable **In sintesi** paragraph |
+| Cover | board name and period, an editable headline and subtitle, tiles for completed tasks, closed subtasks, in progress, next and waiting, a **Da sottolineare** list (EN *Worth a mention*; not the board's ★ **In evidenza** band, though it starts from it): up to 8 tasks, at first the board's ★ tasks among those it can hold, in the picker's order; **Scegli attività** changes it (from the completed, in-progress, next and waiting tasks), and once changed the period's draft keeps that choice even if the ★ change; left out of the PDF when empty — and an editable **In sintesi** paragraph |
 | 01 Completate | every task that entered DONE inside the period, with priority, completion date, its subtasks and a progress bar |
 | 02 Prossimi passi | the NEXT column now, with due dates and subtasks |
 | 03 Progetti | every ongoing project, plus those completed inside the period — status, target date (or completion date), task count, description, % done and its linked tasks (open first); ongoing first, then by priority — except projects taken off with their × (`projects.report_hidden`, shared by the whole team): they stay off **every** later report until put back from the **Progetti esclusi** view of the REPORT tab |
@@ -939,7 +939,7 @@ appears anywhere.
   section heading always stays with its first card and no card is split.
   Pages are laid out by block id, so hiding a card (×) just drops it and the
   rest re-packs. The planner is its own 1123 × 794 landscape page.
-- **Drafts.** Every change (texts, hidden cards, chosen highlights) is saved
+- **Drafts.** Every change (texts, hidden cards, the «Da sottolineare» choice) is saved
   on this device straight away, per report period (`gtd-report-draft:<from>_<to>`
   in `localStorage`, `prefs.ts`), and kept for **7 days** after the last
   change. The period last chosen is remembered too (`gtd-report-period`):
@@ -969,7 +969,7 @@ instead, by a Netlify Function: `web/netlify/functions/report-pdf.mts`.
 1. **Download PDF** builds a `ReportDoc` (`web/src/lib/reportDoc.ts`): the
    report's structure from the same model the pages use, and every text
    exactly as it currently reads on the pages (each editable text carries a
-   `data-ed-id`), so edits, hidden cards and the chosen highlights are all in
+   `data-ed-id`), so edits, hidden cards and the «Da sottolineare» list are all in
    it. It is POSTed to `/.netlify/functions/report-pdf` with the person's
    Supabase access token.
 2. The function checks that token with the database's own
