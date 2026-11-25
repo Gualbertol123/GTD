@@ -46,14 +46,23 @@ const ICON = {
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export function MailModal({ board, onClose }: { board: Board; onClose: () => void }) {
-  useBackClose(onClose); // the browser's Back closes it
+/**
+ * The mail update: who to send to, the text (generated from the board,
+ * editable), Copy and Open in the mail app. Shown as the SETTIMANA › Mail
+ * page on the desktop, and inside MailModal (below) on the phone.
+ */
+export function MailComposer({ board, onClose, titleId = "mail-title", headingLevel = 3 }: {
+  board: Board;
+  /** Shows a close button (the pop-up); the page has none. */
+  onClose?: () => void;
+  titleId?: string;
+  headingLevel?: 2 | 3;
+}) {
   const { t, lang } = useT();
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const copyRef = useRef<HTMLButtonElement>(null);
   const areaRef = useRef<HTMLTextAreaElement>(null);
+  const Heading = headingLevel === 2 ? "h2" : "h3";
 
   // The mail lists what was done in the last ARCHIVE_DAYS days (after that a
   // done task is archived), so say which days those are.
@@ -104,52 +113,6 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
   const href = `mailto:${toPart}?subject=${encodeURIComponent(subject)}&body=${encodedBody}`;
   const tooLong = encodedBody.length > MAILTO_SAFE;
 
-  // Focus moves into the dialog and comes back to whatever opened it.
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    copyRef.current?.focus();
-    return () => {
-      if (opener && document.contains(opener)) opener.focus();
-    };
-  }, []);
-
-  // Escape closes; Tab stays inside the dialog. Listened on the document, so
-  // it works even when focus fell to the page (a button that just vanished).
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        closeRef.current();
-        return;
-      }
-      trapTab(e);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
-
-  const trapTab = (e: KeyboardEvent) => {
-    if (e.key !== "Tab") return;
-    const panel = panelRef.current;
-    if (!panel) return;
-    const items = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-      (el) => el.offsetParent !== null
-    );
-    if (!items.length) return;
-    const first = items[0];
-    const last = items[items.length - 1];
-    if (e.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
-      e.preventDefault();
-      first.focus();
-    }
-  };
-
   const copy = async () => {
     setCopyFailed(false);
     try {
@@ -168,28 +131,17 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="mail-modal-title"
-        aria-describedby="mail-modal-period"
-        className="bg-white rounded-[16px] w-full max-w-[480px] max-h-[calc(100dvh-32px)] overflow-y-auto shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <>
         <div className="p-4 border-b border-[#E8E6E1] flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 id="mail-modal-title" className="font-trajan text-[14px] uppercase tracking-widest text-[#0A1931]">
+            <Heading id={titleId} className="font-trajan text-[14px] uppercase tracking-widest text-[#0A1931]">
               {t("mail.title")}
-            </h3>
-            <p id="mail-modal-period" className="mt-1 text-[11px] text-[#6B6B6B]">
+            </Heading>
+            <p id={`${titleId}-period`} className="mt-1 text-[11px] text-[#6B6B6B]">
               {periodText}
             </p>
           </div>
+          {onClose && (
           <button
             type="button"
             onClick={onClose}
@@ -201,6 +153,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
           </button>
+          )}
         </div>
         <div className="p-4 space-y-3">
           <label className="flex items-center gap-2">
@@ -265,7 +218,7 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
             {t("mail.openClient")}
           </a>
           <button
-            ref={copyRef}
+            data-mail-copy=""
             type="button"
             onClick={copy}
             className={`h-9 px-5 rounded-full text-[12px] font-semibold bg-[#C9A96E] text-[#0A1931] inline-flex items-center gap-1.5`}
@@ -282,6 +235,75 @@ export function MailModal({ board, onClose }: { board: Board; onClose: () => voi
             )}
           </button>
         </div>
+    </>
+  );
+}
+
+/** The mail update as a pop-up (the phone's Altro › Mail). */
+export function MailModal({ board, onClose }: { board: Board; onClose: () => void }) {
+  useBackClose(onClose); // the browser's Back closes it
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Focus moves into the dialog and comes back to whatever opened it.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    panelRef.current?.querySelector<HTMLElement>("[data-mail-copy]")?.focus();
+    return () => {
+      if (opener && document.contains(opener)) opener.focus();
+    };
+  }, []);
+
+  // Escape closes; Tab stays inside the dialog. Listened on the document, so
+  // it works even when focus fell to the page (a button that just vanished).
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeRef.current();
+        return;
+      }
+      trapTab(e);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  const trapTab = (e: KeyboardEvent) => {
+    if (e.key !== "Tab") return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const items = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+      (el) => el.offsetParent !== null
+    );
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mail-modal-title"
+        aria-describedby="mail-modal-title-period"
+        className="bg-white rounded-[16px] w-full max-w-[480px] max-h-[calc(100dvh-32px)] overflow-y-auto shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <MailComposer board={board} onClose={onClose} titleId="mail-modal-title" />
       </div>
     </div>
   );

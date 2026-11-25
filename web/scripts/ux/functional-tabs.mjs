@@ -676,19 +676,22 @@ groups.auth = async () => {
 groups.routes = async () => {
   {
     const { context, page } = await openApp(browser, { skin: "classic", appearance: "light", path: "#/board" });
-    const tab = (name) => page.locator("nav[aria-label] button", { hasText: name }).click();
-    await tab("WEEKLY"); await wait(page, 400);
-    await tab("REPORT"); await wait(page, 400);
+    // Six places since 2026-11-25: SETTIMANA holds Weekly | Report | Mail.
+    const tab = (name) => page.locator("nav[aria-label] button", { hasText: name }).first().click();
+    const week = (name) => page.locator('[role=group][aria-label="SETTIMANA"] button', { hasText: name }).click();
+    await tab("SETTIMANA"); await wait(page, 400);
+    await week("Report"); await wait(page, 400);
     await tab("CALENDARIO"); await wait(page, 400);
     ok("routes: tab clicks write the address", page.url().endsWith("#/calendario"), page.url());
+    const at = () => page.url().split("#")[1];
     await page.goBack(); await wait(page, 400);
-    const a1 = page.url();
-    const cur1 = await page.locator("nav[aria-label] button[aria-current=page]").innerText();
+    const cur1 = at();
     await page.goBack(); await wait(page, 400);
-    const cur2 = await page.locator("nav[aria-label] button[aria-current=page]").innerText();
+    const cur2 = at();
     await page.goForward(); await wait(page, 400);
-    const cur3 = await page.locator("nav[aria-label] button[aria-current=page]").innerText();
-    ok("routes: Back/Back/Forward = REPORT, WEEKLY, REPORT", cur1 === "REPORT" && cur2 === "WEEKLY" && cur3 === "REPORT", `${a1} ${cur1},${cur2},${cur3}`);
+    const cur3 = at();
+    const navNow = await page.locator("nav[aria-label] button[aria-current=page]").innerText();
+    ok("routes: Back/Back/Forward = report, weekly, report (nav: SETTIMANA)", cur1 === "/report" && cur2 === "/weekly" && cur3 === "/report" && navNow === "SETTIMANA", `${cur1},${cur2},${cur3} ${navNow}`);
     ok("routes: document.title names the section", /Report/i.test(await page.title()), await page.title());
     await go(page, "#/projects/p1");
     const projName = () => page.evaluate(() => [...document.querySelectorAll("main textarea")].some((e) => e.value === "Pricing 2027"));
@@ -699,14 +702,15 @@ groups.routes = async () => {
     ok("routes: unknown address falls back to the board", /#\/board$/.test(page.url()), page.url());
     await go(page, "#/projects/zzz");
     info("routes: unknown project id", `${page.url()} — ${(await mainText(page)).replace(/\n+/g, " | ").slice(0, 120)}`);
-    // Mail modal and Back
+    // Mail: on the desktop a page (SETTIMANA › Mail) since 2026-11-25; the
+    // header button opens it, Back returns to where you were.
     await go(page, "#/weekly");
     const mailBtn = page.locator("header button", { hasText: /Mail|mail/ }).first();
     if (await mailBtn.count()) {
       await mailBtn.click(); await wait(page, 500);
-      const open1 = await page.locator("[role=dialog]").count();
+      const open1 = /#\/mail$/.test(page.url()) && (await page.locator("main textarea").count()) > 0;
       await page.goBack(); await wait(page, 500);
-      ok("routes: Back closes the mail pop-up and stays on the tab", open1 > 0 && (await page.locator("[role=dialog]").count()) === 0 && /#\/weekly$/.test(page.url()), page.url());
+      ok("routes: the header's mail button opens SETTIMANA › Mail, Back returns", open1 && /#\/weekly$/.test(page.url()), page.url());
     } else info("routes: mail button", "not found in header");
     // Switch layout: desktop -> phone
     for (const [from, want] of [["#/weekly", "#/more/weekly"], ["#/calendario", "#/agenda"], ["#/projects/p1", "#/projects/p1"], ["#/reflection", "#/more/reflection"], ["#/music", "#/more"]]) {

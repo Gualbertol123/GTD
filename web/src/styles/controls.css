@@ -48,6 +48,11 @@
 html:not([data-skin="glass"]) header.bg-\[\#0A1931\] {
   --ctl-focus: #c9a96e;
 }
+/* …but a pop-over opened from it (Aspetto, the colour panel) is a white
+   panel: navy again. */
+html:not([data-skin="glass"]) header.bg-\[\#0A1931\] :is(.color-pop, .menu-pop) {
+  --ctl-focus: #0a1931;
+}
 
 /* On the navy header (Classic) the track is dark, so the chosen segment is the
    inverse brand pair: gold with navy text. Glass resets these in glass.css. */
@@ -158,10 +163,10 @@ html[data-skin="glass"] .seg {
 .color-range {
   accent-color: var(--ctl-accent);
 }
-/* Its panel opens inside the header, where glass.css §10 turns nested blur
-   off: a translucent film there would be unreadable over the board, so it
-   takes the opaque panel colour. */
-html[data-skin="glass"] .color-pop {
+/* Pop-overs (the colour panel, the ALTRO and Aspetto menus) open over the
+   page: a translucent film there would be unreadable over the board, so
+   they take the opaque panel colour. */
+html[data-skin="glass"] :is(.color-pop, .menu-pop) {
   background-color: var(--panel-opaque) !important;
 }
 

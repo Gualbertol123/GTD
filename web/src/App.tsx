@@ -9,16 +9,14 @@ import { ProjectsView } from "./components/ProjectsView";
 import { WeeklyView } from "./components/WeeklyView";
 import { isOwnedBy } from "./lib/owners";
 import { DailyReflection } from "./components/DailyReflection";
-import { MailModal } from "./components/MailModal";
+import { MailComposer } from "./components/MailModal";
+import { TabNav, WEEK_PAGES, WeekSwitch } from "./components/TabNav";
 import { ConnBadge } from "./components/ConnBadge";
-import { LangToggle } from "./components/LangToggle";
 import { IdentityPicker } from "./components/IdentityPicker";
-import { GlassToggle } from "./components/GlassToggle";
-import { ColorControl } from "./components/ColorControl";
+import { AppearanceMenu } from "./components/AppearanceMenu";
 import { ProjectsProvider } from "./lib/projectsContext";
 import { PHONE_QUERY, useLayout } from "./mobile/useLayout";
 import { MusicButton, MusicPlayer } from "./components/MusicPlayer";
-import { music } from "./lib/music";
 import { UndoToastHost, showNotice } from "./components/TaskDetails";
 import { onSaveError } from "./lib/saveErrors";
 import { navigate, useRoute } from "./lib/history";
@@ -55,7 +53,6 @@ export default function App() {
       ),
     [t]
   );
-  const [mailOpen, setMailOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     owner: "all",
@@ -162,46 +159,39 @@ export default function App() {
         board={board}
         conn={conn}
         onRename={(name) => send({ type: "renameBoard", name })}
-        onOpenMail={() => setMailOpen(true)}
+        onOpenMail={() => setTab("mail")}
         send={send}
         rightSlot={
           <>
             <MusicButton />
             <IdentityPicker members={members} />
             <ConnBadge conn={conn} />
-            <LangToggle />
-            <GlassToggle />
-            <ColorControl />
+            <AppearanceMenu />
           </>
         }
       />
 
-      {/* Tabs */}
-      <nav aria-label={t("ux.shell.tabsNav")} className="max-w-[1500px] mx-auto px-4 mt-4">
-        <div className="flex flex-wrap gap-2">
-          {TABS.map((tb) => {
-            const active = tab === tb.id;
-            return (
-              <button
-                key={tb.id}
-                aria-current={active ? "page" : undefined}
-                onClick={(e) => {
-                  setTab(tb.id);
-                  // Keyboard activation (detail 0) carries on into the new
-                  // section; a mouse click leaves focus and scroll alone.
-                  if (e.detail === 0) requestAnimationFrame(() => mainRef.current?.focus({ preventScroll: true }));
-                }}
-                onPointerDown={tb.id === "music" ? music.warm : undefined}
-                className="tab px-4 h-9 text-[12px] font-semibold tracking-wide"
-              >
-                {t(`tabs.${tb.id}`)}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      {/* Tabs: six places (components/TabNav.tsx). */}
+      <TabNav
+        tab={tab}
+        go={(id, viaKeyboard) => {
+          setTab(id);
+          // Keyboard activation carries on into the new section; a mouse
+          // click leaves focus and scroll alone.
+          if (viaKeyboard) requestAnimationFrame(() => mainRef.current?.focus({ preventScroll: true }));
+        }}
+      />
 
       <main id="main" ref={mainRef} tabIndex={-1} className="max-w-[1500px] mx-auto px-4 mt-4 outline-none">
+        {WEEK_PAGES.includes(tab) && (
+          <WeekSwitch
+            tab={tab}
+            go={(id, viaKeyboard) => {
+              setTab(id);
+              if (viaKeyboard) requestAnimationFrame(() => mainRef.current?.focus({ preventScroll: true }));
+            }}
+          />
+        )}
         <Suspense fallback={<div role="status" aria-busy="true" className="min-h-[50vh]" />}>
         {tab === "board" && (
           <BoardView
@@ -215,6 +205,11 @@ export default function App() {
         {tab === "projects" && <ProjectsView board={board} send={send} />}
         {tab === "weekly" && <WeeklyView board={board} send={send} />}
         {tab === "report" && <ReportView board={board} send={send} />}
+        {tab === "mail" && (
+          <section className="bg-white rounded-[14px] border border-[#E8E6E1] max-w-[720px]">
+            <MailComposer board={board} titleId="mail-page-title" headingLevel={2} />
+          </section>
+        )}
         {tab === "products" && <ProductTreeView />}
         {tab === "calendario" && (
           <div className="space-y-4">
@@ -236,8 +231,6 @@ export default function App() {
         {tab === "music" && <MusicTab />}
         </Suspense>
       </main>
-
-      {mailOpen && <MailModal board={board} onClose={() => setMailOpen(false)} />}
 
     </div>
     </ProjectsProvider>
