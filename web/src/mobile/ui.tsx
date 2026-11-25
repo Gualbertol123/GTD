@@ -163,9 +163,16 @@ export function Sheet({
   }).current;
   useBackClose(closeSafely); // the browser's / phone's Back closes the top sheet
 
+  // What had focus when the sheet opened, captured once at first render: an
+  // effect that runs twice (React's StrictMode in development) would
+  // otherwise record the sheet itself the second time, and a picker opened
+  // from a task sheet lost focus to <body> on close.
+  const openerRef = useRef<Element | null | undefined>(undefined);
+  if (openerRef.current === undefined) openerRef.current = typeof document === "undefined" ? null : document.activeElement;
+
   useEffect(() => {
     const id = ++sheetSeq;
-    const opener = document.activeElement;
+    const opener = openerRef.current;
     if (sheetStack.length === 0) {
       lockScroll();
       // The page behind is out of reach for keyboard and screen reader while
@@ -174,6 +181,7 @@ export function Sheet({
       document.documentElement.setAttribute("data-sheet", "");
     }
     sheetStack.push(id);
+    const sheetEl = ref.current!;
     // Move focus into the sheet, unless something inside already took it.
     if (ref.current && !ref.current.contains(document.activeElement)) ref.current.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
@@ -217,7 +225,11 @@ export function Sheet({
       if (opener instanceof HTMLElement && opener.isConnected && opener !== document.body) {
         const restore = () => opener.focus({ preventScroll: true });
         if (sheetStack.length === 0) restore();
-        else setTimeout(restore, 0);
+        // A nested sheet (a picker over the task sheet): once its parent's
+        // keyboard handling is back. Not if the sheet is still there (the
+        // effect was only re-run): that pulled focus out of a picker
+        // that had just opened.
+        else setTimeout(() => !sheetEl.isConnected && restore(), 0);
       }
     };
   }, []);
