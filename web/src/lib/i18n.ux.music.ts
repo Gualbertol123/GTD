@@ -41,7 +41,7 @@ export const UX_MUSIC_IT: Record<string, string> = {
   "ux.music.g.anni2000": "Anni 2000",
   "ux.music.g.flamenco": "Flamenco pop",
   "ux.music.g.dance": "Dance",
-  "ux.music.g.acoustic": "Acoustic",
+  "ux.music.g.acoustic": "Acustica",
   // Importa: suggested searches.
   "ux.music.s.enrique": "Enrique Iglesias greatest hits",
   "ux.music.s.ricky": "Ricky Martin greatest hits",

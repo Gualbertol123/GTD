@@ -1,4 +1,5 @@
 import type { Board, Op, Task } from "./types";
+import { toISODate } from "./dates";
 
 // Optimistic, in-memory only. Applies an op to the current board so the UI
 // updates instantly; the authoritative state is then reloaded from Supabase
@@ -49,7 +50,7 @@ export function applyOpLocal(board: Board, op: Op): Board {
         t.status = op.status;
         t.updatedAt = now;
         if (op.status === "WAITING" && !t.waitingSince) {
-          t.waitingSince = new Date().toISOString().slice(0, 10);
+          t.waitingSince = toISODate(new Date()); // local date, not UTC
         } else if (op.status !== "WAITING") {
           delete t.waitingSince;
         }

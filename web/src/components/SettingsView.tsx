@@ -52,18 +52,20 @@ function SaveNote({ status }: { status: SaveStatus }) {
   );
 }
 
-// Inline "Sure? Yes / No" for actions that cannot be undone.
+// Inline "Sure? Yes / No" for actions that cannot be undone. Focus starts
+// on No, as in every other confirm: Enter straight away used to log out or
+// remove the logo.
 function ConfirmInline({ text, onYes, onNo }: { text: string; onYes: () => void; onNo: () => void }) {
   const { t } = useT();
-  const yesRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => yesRef.current?.focus(), []);
+  const noRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => noRef.current?.focus(), []);
   return (
     <span className="inline-flex items-center gap-2 flex-wrap text-[12px]">
       <span className="text-[#C81E1E]">{text}</span>
-      <button ref={yesRef} type="button" onClick={onYes} className="h-8 px-3 rounded-full font-semibold text-[#C81E1E] border border-[#FECACA]">
+      <button type="button" onClick={onYes} className="h-8 px-3 rounded-full font-semibold text-[#C81E1E] border border-[#FECACA]">
         {t("task.yes")}
       </button>
-      <button type="button" onClick={onNo} className="h-8 px-3 rounded-full font-semibold text-[#6B6B6B] border border-[#E8E6E1]">
+      <button ref={noRef} type="button" onClick={onNo} className="h-8 px-3 rounded-full font-semibold text-[#6B6B6B] border border-[#E8E6E1]">
         {t("task.no")}
       </button>
     </span>

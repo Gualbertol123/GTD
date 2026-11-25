@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { toISODate } from "./dates";
 import type { BoardMode, Board, PersonalNote, Op, Priority, Project, Reflection, Subtask, Task, Weekly, WeeklyItem } from "./types";
 import { reorderByIds } from "./localReducer";
 import { cleanRule, parseRule } from "./recurrence";
@@ -522,7 +523,7 @@ export function nextCreatedAt(): number {
 }
 
 export async function writeOp(op: Op, board: Board): Promise<void> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toISODate(new Date()); // local date, not UTC (00:00-02:00 in Italy was yesterday)
 
   switch (op.type) {
     case "addTask": {

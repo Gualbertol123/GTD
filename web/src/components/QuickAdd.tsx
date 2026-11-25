@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { toISODate } from "../lib/dates";
 import type { Op, Priority, Recurrence, Status, Task } from "../lib/types";
 import { STATUS_ORDER, UNASSIGNED, genId } from "../lib/constants";
 import { ownerInitial, ownersLabel, ownersPatch } from "../lib/owners";
@@ -98,7 +99,7 @@ export function QuickAdd({
       subtasks: [],
       dueDate: due || undefined,
       // A task born in Waiting starts counting its days today.
-      ...(status === "WAITING" ? { waitingSince: new Date().toISOString().slice(0, 10) } : {}),
+      ...(status === "WAITING" ? { waitingSince: toISODate(new Date()) } : {}),
       ...(recurringOn && pin ? { pinned: true } : {}),
       ...(recurringOn && repeat ? { recurrence: { freq: repeat, every: 1 } } : {}),
       updatedAt: Date.now(),

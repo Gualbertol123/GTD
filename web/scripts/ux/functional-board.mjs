@@ -485,8 +485,8 @@ section("migrations", async (browser) => {
     const store = createStore({ missing: ["017"] });
     const { page, context } = await openApp(browser, { store, name: "m017" });
     const card = await openCard(page, "BU Pivot loans");
-    await card.getByPlaceholder("Aggiungi sotto-attività…").fill("QA sub");
-    await card.getByPlaceholder("Aggiungi sotto-attività…").press("Enter");
+    await card.getByPlaceholder(/Aggiungi sotto-?attività…/).fill("QA sub");
+    await card.getByPlaceholder(/Aggiungi sotto-?attività…/).press("Enter");
     await waitFor(() => sv(store.db, "1").subtasks.length === 3);
     check("before 017: add subtask falls back to the array write", sv(store.db, "1").subtasks.some((s) => s.text === "QA sub"), JSON.stringify(sv(store.db, "1").subtasks));
     await card.getByLabel("Market share").click();
@@ -708,6 +708,9 @@ section("board.editor", async (browser) => {
   check("editor: move to section", sv(store.db, "6").status === "IN PROGRESS");
   await sleep(200);
   check("editor: card stays open after moving column (select)", (await page.locator(".task-card.is-open").count()) === 1, "the open editor closes when its task changes column");
+  // The moved card reopens itself on mount: wait for it, or clicking its title
+  // below would close it again.
+  await page.locator(".task-card.is-open").first().waitFor({ timeout: 1500 }).catch(() => {});
   card = (await page.locator(".task-card.is-open").count()) ? page.locator(".task-card.is-open").first() : await openCard(page, "Efficientare l'update dei cambi");
   {
     await card.locator('button[title="Stato successivo"]').click();
@@ -715,8 +718,11 @@ section("board.editor", async (browser) => {
     check("editor: › arrow moves to the next status", sv(store.db, "6").status === "WAITING");
   }
   // subtasks
+  // The moved card reopens itself on mount: wait for it, or clicking its title
+  // below would close it again.
+  await page.locator(".task-card.is-open").first().waitFor({ timeout: 1500 }).catch(() => {});
   card = (await page.locator(".task-card.is-open").count()) ? page.locator(".task-card.is-open").first() : await openCard(page, "Efficientare l'update dei cambi");
-  const add = card.getByPlaceholder("Aggiungi sotto-attività…");
+  const add = card.getByPlaceholder(/Aggiungi sotto-?attività…/);
   for (const s of ["uno", "due", "tre"]) {
     await add.fill(s);
     await add.press("Enter");
@@ -780,8 +786,8 @@ section("board.realtime", async (browser) => {
   const ca = await openCard(A.page, "BU Pivot loans");
   const cb = await openCard(B.page, "BU Pivot loans");
   await Promise.all([
-    (async () => { await ca.getByPlaceholder("Aggiungi sotto-attività…").fill("from A"); await ca.getByPlaceholder("Aggiungi sotto-attività…").press("Enter"); })(),
-    (async () => { await cb.getByPlaceholder("Aggiungi sotto-attività…").fill("from B"); await cb.getByPlaceholder("Aggiungi sotto-attività…").press("Enter"); })(),
+    (async () => { await ca.getByPlaceholder(/Aggiungi sotto-?attività…/).fill("from A"); await ca.getByPlaceholder(/Aggiungi sotto-?attività…/).press("Enter"); })(),
+    (async () => { await cb.getByPlaceholder(/Aggiungi sotto-?attività…/).fill("from B"); await cb.getByPlaceholder(/Aggiungi sotto-?attività…/).press("Enter"); })(),
   ]);
   await sleep(800);
   const subs = sv(store.db, "1").subtasks.map((s) => s.text);

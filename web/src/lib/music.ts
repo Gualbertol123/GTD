@@ -2036,7 +2036,9 @@ async function request<T>(path: string, init: FnInit, ctrl: AbortController): Pr
   } catch {
     if (timedOut) return { error: "timeout" };
     if (ctrl.signal.aborted) return { error: "aborted" };
-    return { error: "offline" };
+    // "Sei offline" only when the device is: a failed call while online is
+    // the music server not answering (it said offline for both).
+    return { error: typeof navigator !== "undefined" && navigator.onLine === false ? "offline" : "server" };
   } finally {
     clearTimeout(timer);
   }

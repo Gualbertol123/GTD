@@ -178,6 +178,9 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
     (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999") ||
     PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
   const pinned = tasks.filter((tk) => tk.pinned && tk.status !== "DONE").sort(byDue);
+  // Highlighted tasks before the filters: an empty band under a search is
+  // "nothing matches", not "nothing highlighted".
+  const allPinned = board.tasks.filter((tk) => tk.pinned && tk.status !== "DONE").length;
   const pinnedRecurring = pinned.filter((tk) => tk.recurrence);
   const pinnedOther = pinned.filter((tk) => !tk.recurrence);
   const dropOnBand = () => {
@@ -492,7 +495,9 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
           </div>
           {bandOpen &&
             (pinned.length === 0 ? (
-              <p className="mt-2 text-[12px] text-[#7A5F30]">{overBand ? t("pin.drop") : t("pin.empty")}</p>
+              <p className="mt-2 text-[12px] text-[#7A5F30]">
+                {overBand ? t("pin.drop") : filtersActive && allPinned > 0 ? t("pin.filtered") : t("pin.empty")}
+              </p>
             ) : (
               // Groups side by side (recurring first), so a few highlighted
               // tasks take one row, not a row per group.

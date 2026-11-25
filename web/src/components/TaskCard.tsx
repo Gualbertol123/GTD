@@ -73,9 +73,13 @@ export function TaskCard({
     },
     []
   );
-  // Just moved here from its editor: keep keyboard focus on this task.
+  // Just moved here from its own editor (‹ › or "Sposta in"): it reopens, so
+  // the arrows step through the columns without closing the editor each
+  // time, and keyboard focus stays on this task.
   useEffect(() => {
-    if (claimFocusAfterMove(task.id)) headRef.current?.focus({ preventScroll: false });
+    if (!claimFocusAfterMove(task.id)) return;
+    setOpen(true);
+    headRef.current?.focus({ preventScroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const isDone = task.status === "DONE";
