@@ -1,0 +1,6 @@
+[
+  {
+    "el": "^div\\.mp-toasts",
+    "reason": "Harness artefact: hovering the ♪ button warms the YouTube player (MusicPlayer onPointerEnter). The harness blocks YouTube, so its 'unreachable' toast slides in; on a normal network the warm-up is silent."
+  }
+]
