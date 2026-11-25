@@ -60,8 +60,28 @@ describe("createSend", () => {
     const onError = vi.fn();
     s.send({ type: "weeklyAdd", column: "well", item: { id: "x", text: "x" } }, onError);
     await flush();
-    expect(onError).toHaveBeenCalledWith("refused");
+    expect(onError).toHaveBeenCalledWith("refused", expect.any(Error));
     expect(s.onFail).toHaveBeenCalledWith("refused", true);
+  });
+
+  it("says a write is saved only once the server accepted it", async () => {
+    const s = setup(board());
+    const onSaved = vi.fn();
+    s.send({ type: "weeklyAdd", column: "well", item: { id: "x", text: "x" } }, undefined, onSaved);
+    expect(onSaved).not.toHaveBeenCalled(); // optimistic on screen, not yet saved
+    await flush();
+    expect(onSaved).toHaveBeenCalledTimes(1);
+  });
+
+  it("never says saved for a refused write", async () => {
+    const s = setup(board());
+    s.failNext();
+    const onSaved = vi.fn();
+    const onError = vi.fn();
+    s.send({ type: "weeklyAdd", column: "well", item: { id: "x", text: "x" } }, onError, onSaved);
+    await flush();
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
   });
 
   it("says when nobody else reported a refused write", async () => {

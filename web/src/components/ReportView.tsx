@@ -9,12 +9,14 @@ import { shortDate } from "../lib/dates";
 import { projectStats } from "../lib/projects";
 import { isOffline } from "../lib/optimisticSend";
 import { clearReportDraft, purgeReportDrafts, readReportDraft } from "../lib/prefs";
+import { isMissingColumn } from "../lib/saveErrors";
+import type { SendError } from "../lib/optimisticSend";
 import "@fontsource-variable/inter";
 import "../styles/glassReport.css";
 
 interface Props {
   board: Board;
-  send: (op: Op, onError?: (message: string) => void) => void;
+  send: (op: Op, onError?: SendError, onSaved?: () => void) => void;
 }
 
 const WEEKS_BACK = 12;
@@ -22,10 +24,20 @@ const TOAST_MS = 6000;
 
 type Stage = "setup" | "editing";
 
-/** An error line: a readable message, plus the raw server text when useful. */
+/** An error line: a readable message, plus the raw server text when useful.
+ *  `at`: shown next to the buttons that started it (top, or the end of the pages). */
 interface ErrLine {
   text: string;
   details?: string;
+  at?: "top" | "end";
+}
+
+/** A short notice at the foot of the screen; an error stays until dismissed. */
+interface Toast {
+  id: number;
+  text: string;
+  undo?: () => void;
+  error?: boolean;
 }
 
 // Small decorative icons (the controls carry their own text).
@@ -94,6 +106,39 @@ function ErrorLine({ err }: { err: ErrLine }) {
   );
 }
 
+function ToastPill({ toast, onClose }: { toast: Toast; onClose: () => void }) {
+  const { t } = useT();
+  return (
+    <div
+      className={`pointer-events-auto flex items-center gap-3 bg-[#1C1C1E] text-white shadow-xl pl-4 pr-1.5 py-1.5 text-[13px] ${
+        toast.error ? "rounded-[18px]" : "rounded-full"
+      }`}
+    >
+      <span className={`min-w-0 ${toast.error ? "text-[#FFB4AB]" : "truncate"}`}>{toast.text}</span>
+      {toast.undo && (
+        <button
+          type="button"
+          onClick={() => {
+            toast.undo?.();
+            onClose();
+          }}
+          className="shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold text-[#E9C989] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
+        >
+          {t("ux.report.undo")}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label={t("ux.report.dismiss")}
+        className="shrink-0 h-8 w-8 rounded-full inline-flex items-center justify-center text-white/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
+      >
+        <IconClose />
+      </button>
+    </div>
+  );
+}
+
 // The REPORT tab.
 //
 // Flow: pick a period → Generate. The report is laid out right here as A4
@@ -118,38 +163,50 @@ export function ReportView({ board, send }: Props) {
   useEffect(() => setHasDraft(!!readReportDraft(draftKey)), [draftKey]);
   const onDraftChange = useCallback((v: boolean) => setHasDraft(v), []);
 
-  // "Report" or the list of projects left out of the report.
-  const [view, setView] = useState<"report" | "excluded">("report");
-  const excluded = board.projects.filter((p) => p.reportHidden);
-  const setProjectInReport = useCallback(
-    (id: string, hidden: boolean) =>
-      send({ type: "projectReportHidden", id, hidden }, (message) =>
-        // Offline is not a missing migration: say just that.
-        setErr({ text: isOffline() ? t("save.offline") : `${t("report.excludeFailed")} (${message})` })
-      ),
-    [send, t]
-  );
-
   // A short notice at the foot of the screen, with an Undo when it has one.
   // It sits outside the pages, so it is never measured or exported.
-  const [toast, setToast] = useState<{ id: number; text: string; undo?: () => void } | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
   const toastSeq = useRef(0);
-  const showToast = useCallback((text: string, undo?: () => void) => {
+  const showToast = useCallback((text: string, undo?: () => void, error = false) => {
     toastSeq.current += 1;
-    setToast({ id: toastSeq.current, text, undo });
+    setToast({ id: toastSeq.current, text, undo, error });
   }, []);
   useEffect(() => {
-    if (!toast) return;
+    if (!toast || toast.error) return;
     const h = window.setTimeout(() => setToast((cur) => (cur?.id === toast.id ? null : cur)), TOAST_MS);
     return () => window.clearTimeout(h);
   }, [toast]);
 
-  // × on a project card: leaves it out of every report, so offer to undo.
+  // "Report" or the list of projects left out of the report.
+  const [view, setView] = useState<"report" | "excluded">("report");
+  const excluded = board.projects.filter((p) => p.reportHidden);
+  // Leave a project out of (or put it back in) every report. `onSaved` runs
+  // only once the server has the change; a refusal is said once, in the
+  // notice at the foot of the screen, and names migration 013 only when the
+  // column is what is missing.
+  const setProjectInReport = useCallback(
+    (id: string, hidden: boolean, onSaved?: () => void) =>
+      send(
+        { type: "projectReportHidden", id, hidden },
+        (message, error) =>
+          showToast(
+            isMissingColumn(error)
+              ? t("report.excludeFailed")
+              : isOffline()
+                ? t("save.offline")
+                : t("report.saveFailed", { msg: message }),
+            undefined,
+            true
+          ),
+        onSaved
+      ),
+    [send, showToast, t]
+  );
+
+  // × on a project card: leaves it out of every report; once saved, offer to undo.
   const excludeProject = useCallback(
-    (id: string) => {
-      setProjectInReport(id, true);
-      showToast(t("ux.report.excluded"), () => setProjectInReport(id, false));
-    },
+    (id: string) =>
+      setProjectInReport(id, true, () => showToast(t("ux.report.excluded"), () => setProjectInReport(id, false))),
     [setProjectInReport, showToast, t]
   );
   const onCardHidden = useCallback(
@@ -215,7 +272,7 @@ export function ReportView({ board, send }: Props) {
     }
   };
 
-  const downloadPdf = async () => {
+  const downloadPdf = async (at: "top" | "end") => {
     const build = docRef.current;
     if (!build || badRange) return;
     setErr(null);
@@ -226,7 +283,7 @@ export function ReportView({ board, send }: Props) {
       await new Promise((r) => setTimeout(r, 0));
       const doc = build();
       const fail = (text: string, details?: string) =>
-        setErr({ text: `${t("ux.report.downloadFailed")} — ${text}`, details });
+        setErr({ text: `${t("ux.report.downloadFailed")} — ${text}`, details, at });
       const { data: auth } = await supabase.auth.getSession();
       const token = auth.session?.access_token;
       if (!token) return fail(t("report.pdfLogin"));
@@ -263,7 +320,7 @@ export function ReportView({ board, send }: Props) {
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch (e) {
-      setErr({ text: `${t("ux.report.downloadFailed")} — ${t("ux.report.pdfFailed")}`, details: e instanceof Error ? e.message : String(e) });
+      setErr({ text: `${t("ux.report.downloadFailed")} — ${t("ux.report.pdfFailed")}`, details: e instanceof Error ? e.message : String(e), at });
     } finally {
       setBusy(null);
     }
@@ -313,7 +370,6 @@ export function ReportView({ board, send }: Props) {
       {view === "excluded" && (
         <div className="rounded-[14px] border border-[#E8E6E1] bg-white p-4 space-y-3">
           <p className="text-[12px] text-[#6B6B6B]">{t("report.excludedHint")}</p>
-          {err && <ErrorLine err={err} />}
           <div role="status" aria-live="polite" className="text-[11px] text-[#065F46] empty:hidden">
             {included && (
               <span className="inline-flex items-center gap-1.5">
@@ -340,10 +396,7 @@ export function ReportView({ board, send }: Props) {
                     </div>
                     <button
                       type="button"
-                      onClick={() => {
-                        setProjectInReport(p.id, false);
-                        setIncluded(p.name || "—");
-                      }}
+                      onClick={() => setProjectInReport(p.id, false, () => setIncluded(p.name || "—"))}
                       className={`h-8 px-4 rounded-full bg-[#0A1931] text-[#C9A96E] text-[12px] font-semibold shrink-0 inline-flex items-center gap-1.5`}
                     >
                       <IconPlus />
@@ -439,7 +492,7 @@ export function ReportView({ board, send }: Props) {
             </>
           ) : (
             <>
-              <button type="button" onClick={downloadPdf} disabled={busy !== null || badRange} className={primaryBtn}>
+              <button type="button" onClick={() => downloadPdf("top")} disabled={busy !== null || badRange} className={primaryBtn}>
                 {busy === "pdf" ? t("report.pdfMaking") : t("report.downloadPdf")}
               </button>
               <button type="button" onClick={() => setStage("setup")} disabled={busy !== null} className={ghostBtn}>
@@ -489,7 +542,7 @@ export function ReportView({ board, send }: Props) {
             : t("report.preview", { t: data.totalTasks, s: data.totalSubtasks })}
         </div>
 
-        {err && <ErrorLine err={err} />}
+        {err && err.at !== "end" && <ErrorLine err={err} />}
       </div>
 
       {stage === "editing" && !badRange && (
@@ -516,49 +569,28 @@ export function ReportView({ board, send }: Props) {
             className="flex flex-col items-center gap-2 pt-1 pb-16"
           >
             <div className="flex items-center justify-center gap-2 flex-wrap">
-              <button type="button" onClick={downloadPdf} disabled={busy !== null} className={primaryBtn}>
+              <button type="button" onClick={() => downloadPdf("end")} disabled={busy !== null} className={primaryBtn}>
                 {busy === "pdf" ? t("report.pdfMaking") : t("report.downloadPdf")}
               </button>
               <button type="button" onClick={() => setStage("setup")} disabled={busy !== null} className={ghostBtn}>
                 {t("report.close")}
               </button>
             </div>
-            {err && <ErrorLine err={err} />}
+            {err?.at === "end" && <ErrorLine err={err} />}
           </div>
         </div>
       )}
       </>)}
 
-      <div
-        role="status"
-        aria-live="polite"
-        className="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-6 z-[60] pointer-events-none max-w-[calc(100vw-32px)]"
-      >
-        {toast && (
-          <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-[#1C1C1E] text-white shadow-xl pl-4 pr-1.5 py-1.5 text-[13px]">
-            <span className="min-w-0 truncate">{toast.text}</span>
-            {toast.undo && (
-              <button
-                type="button"
-                onClick={() => {
-                  toast.undo?.();
-                  setToast(null);
-                }}
-                className="shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold text-[#E9C989] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
-              >
-                {t("ux.report.undo")}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setToast(null)}
-              aria-label={t("ux.report.dismiss")}
-              className="shrink-0 h-8 w-8 rounded-full inline-flex items-center justify-center text-white/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
-            >
-              <IconClose />
-            </button>
-          </div>
-        )}
+      {/* Two live regions, both always there: a notice is announced politely,
+          a refused save as an alert. */}
+      <div className="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-6 z-[60] pointer-events-none max-w-[calc(100vw-32px)]">
+        <div role="status" aria-live="polite">
+          {toast && !toast.error && <ToastPill toast={toast} onClose={() => setToast(null)} />}
+        </div>
+        <div role="alert">
+          {toast?.error && <ToastPill toast={toast} onClose={() => setToast(null)} />}
+        </div>
       </div>
     </div>
   );

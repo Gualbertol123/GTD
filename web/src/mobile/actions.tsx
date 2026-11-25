@@ -3,8 +3,9 @@ import type { Op, Status, Task } from "../lib/types";
 import { useT } from "../lib/i18n";
 import { useToast } from "./ui";
 import { StatusPicker } from "./pickers";
+import type { SendError } from "../lib/optimisticSend";
 
-export type Send = (op: Op, onError?: (message: string) => void) => void;
+export type Send = (op: Op, onError?: SendError, onSaved?: () => void) => void;
 
 /**
  * The quick actions every task list offers. Each one says what it did in a

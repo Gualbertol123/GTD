@@ -16,3 +16,11 @@ export function onSaveError(l: Listener): () => void {
     listeners.delete(l);
   };
 }
+
+/** A write naming a column the database does not have yet: a migration still
+ *  to run. PostgREST says PGRST204 (unknown column in the body), Postgres
+ *  42703 (unknown column in a filter). Any other refusal is something else. */
+export function isMissingColumn(error: unknown): boolean {
+  const code = error && typeof error === "object" && "code" in error ? (error as { code: unknown }).code : null;
+  return code === "PGRST204" || code === "42703";
+}

@@ -3,7 +3,7 @@ import { reportSaveError } from "./saveErrors";
 import type { Board, Op } from "./types";
 import { fetchBoard, fetchChange, seedIfEmpty, writeOp, type ChangedTable } from "./db";
 import { applyRowChange, reconcileBoard, type RowChange } from "./rowSync";
-import { createSend, errMsg, isOffline, withPending, type BoardCell } from "./optimisticSend";
+import { createSend, errMsg, isOffline, withPending, type BoardCell, type SendError } from "./optimisticSend";
 import { supabase } from "./supabaseClient";
 import { isConfigured } from "./supabaseConfig";
 import { requestAuthCheck } from "./auth";
@@ -16,8 +16,9 @@ export interface UseBoard {
   conn: ConnState;
   error: string | null;
   /** onError fires when the write is rejected, after the optimistic change is
-   *  rolled back, or at once when offline (then nothing was changed at all). */
-  send: (op: Op, onError?: (message: string) => void) => void;
+   *  rolled back, or at once when offline (then nothing was changed at all);
+   *  onSaved once the server has accepted it. */
+  send: (op: Op, onError?: SendError, onSaved?: () => void) => void;
   reload: () => void;
 }
 

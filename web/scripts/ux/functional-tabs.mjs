@@ -296,58 +296,105 @@ groups.report = async () => {
     info("report: custom period from > to", `bad-range alert=${bad}, Generate disabled=${genDisabled}`);
     await context.close();
   }
-  // Progetti esclusi: exclude a project via ×, view list, put back
+  // Progetti esclusi: exclude a project via ×, view list, put back.
+  // The writes are slowed down: "escluso" and "di nuovo nel report" may only
+  // appear once the server has the change (G-34).
   {
-    const { context, page, db } = await openApp(browser, { skin: "classic", appearance: "light", path: "#/report" });
+    const { context, page, db, ctl } = await openApp(browser, { skin: "classic", appearance: "light", path: "#/report" });
     await page.locator("main button", { hasText: "Genera report" }).click();
     await wait(page, 2500);
-    const px = page.locator(`button[aria-label="${"Escludi"}"], button.gr-hide[aria-label*="progett"], button.gr-hide[aria-label*="report"]`);
     const labels = await page.locator("button.gr-hide").evaluateAll((els) => [...new Set(els.map((e) => e.getAttribute("aria-label")))]);
     info("report: × labels on cards", labels.join(" | "));
     const projX = page.locator('button.gr-hide[aria-label*="rogett"]');
     if (await projX.count()) {
+      ctl.delayMs = 1200;
       await projX.first().click({ force: true });
-      await wait(page, 900);
+      await wait(page, 300);
+      const early = (await page.locator("[role=status]").allInnerTexts()).join(" ");
+      ok("report: project × says 'escluso' only after the write", !/escluso/i.test(early), `toast before the server answered="${early.replace(/\n/g, " ")}"`);
+      await wait(page, 1600);
+      const late = (await page.locator("[role=status]").allInnerTexts()).join(" ");
+      ok("report: project × then says 'escluso' with Annulla", /escluso/i.test(late) && /Annulla/.test(late), late.replace(/\n/g, " "));
       ok("report: project × writes report_hidden=true", db.projects.some((p) => p.report_hidden === true));
       const tab = await page.locator("[role=tab]", { hasText: "Progetti esclusi" }).innerText();
       ok("report: 'Progetti esclusi' shows a count", /\d/.test(tab), tab.replace(/\n/g, " "));
       await page.locator("[role=tab]", { hasText: "Progetti esclusi" }).click();
       await wait(page, 400);
-      await page.locator("main button", { hasText: /Rimetti|report/i }).last().click();
-      await wait(page, 800);
+      await page.locator("main button", { hasText: /Rimetti/ }).last().click();
+      await wait(page, 300);
+      const earlyBack = await page.evaluate(() => /di nuovo nel report/.test(document.body.innerText));
+      ok("report: 'di nuovo nel report' waits for the write", !earlyBack);
+      await wait(page, 1600);
       ok("report: put back from Progetti esclusi clears report_hidden", db.projects.every((p) => !p.report_hidden));
+      ok("report: put back then says it is back in the report", await page.evaluate(() => /di nuovo nel report/.test(document.body.innerText)));
+      ctl.delayMs = 0;
     } else ok("report: project card has its own ×", false, "not found");
     // Empty excluded list
     const t = await mainText(page);
     info("report: excluded empty state", t.replace(/\n+/g, " | ").slice(0, 200));
     await context.close();
   }
-  // Before migration 013: writes naming report_hidden fail with PGRST204
+  // Every "not saved" message on screen (visible leaf nodes, de-duplicated by node, not text).
+  const notSaved = (page) =>
+    page.evaluate(() =>
+      [...document.querySelectorAll("body *")]
+        .filter((e) => e.childElementCount === 0 && /non salvat|not saved/i.test(e.textContent ?? "") && e.getBoundingClientRect().height > 0)
+        .map((e) => e.textContent.trim())
+    );
+  // Before migration 013 (the stub answers PGRST204 to a write naming report_hidden):
+  // one error, naming 013, and no "escluso" toast.
   {
-    const { context, page, db } = await openApp(browser, { skin: "classic", appearance: "light", path: "#/report" });
-    for (const p of db.projects) delete p.report_hidden;
-    await refuse(context, "projects", {
-      status: 400,
-      body: { code: "PGRST204", message: "Could not find the 'report_hidden' column of 'projects' in the schema cache", details: null, hint: null },
-      match: (r) => (r.postData() ?? "").includes("report_hidden"),
-    });
-    await page.reload();
-    await wait(page, 1200);
+    const { context, page } = await openApp(browser, { skin: "classic", appearance: "light", path: "#/report", missing: ["013"] });
     await page.locator("main button", { hasText: /Genera report|Scarica PDF/ }).first().click();
     await wait(page, 2500);
     const projX = page.locator('button.gr-hide[aria-label*="rogett"]');
     if (await projX.count()) {
       await projX.first().click({ force: true });
       await wait(page, 2000);
-      const alerts = await page.locator("main [role=alert]").allInnerTexts();
-      const toast = await page.locator("[role=status]").allInnerTexts();
-      ok("report pre-013: excluding a project says the migration is missing", alerts.some((a) => /013|migrazion/i.test(a)), `alerts=${alerts.join(" / ").replace(/\n/g, " ")}; toast=${toast.join(" / ").replace(/\n/g, " ")}`);
+      const msgs = await notSaved(page);
+      const toast = (await page.locator("[role=status]").allInnerTexts()).join(" ");
+      ok("report pre-013: excluding a project shows one error", msgs.length === 1, msgs.join(" / "));
+      ok("report pre-013: …which names migration 013", msgs.some((m) => /013/.test(m)), msgs.join(" / "));
+      ok("report pre-013: …and no 'escluso' toast", !/escluso/i.test(toast), `status="${toast.replace(/\n/g, " ")}"`);
       await page.screenshot({ path: `${OUT}/report-pre013.png` });
-    }
+    } else ok("report pre-013: project card has its own ×", false, "not found");
     // Excluded view before migration
     await page.locator("[role=tab]", { hasText: "Progetti esclusi" }).click();
     await wait(page, 400);
     info("report pre-013: Progetti esclusi view", (await mainText(page)).replace(/\n+/g, " | ").slice(0, 250));
+    await context.close();
+  }
+  // A refused write (403, row-level security) after 013: one error, "Non
+  // salvato: …" with the server's words, no mention of 013, nothing said to have worked.
+  {
+    const { context, page, db, ctl } = await openApp(browser, { skin: "classic", appearance: "light", path: "#/report" });
+    db.projects[1].report_hidden = true; // one already left out, to try putting it back
+    await page.reload();
+    await wait(page, 1200);
+    ctl.reject = (method, table) => table === "projects" && method === "PATCH";
+    await page.locator("main button", { hasText: /Genera report|Scarica PDF/ }).first().click();
+    await wait(page, 2500);
+    const projX = page.locator('button.gr-hide[aria-label*="rogett"]');
+    if (await projX.count()) {
+      await projX.first().click({ force: true });
+      await wait(page, 2000);
+      const msgs = await notSaved(page);
+      const toast = (await page.locator("[role=status]").allInnerTexts()).join(" ");
+      ok("report refused: excluding a project shows one error", msgs.length === 1, msgs.join(" / "));
+      ok("report refused: …'Non salvato: <reason>', not migration 013", msgs.length === 1 && /^Non salvato: .*row-level security/.test(msgs[0]) && !/013/.test(msgs[0]), msgs.join(" / "));
+      ok("report refused: …and no 'escluso' toast", !/escluso/i.test(toast), `status="${toast.replace(/\n/g, " ")}"`);
+      ok("report refused: the project card is back after the refusal", (await projX.count()) > 0);
+      await page.screenshot({ path: `${OUT}/report-refused.png` });
+      await page.locator("[role=alert] button[aria-label]").first().click().catch(() => {});
+    } else ok("report refused: project card has its own ×", false, "not found");
+    await page.locator("[role=tab]", { hasText: "Progetti esclusi" }).click();
+    await wait(page, 400);
+    await page.locator("main button", { hasText: /Rimetti/ }).first().click();
+    await wait(page, 2000);
+    const msgs = await notSaved(page);
+    ok("report refused: putting a project back shows one error", msgs.length === 1, msgs.join(" / "));
+    ok("report refused: …and never says it is back in the report", !(await page.evaluate(() => /di nuovo nel report/.test(document.body.innerText))));
+    ok("report refused: …and the project is still listed", (await page.locator("main button", { hasText: /Rimetti/ }).count()) === 1);
     await context.close();
   }
   // Empty board

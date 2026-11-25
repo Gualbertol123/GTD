@@ -48,7 +48,11 @@ export function isOffline(): boolean {
 // toast) says the change was not made. It used to look saved, then vanish on
 // reconnect. The report comes a moment later (a microtask), after whatever
 // the caller does next (a "Done · Undo" toast), so it is the message left.
-export type Send = ((op: Op, onError?: (message: string) => void) => void) & {
+// onError gets the readable message and the error itself (its `code` tells a
+// missing column, PGRST204 / 42703, from a refusal); onSaved runs once every
+// write of the op has been accepted, for a screen that says "done" only then.
+export type SendError = (message: string, error: unknown) => void;
+export type Send = ((op: Op, onError?: SendError, onSaved?: () => void) => void) & {
   /** Ops sent but not yet confirmed by the server, oldest first. */
   pending: () => Op[];
 };
@@ -60,13 +64,13 @@ export function createSend(deps: SendDeps): Send {
     const i = unconfirmed.indexOf(op);
     if (i >= 0) unconfirmed.splice(i, 1);
   };
-  const send = (op: Op, onError?: (message: string) => void): void => {
+  const send = (op: Op, onError?: SendError, onSaved?: () => void): void => {
     const first = deps.cell.current;
     if (!first) return;
     if (deps.offline?.()) {
       const message = deps.offlineReason?.() ?? "offline";
       queueMicrotask(() => {
-        onError?.(message);
+        onError?.(message, { code: "offline" });
         deps.onOffline?.(message, !!onError);
       });
       return;
@@ -100,11 +104,12 @@ export function createSend(deps: SendDeps): Send {
             if (was) await deps.write({ type: "moveTask", id: was.id, status: was.status }, steps[i].before).catch(() => {});
           }
           // Tell the person right where they acted, when the caller can.
-          onError?.(message);
+          onError?.(message, e);
           deps.onFail(message, !!onError);
           return; // the rest of this group stays unsent
         }
       }
+      onSaved?.();
     });
   };
   send.pending = () => unconfirmed.slice();
