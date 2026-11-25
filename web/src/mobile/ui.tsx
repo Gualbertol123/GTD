@@ -307,7 +307,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     clearTimeout(timer.current);
     const id = Date.now();
     setMsg({ id, text, undo });
-    timer.current = setTimeout(() => setMsg((m) => (m?.id === id ? null : m)), undo ? 5000 : 2600);
+    // A longer message (a refused edit says why) stays long enough to read.
+    const ms = undo ? 5000 : Math.max(2600, text.length * 60);
+    timer.current = setTimeout(() => setMsg((m) => (m?.id === id ? null : m)), ms);
   }, []);
 
   useEffect(() => () => clearTimeout(timer.current), []);

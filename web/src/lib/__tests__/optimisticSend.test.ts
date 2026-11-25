@@ -110,3 +110,55 @@ describe("createSend", () => {
     expect(s.writes).toHaveLength(0);
   });
 });
+
+describe("createSend offline", () => {
+  function offlineSetup() {
+    const cell: BoardCell = { current: board({ tasks: [task("a")] }) };
+    const deps = {
+      cell,
+      publish: vi.fn(),
+      write: vi.fn(() => Promise.resolve()),
+      onFail: vi.fn(),
+      offline: () => true,
+      offlineReason: () => "you are offline",
+      onOffline: vi.fn(),
+    };
+    return { cell, deps, send: createSend(deps) };
+  }
+
+  it("refuses an edit up front: nothing on screen, nothing sent", async () => {
+    const { cell, deps, send } = offlineSetup();
+    const before = cell.current;
+    const onError = vi.fn();
+    send({ type: "addTask", task: task("b") }, onError);
+    // Reported a moment later, after the caller's own "done" toast.
+    expect(onError).not.toHaveBeenCalled();
+    await Promise.resolve();
+    expect(cell.current).toBe(before);
+    expect(deps.publish).not.toHaveBeenCalled();
+    expect(deps.write).not.toHaveBeenCalled();
+    expect(send.pending()).toEqual([]);
+    expect(onError).toHaveBeenCalledWith("you are offline");
+    expect(deps.onOffline).toHaveBeenCalledWith("you are offline", true);
+    expect(deps.onFail).not.toHaveBeenCalled();
+  });
+
+  it("says when nobody else reported the offline refusal", async () => {
+    const { deps, send } = offlineSetup();
+    send({ type: "moveTask", id: "a", status: "DONE" });
+    await Promise.resolve();
+    expect(deps.onOffline).toHaveBeenCalledWith("you are offline", false);
+  });
+
+  it("goes through again once online", async () => {
+    let off = true;
+    const { cell, deps } = offlineSetup();
+    const send = createSend({ ...deps, offline: () => off });
+    send({ type: "addTask", task: task("b") });
+    off = false;
+    send({ type: "addTask", task: task("c") });
+    await flush();
+    expect(cell.current!.tasks.map((t) => t.id)).toEqual(["a", "c"]);
+    expect(deps.write).toHaveBeenCalledTimes(1);
+  });
+});

@@ -3,10 +3,11 @@ import { reportSaveError } from "./saveErrors";
 import type { Board, Op } from "./types";
 import { fetchBoard, fetchChange, seedIfEmpty, writeOp, type ChangedTable } from "./db";
 import { applyRowChange, reconcileBoard, type RowChange } from "./rowSync";
-import { createSend, errMsg, withPending, type BoardCell } from "./optimisticSend";
+import { createSend, errMsg, isOffline, withPending, type BoardCell } from "./optimisticSend";
 import { supabase } from "./supabaseClient";
 import { isConfigured } from "./supabaseConfig";
 import { requestAuthCheck } from "./auth";
+import { useT } from "./i18n";
 
 export type ConnState = "connecting" | "online" | "reconnecting" | "offline";
 
@@ -14,7 +15,8 @@ export interface UseBoard {
   board: Board | null;
   conn: ConnState;
   error: string | null;
-  /** onError fires when the write is rejected, after the optimistic change is rolled back. */
+  /** onError fires when the write is rejected, after the optimistic change is
+   *  rolled back, or at once when offline (then nothing was changed at all). */
   send: (op: Op, onError?: (message: string) => void) => void;
   reload: () => void;
 }
@@ -41,6 +43,10 @@ export function useBoard(): UseBoard {
   const [board, setBoard] = useState<Board | null>(null);
   const [conn, setConn] = useState<ConnState>("connecting");
   const [error, setError] = useState<string | null>(null);
+  // The offline reason handed to a caller's onError, in the current language.
+  const { t } = useT();
+  const tRef = useRef(t);
+  tRef.current = t;
 
   // The newest board, ahead of render: every change goes through `commit`, so
   // an op sent right after another one (same tick) starts from it.
@@ -219,6 +225,13 @@ export function useBoard(): UseBoard {
           if (!handled) reportSaveError(message);
           requestAuthCheck();
           reload(); // undo a failed optimistic change
+        },
+        // Offline: refused before anything changed, so nothing to undo or reload.
+        offline: isOffline,
+        offlineReason: () => tRef.current("save.offlineReason"),
+        onOffline: (message, handled) => {
+          setConn("offline");
+          if (!handled) reportSaveError(message);
         },
       });
     pendingOps.current = s.pending;

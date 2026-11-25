@@ -7,6 +7,7 @@ import { priorityLabel, statusLabel, useT } from "../lib/i18n";
 import { useMe } from "../lib/identity";
 import { useProjects } from "../lib/projectsContext";
 import { RepeatIcon, StarIcon } from "./RecurrenceControls";
+import { isOffline } from "../lib/optimisticSend";
 
 const PRIOS: Priority[] = ["P1", "P2", "P3", "P4"];
 
@@ -106,6 +107,9 @@ export function QuickAdd({
       createdAt: Date.now(),
     };
     send({ type: "addTask", task });
+    // Offline it is refused (the toast says so): keep what was typed, to add
+    // it once back online, and do not say "added".
+    if (isOffline()) return;
     const vis = visibility?.(task) ?? { filtered: false, column: false };
     setAdded({ task, ...vis });
     setTitle("");

@@ -5,7 +5,13 @@ export const UX_SHELL_IT: Record<string, string> = {
   "reflAuth.hint": "Prima volta? Chiedi la password iniziale a un amministratore.",
   "ux.shell.skipToContent": "Vai al contenuto",
   "save.failed": "Non salvato: {msg}. La bacheca mostra di nuovo ciò che è salvato.",
-  "save.offline": "Non salvato: sei offline. La modifica sparirà: rifalla quando torni online.",
+  // An edit made offline is refused before it changes anything (optimisticSend.ts).
+  "save.offline": "Modifica non fatta: sei offline. Rifalla quando torni online.",
+  // The same, after a screen's own "Non salvato:" (phone sheets, project page).
+  "save.offlineReason": "sei offline, quindi la modifica non è stata fatta. Rifalla quando torni online.",
+  // The loading screen when the app opens with no network (the cached shell).
+  "app.offline": "Sei offline. La bacheca si apre da sola appena torna la connessione.",
+  "app.unreachable": "Il server non risponde. Riprova da solo tra poco.",
   "ux.shell.tabsNav": "Sezioni",
   "ux.shell.close": "Chiudi",
   "ux.shell.renameBoard": "Rinomina la bacheca",
@@ -24,8 +30,11 @@ export const UX_SHELL_IT: Record<string, string> = {
 
 export const UX_SHELL_EN: Record<string, string> = {
   "save.failed": "Not saved: {msg}. The board shows what is saved again.",
-  "save.offline": "Not saved: you are offline. The change will go away: make it again once you are back online.",
+  "save.offline": "Change not made: you are offline. Make it again once you are back online.",
+  "save.offlineReason": "you are offline, so the change was not made. Make it again once you are back online.",
   "reflAuth.hint": "First time? Ask an admin for the initial password.",
+  "app.offline": "You are offline. The board opens by itself as soon as the connection is back.",
+  "app.unreachable": "The server is not answering. It tries again by itself shortly.",
   "ux.shell.skipToContent": "Skip to content",
   "ux.shell.tabsNav": "Sections",
   "ux.shell.close": "Close",

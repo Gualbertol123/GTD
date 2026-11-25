@@ -129,9 +129,10 @@ export function UndoToastHost() {
             if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHold(false);
           }}
           data-undo-toast=""
-          className="pointer-events-auto flex items-center gap-3 rounded-full bg-[#1C1C1E] text-white shadow-xl pl-4 pr-1.5 py-1.5 text-[13px]"
+          className="pointer-events-auto flex items-center gap-3 rounded-[20px] bg-[#1C1C1E] text-white shadow-xl pl-4 pr-1.5 py-1.5 text-[13px]"
         >
-          <span className="min-w-0 truncate">{toast.text}</span>
+          {/* Up to three lines: a "not saved, you are offline" notice is read whole. */}
+          <span className="min-w-0 line-clamp-3">{toast.text}</span>
           {toast.onUndo && (
           <button
             ref={undoRef}

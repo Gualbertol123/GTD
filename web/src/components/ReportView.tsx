@@ -7,6 +7,7 @@ import type { ReportDoc } from "../lib/reportDoc";
 import { supabase } from "../lib/supabaseClient";
 import { shortDate } from "../lib/dates";
 import { projectStats } from "../lib/projects";
+import { isOffline } from "../lib/optimisticSend";
 import { clearReportDraft, purgeReportDrafts, readReportDraft } from "../lib/prefs";
 import "@fontsource-variable/inter";
 import "../styles/glassReport.css";
@@ -123,7 +124,8 @@ export function ReportView({ board, send }: Props) {
   const setProjectInReport = useCallback(
     (id: string, hidden: boolean) =>
       send({ type: "projectReportHidden", id, hidden }, (message) =>
-        setErr({ text: `${t("report.excludeFailed")} (${message})` })
+        // Offline is not a missing migration: say just that.
+        setErr({ text: isOffline() ? t("save.offline") : `${t("report.excludeFailed")} (${message})` })
       ),
     [send, t]
   );

@@ -1189,7 +1189,8 @@ html[data-typing] .m-dock {
 }
 /* Over an open sheet there is no tab bar: sit low, above the keyboard if up. */
 html[data-sheet] .m-toast { bottom: calc(12px + env(safe-area-inset-bottom) + var(--m-kb, 0px)); }
-.m-toast span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Up to three lines: a "not saved, you are offline" toast must be read whole. */
+.m-toast span { flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; }
 .m-toast button {
   color: var(--m-accent);
   font-weight: 700;

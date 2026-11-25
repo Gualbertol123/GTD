@@ -11,6 +11,7 @@ import { Avatar, PRIO_VAR, STATUS_VAR, Sheet, shortDay, useToast } from "./ui";
 import { DuePicker, PeoplePicker, PriorityPicker, ProjectPicker, StatusPicker } from "./pickers";
 import { IconCalendar, IconFlag, IconFolder, IconStatus, IconUser } from "./icons";
 import type { Send } from "./actions";
+import { isOffline } from "../lib/optimisticSend";
 
 type Picker = "status" | "priority" | "due" | "people" | "project" | null;
 
@@ -92,6 +93,8 @@ export function AddSheet({
       ...(status === "WAITING" ? { waitingSince: toISODate(new Date()) } : {}),
     };
     send({ type: "addTask", task }, (m) => toast(`${t("m.notSaved")} ${m}`));
+    // Offline it is refused (the toast says so): the sheet stays, as typed.
+    if (isOffline()) return;
     toast(t("m.toast.added").replace("{title}", v));
     setTitle("");
     setDesc("");

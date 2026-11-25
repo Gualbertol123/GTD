@@ -17,6 +17,18 @@ export interface SendDeps {
   /** Called once a write is refused (after it is reported to the caller).
    *  `handled`: the caller passed onError and tells the person itself. */
   onFail: (message: string, handled: boolean) => void;
+  /** Offline right now? Then a send is refused up front (default: never). */
+  offline?: () => boolean;
+  /** The reason handed to onError for an offline refusal, in the UI language. */
+  offlineReason?: () => string;
+  /** A send refused because the device is offline: nothing was applied or
+   *  sent. `handled`: the caller passed onError and tells the person itself. */
+  onOffline?: (message: string, handled: boolean) => void;
+}
+
+/** The browser says there is no network (navigator.onLine is false). */
+export function isOffline(): boolean {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
 }
 
 // Optimistic send. Each op is applied to the newest board synchronously, so
@@ -30,6 +42,12 @@ export interface SendDeps {
 // to (a recurring task's completion + its next occurrence) are a group: if
 // one is refused, the rest of the group is not sent, so a refused completion
 // no longer leaves a second copy of the task behind.
+//
+// Offline, a send is refused UP FRONT: nothing changes on screen, nothing is
+// sent, queued or stored, and the caller's onError (or the shared "not saved"
+// toast) says the change was not made. It used to look saved, then vanish on
+// reconnect. The report comes a moment later (a microtask), after whatever
+// the caller does next (a "Done · Undo" toast), so it is the message left.
 export type Send = ((op: Op, onError?: (message: string) => void) => void) & {
   /** Ops sent but not yet confirmed by the server, oldest first. */
   pending: () => Op[];
@@ -45,6 +63,14 @@ export function createSend(deps: SendDeps): Send {
   const send = (op: Op, onError?: (message: string) => void): void => {
     const first = deps.cell.current;
     if (!first) return;
+    if (deps.offline?.()) {
+      const message = deps.offlineReason?.() ?? "offline";
+      queueMicrotask(() => {
+        onError?.(message);
+        deps.onOffline?.(message, !!onError);
+      });
+      return;
+    }
     // A recurring task's completion also adds its next occurrence (lib/recurrence.ts).
     const steps: { op: Op; before: Board }[] = [];
     for (const o of expandOp(first, op).flatMap((x) => withLinkOrder(first, x))) {
