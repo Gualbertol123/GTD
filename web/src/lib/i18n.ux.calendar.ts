@@ -15,6 +15,7 @@ export const UX_CALENDAR_IT: Record<string, string> = {
   "cal.overdue": "in ritardo",
   "cal.done": "completata",
   "cal.dueCount": "{n} in scadenza",
+  "cal.upcomingHint": "Ricorrente: compare sulla Board il {date}",
 };
 
 export const UX_CALENDAR_EN: Record<string, string> = {
@@ -32,4 +33,5 @@ export const UX_CALENDAR_EN: Record<string, string> = {
   "cal.overdue": "overdue",
   "cal.done": "done",
   "cal.dueCount": "{n} due",
+  "cal.upcomingHint": "Recurring: shows on the Board on {date}",
 };

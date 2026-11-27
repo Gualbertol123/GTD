@@ -10,6 +10,10 @@ import { IconBack, IconChevron, IconClose } from "../mobile/icons";
 interface Props {
   board: Board;
   tasks: Task[]; // filtered
+  /** Next occurrences of recurring tasks before their day (filtered): shown
+   *  faded on their date, not openable or movable until then (owner's rule,
+   *  2026-11-27). */
+  upcoming?: Task[];
   members: string[];
   send: (op: Op) => void;
 }
@@ -37,7 +41,7 @@ const currentMonth = () => {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 };
 
-export function CalendarView({ board, tasks, members, send }: Props) {
+export function CalendarView({ board, tasks, upcoming = [], members, send }: Props) {
   const { t, lang } = useT();
   const loc = localeCode(lang);
   const [month, setMonthState] = useState<Date>(() => lastMonth ?? currentMonth());
@@ -62,7 +66,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
   // "yyyy-mm-dd" due date never shifts by a day in negative-UTC time zones.
   const byDay = useMemo(() => {
     const m = new Map<string, Task[]>();
-    for (const tk of tasks) {
+    for (const tk of [...tasks, ...upcoming]) {
       if (!tk.dueDate) continue;
       const k = tk.dueDate.slice(0, 10);
       const list = m.get(k);
@@ -70,7 +74,22 @@ export function CalendarView({ board, tasks, members, send }: Props) {
       else m.set(k, [tk]);
     }
     return m;
-  }, [tasks]);
+  }, [tasks, upcoming]);
+  const upcomingIds = useMemo(() => new Set(upcoming.map((tk) => tk.id)), [upcoming]);
+  // A faded, inert line for an upcoming copy (day cell and day list).
+  const upcomingChip = (tk: Task, iso: string, big: boolean) => (
+    <div
+      key={tk.id}
+      title={t("cal.upcomingHint", { date: longDate(iso) })}
+      className={`w-full flex items-center gap-1 rounded border border-dashed border-[#D9D5CE] text-left opacity-60 ${big ? "px-2 py-1.5 gap-2" : "px-1 py-0.5"}`}
+    >
+      <span aria-hidden="true" className={`${big ? "text-[12px]" : "text-[10px]"} text-ink-2 shrink-0`}>↻</span>
+      <span className={`${big ? "text-[12px] truncate" : "text-[11px] leading-tight line-clamp-2 break-words"} min-w-0 text-[#0A1931]`}>
+        {tk.title}
+        <span className="sr-only">, {t("cal.upcomingHint", { date: longDate(iso) })}</span>
+      </span>
+    </div>
+  );
 
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
   const startOffset = (first.getDay() + 6) % 7; // Monday-first
@@ -237,7 +256,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                 </button>
               </div>
               <div className="space-y-1.5">
-                {dayList.map((tk) => (
+                {dayList.map((tk) => upcomingIds.has(tk.id) ? upcomingChip(tk, selectedDay, true) : (
                   <button
                     type="button"
                     key={tk.id}
@@ -400,6 +419,7 @@ export function CalendarView({ board, tasks, members, send }: Props) {
                   </div>
                   <div className="space-y-0.5 mt-0.5">
                     {visible.map((tk) => {
+                      if (upcomingIds.has(tk.id)) return upcomingChip(tk, key, false);
                       const isSel = selectedId === tk.id;
                       const done = tk.status === "DONE";
                       const overdue = !done && isPast;

@@ -243,6 +243,7 @@ export default function App() {
             <CalendarView
               board={board}
               tasks={filteredForCalendar(board.tasks, filters)}
+              upcoming={filteredForCalendar(board.upcoming ?? [], filters)}
               members={members}
               send={send}
             />

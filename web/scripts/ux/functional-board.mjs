@@ -146,6 +146,17 @@ section("recurring.next", async (browser) => {
   const { page, context } = await openApp(browser, { store, name: "rec" });
   check("recurring: a copy shows on its day, ★ in the band", (await columnsOf(page, "Rec copy due today")).includes("Next") && (await bandTitles(page)).some((x) => x.includes("Rec copy due today")));
   check("recurring: a copy due tomorrow is not shown yet", (await columnsOf(page, "Rec copy due tomorrow")).length === 0 && !(await bandTitles(page)).some((x) => x.includes("Rec copy due tomorrow")));
+  // …but the Calendar shows it, faded and inert, on its date (owner's choice 2026-11-27).
+  await page.evaluate(() => (location.hash = "#/calendario"));
+  await sleep(800);
+  if (parse(rel(1)).getMonth() !== today.getMonth()) { await page.getByRole("button", { name: "Mese successivo" }).click(); await sleep(300); }
+  const calCopy = await page.evaluate(() => {
+    const el = [...document.querySelectorAll("[title^='Ricorrente: compare sulla Board il']")].find((e) => (e.textContent ?? "").includes("Rec copy due tomorrow"));
+    return el ? { tag: el.tagName, inButton: !!el.closest("button"), draggable: el.getAttribute("draggable") } : null;
+  });
+  check("recurring: the Calendar shows a copy before its day, faded and not a button", !!calCopy && calCopy.tag === "DIV" && !calCopy.inButton && !calCopy.draggable, JSON.stringify(calCopy));
+  await page.evaluate(() => (location.hash = "#/board"));
+  await sleep(600);
 
   // ↻ chip
   const chip = await page.locator(".task-card", { hasText: "Rec feriali" }).first().textContent();
