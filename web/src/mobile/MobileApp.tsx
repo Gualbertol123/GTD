@@ -88,6 +88,7 @@ function mobileRoute(tab: string, sub?: string): { tab: MobileTab; page: MorePag
   if (tab === "calendario") return { tab: "agenda", page: null };
   if (tab === "music") return { tab: "more", page: null }; // the desktop MUSICA tab: the player opens on top
   if (tab === "mail") return { tab: "more", page: null }; // the desktop SETTIMANA › Mail: the mail pop-up opens on top
+  if (tab === "review") return { tab: "more", page: "weekly" }; // the desktop SETTIMANA › Revisione (desktop only): the phone's Weekly
   if (MORE_PAGES.has(tab)) return { tab: "more", page: tab as MorePage };
   if (tab === "board" || tab === "projects") return { tab, page: null };
   return { tab: savedTab(), page: null };

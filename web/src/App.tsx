@@ -27,6 +27,7 @@ import { wantsNewTask } from "./lib/newTaskShortcut";
 // Screens other than the board load when first opened (each is its own
 // chunk): the first paint downloads the board and the shell only.
 const ReportView = lazy(() => import("./components/ReportView").then((m) => ({ default: m.ReportView })));
+const WeeklyReview = lazy(() => import("./components/WeeklyReview").then((m) => ({ default: m.WeeklyReview })));
 const CalendarView = lazy(() => import("./components/CalendarView").then((m) => ({ default: m.CalendarView })));
 const SettingsView = lazy(() => import("./components/SettingsView").then((m) => ({ default: m.SettingsView })));
 const ProductTreeView = lazy(() => import("./components/ProductTreeView").then((m) => ({ default: m.ProductTreeView })));
@@ -237,6 +238,7 @@ export default function App() {
         )}
         {tab === "projects" && <ProjectsView board={board} send={send} />}
         {tab === "weekly" && <WeeklyView board={board} send={send} />}
+        {tab === "review" && <WeeklyReview board={board} send={send} members={members} />}
         {tab === "report" && <ReportView board={board} send={send} />}
         {tab === "mail" && (
           <section className="bg-white rounded-[14px] border border-[#E8E6E1] max-w-[720px]">

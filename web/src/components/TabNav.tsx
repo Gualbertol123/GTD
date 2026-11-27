@@ -8,12 +8,12 @@ import { music } from "../lib/music";
 //
 //   BOARD · PROGETTI · CALENDARIO · SETTIMANA · RIFLESSIONE · ALTRO ▾
 //
-// SETTIMANA holds the three weekly outputs (Weekly, Report, Mail), switched by
+// SETTIMANA holds the weekly pages (Weekly, Revisione, Report, Mail), switched by
 // WeekSwitch at the top of the page; ALTRO is a menu with Prodotti, Musica and
 // Impostazioni. Every page keeps its own address (#/weekly, #/report, #/mail,
 // #/products, …), so links, Back and the phone's mappings are unchanged.
 
-export const WEEK_PAGES: TabId[] = ["weekly", "report", "mail"];
+export const WEEK_PAGES: TabId[] = ["weekly", "review", "report", "mail"];
 export const MORE_PAGES: TabId[] = ["products", "music", "settings"];
 
 // The week page last opened (per tab, this session): SETTIMANA goes back to it.
@@ -159,7 +159,7 @@ function MoreMenu({ tab, go }: { tab: TabId; go: (t: TabId, viaKeyboard: boolean
   );
 }
 
-/** Weekly | Report | Mail, at the top of the SETTIMANA pages. */
+/** Weekly | Revisione | Report | Mail, at the top of the SETTIMANA pages. */
 export function WeekSwitch({ tab, go }: { tab: TabId; go: (t: TabId, viaKeyboard: boolean) => void }) {
   const { t } = useT();
   return (

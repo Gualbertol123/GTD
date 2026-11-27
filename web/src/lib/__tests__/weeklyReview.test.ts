@@ -7,6 +7,7 @@ import {
   overdueDays,
   reviewLists,
   stepCounts,
+  tasksLeft,
   toClarify,
   waitingDays,
   waitingTooLong,
@@ -114,6 +115,18 @@ describe("all steps", () => {
     expect(stepCounts(l0)).toEqual({ clarify: 1, waiting: 0, overdue: 1, maybe: 0, write: 0 });
     const after = board({ tasks: [task("x", { owner: "Anna", assignees: ["Anna"], dueDate: "2026-12-01" })] });
     expect(stepCounts(reviewLists(after, TODAY))).toEqual({ clarify: 0, waiting: 0, overdue: 0, maybe: 0, write: 0 });
+  });
+
+  it("counts a task listed in several steps once", () => {
+    const b = board({
+      tasks: [
+        task("x", { owner: "Unassigned", status: "WAITING", waitingSince: "2026-11-01", dueDate: "2026-11-02" }),
+        task("m", { status: "MAYBE" }),
+      ],
+    });
+    const l = reviewLists(b, TODAY);
+    expect(stepCounts(l)).toEqual({ clarify: 1, waiting: 1, overdue: 1, maybe: 1, write: 0 });
+    expect(tasksLeft(l)).toBe(2);
   });
 });
 

@@ -11,7 +11,7 @@
                    language and appearance switches.
 
    The state comes from ARIA, so the look can never disagree with what a
-   screen reader is told: [aria-current="page"], [aria-pressed="true"] or
+   screen reader is told: [aria-current="page"] (or "step"), [aria-pressed="true"] or
    [aria-selected="true"] is the chosen one; [aria-expanded="true"] too, for a
    pill that opens a panel (Team, Columns) — it reads as "on" while open.
 
@@ -83,7 +83,7 @@ html:not([data-skin="glass"]) header.bg-\[\#0A1931\] :is(.color-pop, .menu-pop) 
     background-color 100ms ease,
     color 100ms ease;
 }
-.tab:is([aria-current="page"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) {
+.tab:is([aria-current="page"], [aria-current="step"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) {
   background-color: var(--ctl-on-bg);
   color: var(--ctl-on-fg);
   border-color: var(--ctl-on-border);
@@ -115,7 +115,7 @@ html:not([data-skin="glass"]) header.bg-\[\#0A1931\] :is(.color-pop, .menu-pop) 
 
 /* On the chosen fill a lighter chip would lift the blue behind white text
    (3.8:1); a darker one keeps the count above 4.5:1 in both skins. */
-.tab:is([aria-current="page"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) .tab__count {
+.tab:is([aria-current="page"], [aria-current="step"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) .tab__count {
   background-color: rgba(0, 0, 0, 0.22);
 }
 
@@ -133,7 +133,7 @@ html:not([data-skin="glass"]) header.bg-\[\#0A1931\] :is(.color-pop, .menu-pop) 
   background-color: transparent;
   color: var(--ctl-fg-2);
 }
-.seg > .tab:is([aria-current="page"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) {
+.seg > .tab:is([aria-current="page"], [aria-current="step"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) {
   background-color: var(--ctl-on-bg);
   color: var(--ctl-on-fg);
   border-color: var(--ctl-on-border);
@@ -151,7 +151,7 @@ html[data-skin="glass"] .tab:not(.seg > .tab) {
   backdrop-filter: blur(var(--blur-tile)) saturate(var(--sat));
   -webkit-backdrop-filter: blur(var(--blur-tile)) saturate(var(--sat));
 }
-html[data-skin="glass"] .tab:is([aria-current="page"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) {
+html[data-skin="glass"] .tab:is([aria-current="page"], [aria-current="step"], [aria-pressed="true"], [aria-selected="true"], [aria-expanded="true"]) {
   box-shadow: var(--lift-sm), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
 }
 html[data-skin="glass"] .seg {

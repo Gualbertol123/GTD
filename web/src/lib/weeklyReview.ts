@@ -123,6 +123,14 @@ export function stepCounts(l: ReviewLists): Record<ReviewStep, number> {
   return { clarify: l.clarify.length, waiting: l.waiting.length, overdue: l.overdue.length, maybe: l.maybe.length, write: 0 };
 }
 
+/** How many different tasks steps 1–4 still list (one task can be in several). */
+export function tasksLeft(l: ReviewLists): number {
+  const ids = new Set<string>();
+  for (const x of l.clarify) ids.add(x.task.id);
+  for (const t of [...l.waiting, ...l.overdue, ...l.maybe]) ids.add(t.id);
+  return ids.size;
+}
+
 export interface WeekSummary {
   /** Completed this Monday–Sunday week (the Weekly's Recap). */
   doneThisWeek: number;
