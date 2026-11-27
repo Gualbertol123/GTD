@@ -52,6 +52,29 @@ export function AgendaScreen({ board, send }: { board: Board; send: Send }) {
     return m;
   }, [board.tasks, mine, me]);
 
+  // Next occurrences of recurring tasks before their day (board.upcoming):
+  // shown faded on their date, not openable until then (owner's rule,
+  // 2026-11-27, as in the desktop Calendar).
+  const upByDay = useMemo(() => {
+    const m = new Map<string, Task[]>();
+    for (const tk of board.upcoming ?? []) {
+      if (!tk.dueDate) continue;
+      if (mine && me && !isOwnedBy(tk, me)) continue;
+      m.set(tk.dueDate, [...(m.get(tk.dueDate) ?? []), tk]);
+    }
+    return m;
+  }, [board.upcoming, mine, me]);
+  const upRows = (iso: string) =>
+    (upByDay.get(iso) ?? []).map((tk) => (
+      <div key={tk.id} className="m-upcoming">
+        <span aria-hidden="true">↻</span>
+        <span className="m-upcoming__t">
+          {tk.title}
+          <span className="sr-only">, {t("cal.upcomingHint", { date: dayLabel(iso) })}</span>
+        </span>
+      </div>
+    ));
+
   const late = useMemo(
     () =>
       board.tasks
@@ -63,7 +86,7 @@ export function AgendaScreen({ board, send }: { board: Board; send: Send }) {
   const week = Array.from({ length: 7 }, (_, i) => plus(weekStart, i));
   const selected = byDay.get(day) ?? [];
   const upcoming = Array.from({ length: 14 }, (_, i) => toISODate(plus(new Date(day + "T00:00:00"), i + 1))).filter(
-    (iso) => (byDay.get(iso) ?? []).some((tk) => tk.status !== "DONE")
+    (iso) => (byDay.get(iso) ?? []).some((tk) => tk.status !== "DONE") || upByDay.has(iso)
   );
   const monthLabel = weekStart.toLocaleDateString(loc, { month: "long", year: "numeric" });
   const dayLabel = (iso: string) =>
@@ -150,7 +173,8 @@ export function AgendaScreen({ board, send }: { board: Board; send: Send }) {
           <IconPlus size={14} /> {t("m.add")}
         </button>
       </h2>
-      {selected.length ? <TaskList tasks={selected} send={send} showStatus /> : <div className="m-empty">{t("m.nothingDue")}</div>}
+      {selected.length ? <TaskList tasks={selected} send={send} showStatus /> : !upByDay.has(day) && <div className="m-empty">{t("m.nothingDue")}</div>}
+      {upRows(day)}
 
       {upcoming.length > 0 && (
         <>
@@ -161,6 +185,7 @@ export function AgendaScreen({ board, send }: { board: Board; send: Send }) {
                 {dayLabel(iso)}
               </div>
               <TaskList tasks={(byDay.get(iso) ?? []).filter((tk) => tk.status !== "DONE")} send={send} showStatus />
+              {upRows(iso)}
             </div>
           ))}
         </>

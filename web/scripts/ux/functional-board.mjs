@@ -1183,6 +1183,19 @@ section("phone.agenda+projects", async (browser) => {
   await context.close();
 });
 
+// ---- Phone Agenda: a recurring task's next copy, faded, before its day -------
+section("phone.upcoming", async (browser) => {
+  const made = Date.now() - 3600000;
+  const copy = row({ id: `s9@${rel(2)}`, title: "Rec phone copy", due_date: rel(2), recurrence: { freq: "daily", every: 1, series: "s9" }, created_at: made, updated_at: made - 1 });
+  const store = createStore({ db: dbWith([copy]) });
+  const { page, context } = await openApp(browser, { store, name: "ph-up", ...PHONE, path: "#/agenda" });
+  await sleep(600);
+  const up = await page.evaluate(() => [...document.querySelectorAll(".m-upcoming")].map((e) => ({ text: e.textContent ?? "", button: !!e.closest("button, a"), card: !!e.closest(".m-card") })));
+  check("phone Agenda: the next copy shows faded in «In arrivo», not as a card", up.some((u) => u.text.includes("Rec phone copy") && !u.button && !u.card), JSON.stringify(up));
+  check("phone Agenda: …and is not a task card", !(await page.locator(".m-card", { hasText: "Rec phone copy" }).count()));
+  await context.close();
+});
+
 // ---- Phone → desktop with a project sheet open (a tablet rotated, G-25) --------
 section("phone.handoff", async (browser) => {
   const store = createStore();
