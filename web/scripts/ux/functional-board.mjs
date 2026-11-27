@@ -4,12 +4,12 @@
 // Supabase (stub.mjs). Prints PASS / FAIL per check; exit code 1 on a FAIL.
 //
 //   (dev server on :5199 pointed at http://stub.supabase.local, see stub.mjs)
-//   NODE_PATH=<dir with playwright>/node_modules node scripts/ux/functional-board.mjs [filter]
+//   node scripts/ux/functional-board.mjs [filter]   (playwright is a devDependency)
 //
 // `filter` runs only the sections whose name contains it (e.g. "recurring").
 // -----------------------------------------------------------------------------
 
-import { launch, openApp, createStore, seed } from "./stub.mjs";
+import { APP_URL, launch, openApp, createStore, seed } from "./stub.mjs";
 
 const only = process.argv[2] ?? "";
 const results = [];
@@ -692,7 +692,7 @@ section("board.quickadd", async (browser) => {
 section("board.editor", async (browser) => {
   const store = createStore();
   const { page, context } = await openApp(browser, { store, name: "edit" });
-  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "http://localhost:5199" });
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: new URL(APP_URL).origin });
   let card = await openCard(page, "Efficientare l'update dei cambi");
   // assignees multi-select
   await card.locator('button[title="Cambia chi se ne occupa"]').click();

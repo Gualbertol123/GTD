@@ -1,7 +1,8 @@
 // Functional QA pass over the secondary tabs (Weekly, Report, Calendar,
 // Reflection, Products, Music, Settings), login/logout, addresses/Back,
 // IT/EN, refused writes and missing migrations, against the in-memory fake
-// Supabase in stub.mjs. Prints PASS / FAIL / INFO per check.
+// Supabase in stub.mjs. Prints PASS / FAIL / INFO per check; exit code 1 on
+// a FAIL.
 //
 //   node scripts/ux/functional-tabs.mjs [group,group,…]
 //   groups: weekly report calendar reflection products music settings auth
@@ -1029,3 +1030,4 @@ for (const [name, fn] of Object.entries(groups)) {
 }
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed`);
+process.exitCode = fail ? 1 : 0;
