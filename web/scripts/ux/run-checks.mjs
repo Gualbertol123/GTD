@@ -12,7 +12,7 @@
 //
 //   board    functional-board.mjs   board, recurring, In evidenza, projects, phone
 //   tabs     functional-tabs.mjs    the other tabs, login, addresses, languages
-//   cards    board-cards.mjs        memoised board cards
+//   cards    board-cards.mjs        memoised board cards (desktop and phone)
 //   offline  offline-pwa.mjs        the installed app offline (production build)
 //   hover    hoverdiff.mjs          the pointer sweep, cut down to one skin
 //                                   (classic), one size (1440x900) and one

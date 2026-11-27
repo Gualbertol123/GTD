@@ -187,8 +187,9 @@ for axe):
 | `hovershots.mjs before\|after` | Rest vs hover images of the named cases | `ux-audit/shots/hover-*` |
 | `sweepsummary.mjs` | The before / after table from the sweep JSON | §1 |
 | `offline-pwa.mjs` (production build) | First visit precaches the app; offline it opens and says so; edits refused; back online by itself | 28 / 28 |
-| `board-cards.mjs` | A memoised card never shows stale data: steps, widths, moves, remote edits, language | 14 / 14 |
+| `board-cards.mjs` | A memoised card never shows stale data: steps, widths, moves, remote edits, language; on the phone, project chip and step, remote edits, the round check, a project's sheet | 22 / 22 (14 desktop, 8 phone) |
 | `perf-rerender.mjs` | TaskCard renders per remote change, idle poll and drag (G-33) | 1 / 0 / 2 (were 321 / 321 / 963) |
+| `perf-rerender-phone.mjs` | Phone TaskCard renders per remote change, idle poll and a tap on a card's check, on Today and the Board (§3) | Today 1 / 0 / 0 (were 89 / 0 / 88 of 89); Board 1 / 1 / 1 (were 315 / 315 / 315 of 315) |
 
 `stub.mjs` options added in this pass (defaults unchanged): `createStore()`
 shares one fake database between browser contexts and broadcasts every write
@@ -315,7 +316,7 @@ means reproduced, fixed, and re-checked with the script named (in
 | **Weekly's coloured column pills** (H7) — *done 2026-11-27 (third pass)* | A coloured dot and the plain name, both skins. | — |
 | **Chooser consistency** (U3) — *done 2026-11-27 (third pass)* | Priority pills everywhere, the multi-person picker on the project form, ‹ › for the report's week. | — |
 | **Phone → desktop with a project sheet open** (G-25) — *done 2026-11-27 (third pass)* | The desktop opens the project the phone had open. | — |
-| **Phone cards and the sync layer** | The phone's cards still read every task from the projects context; they gain from the memoised context and `reconcileBoard` only. | The same props-instead-of-context change as the desktop card. |
+| **Phone cards and the sync layer** — *done 2026-11-27 (third pass)* | The phone's `TaskCard` is `React.memo` like the desktop's: its project and step are props worked out once per board (`mobile/cardData.ts`), and `TaskList` gives every card the same handlers. `perf-rerender-phone.mjs` (316 tasks, dev build): one remote change re-renders 1 card instead of 89 on Today and 315 on the Board; a tap on a card's check 0 / 1 instead of 88 / 315 (36–66 ms → 7–9 ms a commit). The Board's poll counts 1 because it follows Today's tap (that row really changed). | — |
 
 ### 4. What needs the owner
 

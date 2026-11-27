@@ -1061,7 +1061,7 @@ run side by side on Ubuntu with Node 20 (as on Netlify):
   `functional-board.mjs` (board, recurring tasks, In evidenza, projects, phone),
   `functional-tabs.mjs` (Weekly, Report, Calendar, Reflection, Products, Music,
   Settings, login, addresses, languages, refused writes, offline),
-  `board-cards.mjs` (memoised cards), `offline-pwa.mjs` (the installed app
+  `board-cards.mjs` (memoised cards, desktop and phone), `offline-pwa.mjs` (the installed app
   offline, against a production build) and a quick `hoverdiff.mjs` pointer
   sweep (one skin, one size; the hover rule in §10). On a failure the logs and
   screenshots are attached to the run as the `browser-checks` artifact.
