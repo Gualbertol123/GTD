@@ -792,6 +792,8 @@ section("board.layout", async (browser) => {
   // edit layout: resize
   await page.locator("button", { hasText: /^Modifica layout$/ }).click();
   const handle = page.locator('div[title="Modifica layout"].cursor-col-resize').first();
+  // The open Columns panel and the Inbox strip put the handle below a 900 px fold.
+  await handle.scrollIntoViewIfNeeded();
   const hb = await handle.boundingBox();
   await page.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2);
   await page.mouse.down();
