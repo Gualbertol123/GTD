@@ -13,6 +13,7 @@ import { AutoTextarea } from "./AutoTextarea";
 import { SortableSubtasks } from "./SortableSubtasks";
 import { RecurrenceControls } from "./RecurrenceControls";
 import { PriorityPills } from "./PriorityPills";
+import { AssigneePanel, nextOwners } from "./AssigneePicker";
 
 interface Props {
   task: Task;
@@ -269,16 +270,7 @@ export function TaskDetails({
 
   // Picking a name adds it when the task can be shared, and replaces the whole
   // assignment when it cannot. Taking the last name off leaves it unassigned.
-  const toggleOwner = (name: string) => {
-    if (!multiAssign || name === UNASSIGNED) {
-      patch(ownersPatch([name]));
-      return;
-    }
-    const next = owners.includes(name)
-      ? owners.filter((o) => o !== name)
-      : [...owners.filter((o) => o !== UNASSIGNED), name];
-    patch(ownersPatch(next));
-  };
+  const toggleOwner = (name: string) => patch(ownersPatch(nextOwners(owners, name, multiAssign)));
 
   const addSub = () => {
     const v = newSub.trim();
@@ -392,44 +384,14 @@ export function TaskDetails({
       </div>
 
       {showNames && assignOpen && (
-        <div
-          className="rounded-[12px] border border-[#E8E6E1] bg-[#F5F3EF] p-2.5 space-y-2"
-          onKeyDown={(e) => {
-            // Escape closes the picker first (the card stays open).
-            if (e.key === "Escape") {
-              e.preventDefault();
-              setAssignOpen(false);
-            }
-          }}
-        >
-          <div className="flex items-baseline justify-between gap-2 flex-wrap">
-            <span className="font-trajan text-[10px] uppercase tracking-wide text-ink-3">
-              {t("assign.title")}
-            </span>
-            <span className="text-[10px] text-ink-2">
-              {t(multiAssign ? "assign.hintMulti" : "assign.hintSingle")}
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {[UNASSIGNED, ...members].map((m) => {
-              const on = owners.includes(m);
-              return (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => toggleOwner(m)}
-                  aria-pressed={on}
-                  className="tab h-7 px-3 text-[11px]"
-                >
-                  {memberLabel(m)}
-                </button>
-              );
-            })}
-          </div>
-          {!multiAssign && (
-            <p className="text-[10px] text-[#C81E1E]">{t("assign.migrationNote")}</p>
-          )}
-        </div>
+        // Escape closes the picker first (the card stays open).
+        <AssigneePanel
+          members={members}
+          owners={owners}
+          multiAssign={multiAssign}
+          onToggle={toggleOwner}
+          onClose={() => setAssignOpen(false)}
+        />
       )}
 
       <div className="flex items-center gap-1.5 flex-wrap">

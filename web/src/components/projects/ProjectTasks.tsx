@@ -3,12 +3,13 @@ import type { Board, BoardMode, Op, Priority, Project, Status, Task } from "../.
 import { PRIORITY_DOT, STATUS_ORDER, UNASSIGNED, genId, isArchived } from "../../lib/constants";
 import { statusLabel, useT } from "../../lib/i18n";
 import { useMe } from "../../lib/identity";
-import { isOwnedBy, ownersPatch, taskOwners } from "../../lib/owners";
+import { isOwnedBy, ownerInitial, ownersLabel, ownersPatch, taskOwners } from "../../lib/owners";
 import { daysSince, daysUntil, toISODate } from "../../lib/dates";
 import { readPref, writePref } from "../../lib/prefs";
 import { HEALTH_COLOR, TASK_STATUS_COLOR, boardMode, projectPriority, type ProjectStats } from "../../lib/projects";
 import { TaskDetails } from "../TaskDetails";
 import { PriorityPills } from "../PriorityPills";
+import { AssigneePanel, nextOwners } from "../AssigneePicker";
 import { Avatars, Icon, StatusStack, fmtDay } from "./ProjectBits";
 
 type View = "list" | "board";
@@ -47,13 +48,18 @@ export function ProjectTasks({
   const [showDone, setShowDone] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
 
-  // New-task form. The default holder is the project's first lead, or you.
+  // New-task form. The default holder is the project's first lead, or you;
+  // the assignee pill takes several people, as on the board (one before
+  // migration 009). The first one chosen is the task's `owner`.
   const defaultOwner = (p.owners ?? [])[0] ?? (me && board.members.includes(me) ? me : UNASSIGNED);
+  const multiAssign = board.assigneesAvailable !== false;
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<Status>("NEXT");
   const [prio, setPrio] = useState<Priority>(projectPriority(p));
-  const [owner, setOwner] = useState(defaultOwner);
+  const [owners, setOwners] = useState<string[]>([defaultOwner]);
+  const [pickOpen, setPickOpen] = useState(false);
   const [due, setDue] = useState("");
+  const memberLabel = (name: string) => (name === UNASSIGNED ? t("members.unassigned") : name);
 
   const create = () => {
     const v = title.trim();
@@ -63,7 +69,7 @@ export function ProjectTasks({
       id: genId(),
       title: v,
       desc: "",
-      ...ownersPatch([owner]),
+      ...ownersPatch(owners),
       priority: prio,
       status,
       notes: "",
@@ -78,6 +84,7 @@ export function ProjectTasks({
     save({ type: "addTask", task });
     setTitle("");
     setDue("");
+    setPickOpen(false);
   };
 
   const linkable = useMemo(() => board.tasks.filter((x) => !x.projectId && !isArchived(x)), [board.tasks]);
@@ -183,19 +190,27 @@ export function ProjectTasks({
                 ))}
               </select>
               <PriorityPills value={prio} onChange={setPrio} label={t("projects.priority")} size="h-8 px-2.5 text-[11px]" />
-              <select
-                value={owner}
-                onChange={(e) => setOwner(e.target.value)}
-                className={field}
-                aria-label={t("quick.owner")}
+              <button
+                type="button"
+                onClick={() => setPickOpen((v) => !v)}
+                aria-expanded={pickOpen}
                 title={t("quick.owner")}
+                aria-label={`${t("quick.owner")}: ${ownersLabel({ owner: owners[0] ?? UNASSIGNED, assignees: owners }, memberLabel)}`}
+                className="h-8 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] pl-1 pr-2.5 text-[12px] text-[#0A1931] field inline-flex items-center gap-1.5"
               >
-                {[...board.members, UNASSIGNED].map((m) => (
-                  <option key={m} value={m}>
-                    {m === UNASSIGNED ? t("members.unassigned") : m}
-                  </option>
-                ))}
-              </select>
+                <span className="flex -space-x-1.5" aria-hidden="true">
+                  {owners.slice(0, 3).map((name, i) => (
+                    <span
+                      key={`${name}-${i}`}
+                      className="w-6 h-6 rounded-full bg-[#0A1931] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[#F5F3EF]"
+                    >
+                      {ownerInitial(name)}
+                    </span>
+                  ))}
+                </span>
+                <span>{ownersLabel({ owner: owners[0] ?? UNASSIGNED, assignees: owners }, memberLabel)}</span>
+                <span className="text-[9px] text-ink-2" aria-hidden="true">{pickOpen ? "▾" : "▸"}</span>
+              </button>
               <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className={field} aria-label={t("task.due")} />
               <span className="flex-1" />
               <button
@@ -206,6 +221,15 @@ export function ProjectTasks({
                 + {t("projects.tasks.add")}
               </button>
             </div>
+            {pickOpen && (
+              <AssigneePanel
+                members={board.members}
+                owners={owners}
+                multiAssign={multiAssign}
+                onToggle={(name) => setOwners((prev) => nextOwners(prev, name, multiAssign))}
+                onClose={() => setPickOpen(false)}
+              />
+            )}
           </div>
 
           {linkable.length > 0 && (

@@ -10,6 +10,7 @@ import { RepeatIcon, StarIcon } from "./RecurrenceControls";
 import { isOffline } from "../lib/optimisticSend";
 import { takeNewTask } from "../lib/newTaskShortcut";
 import { PriorityPills } from "./PriorityPills";
+import { AssigneePanel, nextOwners } from "./AssigneePicker";
 
 interface Props {
   members: string[];
@@ -71,19 +72,7 @@ export function QuickAdd({
 
   // Same rule as the picker inside a task: a name adds when several people can
   // share, replaces when they cannot, and Unassigned never shares.
-  const toggleOwner = (name: string) => {
-    if (!multiAssign || name === UNASSIGNED) {
-      setOwners([name]);
-      return;
-    }
-    setOwners((prev) =>
-      prev.includes(name)
-        ? prev.filter((o) => o !== name).length
-          ? prev.filter((o) => o !== name)
-          : [UNASSIGNED]
-        : [...prev.filter((o) => o !== UNASSIGNED), name]
-    );
-  };
+  const toggleOwner = (name: string) => setOwners((prev) => nextOwners(prev, name, multiAssign));
 
   const create = () => {
     const v = title.trim();
@@ -283,35 +272,7 @@ export function QuickAdd({
       </div>
 
       {showNames && pickOpen && (
-        <div className="rounded-[12px] border border-[#E8E6E1] bg-[#F5F3EF] p-2.5 space-y-2">
-          <div className="flex items-baseline justify-between gap-2 flex-wrap">
-            <span className="font-trajan text-[10px] uppercase tracking-wide text-ink-3">
-              {t("assign.title")}
-            </span>
-            <span className="text-[10px] text-ink-2">
-              {t(multiAssign ? "assign.hintMulti" : "assign.hintSingle")}
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {[UNASSIGNED, ...members].map((m) => {
-              const on = owners.includes(m);
-              return (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => toggleOwner(m)}
-                  aria-pressed={on}
-                  className="tab h-7 px-3 text-[11px]"
-                >
-                  {memberLabel(m)}
-                </button>
-              );
-            })}
-          </div>
-          {!multiAssign && (
-            <p className="text-[10px] text-[#C81E1E]">{t("assign.migrationNote")}</p>
-          )}
-        </div>
+        <AssigneePanel members={members} owners={owners} multiAssign={multiAssign} onToggle={toggleOwner} />
       )}
     </div>
   );
