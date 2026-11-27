@@ -10,7 +10,9 @@ import { loadMenu, upcomingMenu, type MenuDay } from "../lib/menu";
 import { Sheet } from "./ui";
 import { TaskList } from "./TaskList";
 import { useNav } from "./nav";
-import { IconCheck, IconChevron, IconClock, IconFork, IconToday, IconUser } from "./icons";
+import { IconCheck, IconChevron, IconClock, IconFork, IconPlus, IconToday, IconUser } from "./icons";
+import { CaptureSheet } from "./CaptureSheet";
+import { inboxTasks, isInbox } from "../lib/inbox";
 import type { Send } from "./actions";
 
 const byPriorityThenDue = (a: Task, b: Task) =>
@@ -19,21 +21,25 @@ const byPriorityThenDue = (a: Task, b: Task) =>
 /**
  * The first screen: what needs *you* today. Your late and due-today work,
  * what you are in the middle of, the week ahead and what you are waiting
- * on — then the canteen's dish of the day.
+ * on — then the canteen's dish of the day. Above them, the Inbox: capture a
+ * title to it, and the team's captured tasks still to sort (lib/inbox.ts).
  */
 export function TodayScreen({ board, send }: { board: Board; send: Send }) {
   const { t, lang } = useT();
   const { me } = useMe();
   const nav = useNav();
   const known = !!me && board.members.includes(me);
+  const [capturing, setCapturing] = useState(false);
 
   const groups = useMemo(() => {
     const open = boardTasks(board).filter((tk) => tk.status !== "DONE");
+    // The whole team's Inbox, oldest first: anyone can sort it.
+    const inbox = inboxTasks(open);
     // In evidenza: the whole team's highlighted tasks, first and only once.
     const pinned = open
       .filter((tk) => tk.pinned)
       .sort((a, b) => (a.dueDate ?? "9").localeCompare(b.dueDate ?? "9") || PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
-    const mine = open.filter((tk) => !tk.pinned && (!known || isOwnedBy(tk, me)));
+    const mine = open.filter((tk) => !tk.pinned && !isInbox(tk) && (!known || isOwnedBy(tk, me)));
     const late: Task[] = [];
     const today: Task[] = [];
     const doing: Task[] = [];
@@ -52,7 +58,7 @@ export function TodayScreen({ board, send }: { board: Board; send: Send }) {
     doing.sort(byPriorityThenDue);
     soon.sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""));
     waiting.sort((a, b) => daysSince(b.waitingSince) - daysSince(a.waitingSince));
-    return { pinned, late, today, doing, soon, waiting };
+    return { pinned, inbox, late, today, doing, soon, waiting };
   }, [board, me, known]);
 
   const doneWeek = board.tasks.filter((tk) => tk.status === "DONE" && !isArchived(tk)).length;
@@ -126,7 +132,21 @@ export function TodayScreen({ board, send }: { board: Board; send: Send }) {
         </button>
       )}
 
+      <button className="m-panel m-row" style={{ marginTop: 14 }} onClick={() => setCapturing(true)} aria-haspopup="dialog" data-capture-open="">
+        <span className="m-row__icon" style={{ ["--tile" as string]: "var(--m-indigo)" }}>
+          <IconPlus size={18} />
+        </span>
+        <span className="m-row__main">
+          <span className="m-row__title">{t("m.inbox.capture")}</span>
+          <span className="m-row__hint" style={{ display: "block" }}>
+            {t("m.inbox.captureHint")}
+          </span>
+        </span>
+        {groups.inbox.length > 0 && <span className="m-count">{groups.inbox.length}</span>}
+      </button>
+
       {section("pin.band", groups.pinned, true)}
+      {section("inbox.title", groups.inbox)}
       {section("m.sec.late", groups.late, true)}
       {section("m.sec.today", groups.today, true)}
       {section("m.sec.doing", groups.doing)}
@@ -141,6 +161,8 @@ export function TodayScreen({ board, send }: { board: Board; send: Send }) {
       )}
 
       <CanteenCard />
+
+      {capturing && <CaptureSheet members={board.members} send={send} onClose={() => setCapturing(false)} />}
     </div>
   );
 }
