@@ -535,6 +535,16 @@ section("migrations", async (browser) => {
     await page.getByLabel("Nuova attività…").press("Enter");
     await sleep(500);
     check("before 009: new task saves", store.db.tasks.some((t) => t.title === "QA pre-009") && writeErrors(store).length === 0);
+    // A project's new task: one person, as on the board.
+    await page.goto(page.url().split("#")[0] + "#/projects/p1");
+    await sleep(900);
+    await page.getByLabel("Nuova attività…").last().fill("QA pre-009 project");
+    await page.locator('main button[aria-expanded][title="Assegnata a"]').last().click();
+    const ptxt = await page.locator("main").textContent();
+    await page.locator("main button[aria-pressed]", { hasText: /^Chiara$/ }).last().click();
+    await page.getByLabel("Nuova attività…").last().press("Enter");
+    const pt = await waitFor(() => store.db.tasks.find((t) => t.title === "QA pre-009 project"));
+    check("before 009: a project's new task takes one person, with the migration note", /migration-009/.test(ptxt) && pt?.owner === "Chiara" && writeErrors(store).length === 0, JSON.stringify(pt && { o: pt.owner, a: pt.assignees }));
     await context.close();
   }
   // 015 (and so 016): projects have a name only
@@ -672,7 +682,11 @@ section("board.quickadd", async (browser) => {
   await page.locator('button[aria-expanded][title="Assegnata a"]').click();
   await page.locator("button[aria-pressed]", { hasText: /^Chiara$/ }).first().click();
   const qrow = page.getByLabel("Nuova attività…").locator("xpath=..");
-  await qrow.locator("select").filter({ has: page.locator("option[value=P1]") }).first().selectOption("P1");
+  // Priority is a row of pills, as in the task editor (no <select>).
+  const qprio = qrow.locator('[role=group][aria-label="Priorità"]');
+  check("new-task bar: priority is P1–P4 pills, P2 chosen", (await qprio.locator("button[aria-pressed]").count()) === 4 && (await qprio.locator('button[aria-pressed="true"]').innerText()) === "P2" && (await qrow.locator("select").filter({ has: page.locator("option[value=P1]") }).count()) === 0);
+  await qprio.locator("button", { hasText: /^P1$/ }).click();
+  check("new-task bar: the clicked pill is the chosen one", (await qprio.locator('button[aria-pressed="true"]').innerText()) === "P1");
   await qrow.locator("select").filter({ has: page.locator("option[value=WAITING]") }).first().selectOption("WAITING");
   await page.locator('input[type="date"]').first().fill(rel(4));
   await page.locator("button", { hasText: /^\+ Aggiungi$/ }).first().click();
@@ -686,6 +700,16 @@ section("board.quickadd", async (browser) => {
   // empty title
   await page.locator("button", { hasText: /^\+ Aggiungi$/ }).first().click();
   check("new-task bar: empty title says why", /titolo/i.test(await toastText(page)), await toastText(page));
+  // The board's priority filter: pills too, with «Tutte» first.
+  const fprio = page.locator('[role=search] [role=group][aria-label="Filtra per priorità"]');
+  const fpressed = async () => fprio.locator('button[aria-pressed="true"]').innerText().catch(() => "");
+  check("filters: priority is pills, «Tutte» first and chosen", (await fprio.locator("button").count()) === 5 && (await fprio.locator("button").first().innerText()) === "Tutte" && (await fpressed()) === "Tutte");
+  await fprio.locator("button", { hasText: /^P1$/ }).click();
+  await sleep(300);
+  check("filters: the P1 pill filters the board", (await fpressed()) === "P1" && (await columnsOf(page, "Integrazione DB esterno per PJT")).length > 0 && (await columnsOf(page, "Cambiare corporate con legal entities")).length === 0);
+  await fprio.locator("button", { hasText: /^Tutte$/ }).click();
+  await sleep(300);
+  check("filters: «Tutte» shows every priority again", (await fpressed()) === "Tutte" && (await columnsOf(page, "Cambiare corporate con legal entities")).length > 0);
   await context.close();
 });
 
@@ -888,6 +912,16 @@ section("projects.tasks", async (browser) => {
   await page.getByLabel("Nuova attività…").last().press("Enter");
   const t = await waitFor(() => store.db.tasks.find((x) => x.title === "QA project task"));
   check("project: new task created linked", t?.project_id === "p1", JSON.stringify(t && { p: t.project_id }));
+  // Several people and a priority pill on a project's new task, as on the board.
+  check("project: the new task's holder is an assignee pill, not a <select>", (await page.locator("main select").filter({ has: page.locator("option[value=Unassigned]") }).count()) === 0);
+  await page.getByLabel("Nuova attività…").last().fill("QA project shared");
+  await page.locator('main button[aria-expanded][title="Assegnata a"]').last().click();
+  await page.locator("main button[aria-pressed]", { hasText: /^Chiara$/ }).last().click();
+  await page.locator('main [role=group][aria-label="Priorità"]').last().locator("button", { hasText: /^P3$/ }).click();
+  await page.getByLabel("Nuova attività…").last().press("Enter");
+  const ts = await waitFor(() => store.db.tasks.find((x) => x.title === "QA project shared"));
+  check("project: new task saves two assignees (lead + Chiara), the lead as owner", JSON.stringify(ts?.assignees) === '["Francesco","Chiara"]' && ts?.owner === "Francesco" && ts?.project_id === "p1", JSON.stringify(ts && { o: ts.owner, a: ts.assignees }));
+  check("project: new task takes the priority pill", ts?.priority === "P3", ts?.priority);
   // link existing
   await page.getByLabel("+ Collega un'attività del board…").selectOption({ label: "Efficientare l'update dei cambi" });
   await waitFor(() => sv(store.db, "6").project_id === "p1");

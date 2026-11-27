@@ -174,9 +174,55 @@ groups.weekly = async () => {
 };
 
 // ---------------------------------------------------------------- REPORT
+// The report's week is picked with ‹ › (like Weekly), over this week and the
+// 11 before it. Offset 0 = this week, 1 = last week, …; -1 = custom period.
+const REPORT_WEEKS = 12;
+const mondayIso = (off) => {
+  const d = new Date();
+  const m = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7) - off * 7);
+  return `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, "0")}-${String(m.getDate()).padStart(2, "0")}`;
+};
+const reportPrev = (page) => page.locator('main button[aria-label="Settimana precedente"]').first();
+const reportNext = (page) => page.locator('main button[aria-label="Settimana successiva"]').first();
+const reportCustom = (page) => page.locator("main button[aria-pressed]", { hasText: /^Personalizzato$/ }).first();
+async function reportWeek(page) {
+  if ((await reportCustom(page).getAttribute("aria-pressed")) === "true") return -1;
+  const from = await page.evaluate(() => {
+    try { return JSON.parse(localStorage.getItem("gtd-report-period") ?? "null")?.from ?? null; } catch { return null; }
+  });
+  for (let i = 0; i < REPORT_WEEKS; i++) if (mondayIso(i) === from) return i;
+  return -2;
+}
+async function pickReportWeek(page, n) {
+  let cur = await reportWeek(page);
+  for (let guard = 0; cur !== n && guard < 2 * REPORT_WEEKS; guard++) {
+    await (cur < 0 || cur < n ? reportPrev(page) : reportNext(page)).click();
+    await wait(page, 150);
+    cur = await reportWeek(page);
+  }
+  await wait(page, 600);
+  return cur;
+}
+
 groups.report = async () => {
   {
     const { context, page, db } = await openApp(browser, { skin: "classic", appearance: "light", path: "#/report" });
+    // ‹ › for the week (no <select> any more).
+    ok("report: the week is chosen with ‹ ›, not a list", (await page.locator("main select").count()) === 0 && (await reportPrev(page).count()) === 1 && (await reportNext(page).count()) === 1);
+    ok("report: › is off on this week", (await reportWeek(page)) === 0 && (await reportNext(page).isDisabled()));
+    await reportPrev(page).click();
+    await wait(page, 300);
+    const lastLabel = await page.locator('main [role=group][aria-labelledby="report-period-label"] [aria-live]').innerText();
+    ok("report: ‹ goes to last week", (await reportWeek(page)) === 1 && /settimana scorsa/.test(lastLabel) && !(await reportNext(page).isDisabled()), `week=${await reportWeek(page)}, label="${lastLabel}"`);
+    await reportNext(page).click();
+    await wait(page, 300);
+    ok("report: › comes back to this week", (await reportWeek(page)) === 0);
+    for (let i = 0; i < REPORT_WEEKS + 2; i++) if (!(await reportPrev(page).isDisabled())) await reportPrev(page).click();
+    await wait(page, 300);
+    ok("report: ‹ stops at the oldest week the list used to offer", (await reportWeek(page)) === REPORT_WEEKS - 1 && (await reportPrev(page).isDisabled()), `week=${await reportWeek(page)}`);
+    await page.locator("main button", { hasText: /^Questa settimana$/ }).click();
+    await wait(page, 300);
+    ok("report: 'Questa settimana' jumps back", (await reportWeek(page)) === 0);
     await page.locator("main button", { hasText: "Genera report" }).click();
     await wait(page, 2500);
     const pages = await page.locator(".gr-page, [class*=gr-page]").count();
@@ -247,9 +293,8 @@ groups.report = async () => {
     await wait(page, 2500);
     ok("report: reload reopens the draft", await page.evaluate(() => [...document.querySelectorAll("[data-ed-id]")].some((e) => e.textContent.includes("QAEDIT"))));
     // Past-week draft: pick last week, edit, leave, return
-    const sel = page.locator("main select").first();
-    await sel.selectOption("1");
-    await wait(page, 1500);
+    await pickReportWeek(page, 1);
+    await wait(page, 900);
     const ed1 = page.locator("[data-ed-id][contenteditable=true]").first();
     if (await ed1.count()) {
       await ed1.click();
@@ -264,21 +309,19 @@ groups.report = async () => {
     await go(page, "#/board");
     await go(page, "#/report");
     await wait(page, 1500);
-    const selVal = await page.locator("main select").first().inputValue();
-    ok("report: leaving the tab on last week's draft reopens last week", selVal === "1" && (await editing()) && (await lwOnPage()), `period=${selVal} (0=this week), editing=${await editing()}, LASTWEEK on page=${await lwOnPage()}`);
+    const selVal = await reportWeek(page);
+    ok("report: leaving the tab on last week's draft reopens last week", selVal === 1 && (await editing()) && (await lwOnPage()), `period=${selVal} (0=this week), editing=${await editing()}, LASTWEEK on page=${await lwOnPage()}`);
     await page.reload();
     await wait(page, 2500);
-    ok("report: reload reopens last week's draft too", (await sel.inputValue()) === "1" && (await lwOnPage()), `period=${await sel.inputValue()}`);
+    ok("report: reload reopens last week's draft too", (await reportWeek(page)) === 1 && (await lwOnPage()), `period=${await reportWeek(page)}`);
     // A remembered week with no draft falls back to this week (and its draft).
-    await sel.selectOption("3");
-    await wait(page, 1200);
+    await pickReportWeek(page, 3);
     await go(page, "#/board");
     await go(page, "#/report");
     await wait(page, 1500);
-    ok("report: a remembered week without a draft falls back to this week", (await sel.inputValue()) === "0" && (await editing()), `period=${await sel.inputValue()}, editing=${await editing()}`);
+    ok("report: a remembered week without a draft falls back to this week", (await reportWeek(page)) === 0 && (await editing()), `period=${await reportWeek(page)}, editing=${await editing()}`);
     // An expired draft (older than 7 days) does not reopen either.
-    await sel.selectOption("1");
-    await wait(page, 1200);
+    await pickReportWeek(page, 1);
     await page.evaluate(() => {
       const k = Object.keys(localStorage).find((x) => x.startsWith("gtd-report-draft:") && localStorage.getItem(x).includes("LASTWEEK"));
       const d = JSON.parse(localStorage.getItem(k));
@@ -287,9 +330,9 @@ groups.report = async () => {
     await go(page, "#/board");
     await go(page, "#/report");
     await wait(page, 1500);
-    ok("report: an expired past-week draft falls back to this week", (await sel.inputValue()) === "0", `period=${await sel.inputValue()}`);
-    await sel.selectOption("0");
-    await wait(page, 1500);
+    ok("report: an expired past-week draft falls back to this week", (await reportWeek(page)) === 0, `period=${await reportWeek(page)}`);
+    await pickReportWeek(page, 0);
+    await wait(page, 900);
     // Download PDF (functions are aborted in the harness)
     const pdfBtn = page.locator("main button", { hasText: "Scarica PDF" }).first();
     if (await pdfBtn.count()) {
@@ -343,8 +386,9 @@ groups.report = async () => {
     const werr = await page.locator("main [role=alert]").allInnerTexts();
     ok("report: Word (classic) downloads a .docx or says why", !!dl || werr.length > 0, dl ? dl.suggestedFilename() : werr.join(" / "));
     // Bad custom range
-    await page.locator("main select").first().selectOption("custom");
+    await reportCustom(page).click();
     await wait(page, 300);
+    ok("report: 'Personalizzato' is a pressed pill and shows the dates", (await reportWeek(page)) === -1 && (await page.locator("main input[type=date]").count()) === 2);
     const dates = page.locator("main input[type=date]");
     await dates.nth(0).fill("2026-11-30");
     await dates.nth(1).fill("2026-11-01").catch(() => {});
@@ -352,6 +396,9 @@ groups.report = async () => {
     const bad = await page.locator("#report-bad-range").count();
     const genDisabled = await page.locator("main button", { hasText: "Genera report" }).isDisabled().catch(() => null);
     info("report: custom period from > to", `bad-range alert=${bad}, Generate disabled=${genDisabled}`);
+    // ‹ › leave a custom period for the weeks again.
+    await pickReportWeek(page, 0);
+    ok("report: ‹ › from a custom period go back to the weeks", (await reportWeek(page)) === 0 && (await page.locator("main input[type=date]").count()) === 0, `week=${await reportWeek(page)}`);
     await context.close();
   }
   // Progetti esclusi: exclude a project via ×, view list, put back.
