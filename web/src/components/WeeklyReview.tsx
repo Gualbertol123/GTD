@@ -88,7 +88,7 @@ export function WeeklyReview({ board, send, members }: Props) {
   const listRef = useRef<HTMLUListElement>(null);
   // The row an action was taken on: when it leaves the list, the focus moves
   // to the row now in its place (or the heading, when the step is empty).
-  const afterAction = useRef<number | null>(null);
+  const afterAction = useRef<{ id: string; i: number; at: number } | null>(null);
 
   const today = toISODate(new Date());
   const lists = useMemo(() => reviewLists(board, today, kept), [board, today, kept]);
@@ -136,17 +136,23 @@ export function WeeklyReview({ board, send, members }: Props) {
     if (viaKeyboard) requestAnimationFrame(() => headingRef.current?.focus());
   };
 
-  const rowIds = rows.map((r) => r.task.id).join(",");
+  // After every render: once the control that was used is gone (its row left
+  // the list, or the button itself did), focus that task's title if it is
+  // still listed, else the row now in its place, else the heading.
   useEffect(() => {
-    const i = afterAction.current;
-    if (i === null) return;
-    afterAction.current = null;
+    const a = afterAction.current;
+    if (!a) return;
+    if (Date.now() - a.at > 2000) {
+      afterAction.current = null;
+      return;
+    }
     const active = document.activeElement;
     if (active && active !== document.body && active.isConnected) return;
-    const titles = listRef.current?.querySelectorAll<HTMLButtonElement>("[data-review-title]") ?? [];
-    const target = titles[Math.min(i, titles.length - 1)] ?? headingRef.current;
+    afterAction.current = null;
+    const titles = [...(listRef.current?.querySelectorAll<HTMLButtonElement>("[data-review-title]") ?? [])];
+    const target = titles.find((b) => b.dataset.reviewTitle === a.id) ?? titles[Math.min(a.i, titles.length - 1)] ?? headingRef.current;
     target?.focus();
-  }, [rowIds]);
+  });
 
   const setKeptSet = (next: Set<string>) => {
     setKept(next);
@@ -272,7 +278,7 @@ export function WeeklyReview({ board, send, members }: Props) {
                 onToggle={() => setOpenId((o) => (o === r.task.id ? null : r.task.id))}
                 fmt={fmt}
                 onAction={() => {
-                  afterAction.current = i;
+                  afterAction.current = { id: r.task.id, i, at: Date.now() };
                 }}
                 actions={{ move, setDue, assign, nudge, remove, keep }}
               />
@@ -381,7 +387,7 @@ function ReviewRow({
           <div className="min-w-0 flex-1">
             <button
               type="button"
-              data-review-title
+              data-review-title={tk.id}
               aria-expanded={open}
               aria-controls={open ? detailsId : undefined}
               onClick={onToggle}
