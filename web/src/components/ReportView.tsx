@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { showNotice, showUndo } from "./TaskDetails";
 import type { Board, Op } from "../lib/types";
 import { useT } from "../lib/i18n";
 import { collectReport, weekPeriod, type Period } from "../lib/reportData";
@@ -40,13 +41,6 @@ interface ErrLine {
   at?: "top" | "end";
 }
 
-/** A short notice at the foot of the screen; an error stays until dismissed. */
-interface Toast {
-  id: number;
-  text: string;
-  undo?: () => void;
-  error?: boolean;
-}
 
 // Small decorative icons (the controls carry their own text).
 const ICON = {
@@ -91,13 +85,6 @@ function IconPlus() {
     </svg>
   );
 }
-function IconClose() {
-  return (
-    <svg {...ICON}>
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  );
-}
 
 function ErrorLine({ err }: { err: ErrLine }) {
   const { t } = useT();
@@ -114,38 +101,6 @@ function ErrorLine({ err }: { err: ErrLine }) {
   );
 }
 
-function ToastPill({ toast, onClose }: { toast: Toast; onClose: () => void }) {
-  const { t } = useT();
-  return (
-    <div
-      className={`pointer-events-auto flex items-center gap-3 bg-[#1C1C1E] text-white shadow-xl pl-4 pr-1.5 py-1.5 text-[13px] ${
-        toast.error ? "rounded-[18px]" : "rounded-full"
-      }`}
-    >
-      <span className={`min-w-0 ${toast.error ? "text-[#FFB4AB]" : "truncate"}`}>{toast.text}</span>
-      {toast.undo && (
-        <button
-          type="button"
-          onClick={() => {
-            toast.undo?.();
-            onClose();
-          }}
-          className="shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold text-[#E9C989] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
-        >
-          {t("ux.report.undo")}
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label={t("ux.report.dismiss")}
-        className="shrink-0 h-8 w-8 rounded-full inline-flex items-center justify-center text-white/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
-      >
-        <IconClose />
-      </button>
-    </div>
-  );
-}
 
 // The REPORT tab.
 //
@@ -180,19 +135,12 @@ export function ReportView({ board, send }: Props) {
   useEffect(() => setHasDraft(!!readReportDraft(draftKey)), [draftKey]);
   const onDraftChange = useCallback((v: boolean) => setHasDraft(v), []);
 
-  // A short notice at the foot of the screen, with an Undo when it has one.
-  // It sits outside the pages, so it is never measured or exported.
-  const [toast, setToast] = useState<Toast | null>(null);
-  const toastSeq = useRef(0);
+  // Notices go through the app's one toast (components/TaskDetails.tsx):
+  // with an Undo when there is one; a refused save stays until dismissed.
   const showToast = useCallback((text: string, undo?: () => void, error = false) => {
-    toastSeq.current += 1;
-    setToast({ id: toastSeq.current, text, undo, error });
+    if (undo) showUndo(text, undo);
+    else showNotice(text, 8000, { error });
   }, []);
-  useEffect(() => {
-    if (!toast || toast.error) return;
-    const h = window.setTimeout(() => setToast((cur) => (cur?.id === toast.id ? null : cur)), TOAST_MS);
-    return () => window.clearTimeout(h);
-  }, [toast]);
 
   // "Report" or the list of projects left out of the report.
   const [view, setView] = useState<"report" | "excluded">("report");
@@ -668,17 +616,6 @@ export function ReportView({ board, send }: Props) {
         </div>
       )}
       </>)}
-
-      {/* Two live regions, both always there: a notice is announced politely,
-          a refused save as an alert. */}
-      <div className="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-6 z-[60] pointer-events-none w-max max-w-[calc(100vw-32px)]">
-        <div role="status" aria-live="polite">
-          {toast && !toast.error && <ToastPill toast={toast} onClose={() => setToast(null)} />}
-        </div>
-        <div role="alert">
-          {toast?.error && <ToastPill toast={toast} onClose={() => setToast(null)} />}
-        </div>
-      </div>
     </div>
   );
 }

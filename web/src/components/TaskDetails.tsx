@@ -41,6 +41,8 @@ interface UndoToast {
   focus?: boolean;
   /** Another word on the button ("Apri" after a Music import); Annulla by default. */
   label?: string;
+  /** A refused save: stays until dismissed, announced as an alert. */
+  error?: boolean;
 }
 let toastNow: UndoToast | null = null;
 let toastSeq = 0;
@@ -60,9 +62,10 @@ export function showUndo(text: string, onUndo: () => void, ms = 6000, opts: { fo
   toastNow = { id: ++toastSeq, text, onUndo, ms, focus: opts.focus, label: opts.label };
   emitToast();
 }
-/** A message with no Undo (a save that failed), in the same place. */
-export function showNotice(text: string, ms = 8000) {
-  toastNow = { id: ++toastSeq, text, ms };
+/** A message with no Undo (a save that failed), in the same place. With
+ *  `error` it stays until dismissed and is announced as an alert. */
+export function showNotice(text: string, ms = 8000, opts: { error?: boolean } = {}) {
+  toastNow = { id: ++toastSeq, text, ms, error: opts.error };
   emitToast();
 }
 function clearToast(id: number) {
@@ -93,7 +96,7 @@ export function UndoToastHost() {
   const [hold, setHold] = useState(false);
   const undoRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (!toast || hold) return;
+    if (!toast || hold || toast.error) return;
     const h = window.setTimeout(() => clearToast(toast.id), toast.ms);
     return () => window.clearTimeout(h);
   }, [toast, hold]);
@@ -116,13 +119,9 @@ export function UndoToastHost() {
     else document.getElementById("main")?.focus();
   };
   if (toastHosts[0] !== hostId || typeof document === "undefined") return null;
-  return createPortal(
-    <div
-      role="status"
-      aria-live="polite"
-      className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] pointer-events-none max-w-[calc(100vw-32px)]"
-    >
-      {toast && (
+  // Two live regions, both always there: a notice is announced politely, a
+  // refused save (error) as an alert.
+  const card = toast && (
         <div
           onMouseEnter={() => setHold(true)}
           onMouseLeave={() => setHold(false)}
@@ -134,7 +133,7 @@ export function UndoToastHost() {
           className="pointer-events-auto flex items-center gap-3 rounded-[20px] bg-[#1C1C1E] text-white shadow-xl pl-4 pr-1.5 py-1.5 text-[13px]"
         >
           {/* Up to three lines: a "not saved, you are offline" notice is read whole. */}
-          <span className="min-w-0 line-clamp-3">{toast.text}</span>
+          <span className={`min-w-0 line-clamp-3 ${toast.error ? "text-[#FFB4AB]" : ""}`}>{toast.text}</span>
           {toast.onUndo && (
           <button
             ref={undoRef}
@@ -163,7 +162,13 @@ export function UndoToastHost() {
             </svg>
           </button>
         </div>
-      )}
+  );
+  return createPortal(
+    <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] pointer-events-none max-w-[calc(100vw-32px)]">
+      <div role="status" aria-live="polite">
+        {toast && !toast.error && card}
+      </div>
+      <div role="alert">{toast?.error && card}</div>
     </div>,
     document.body
   );
