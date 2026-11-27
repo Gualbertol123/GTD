@@ -39,6 +39,8 @@ interface UndoToast {
   ms: number;
   /** Move keyboard focus to Annulla (the delete was done from the keyboard). */
   focus?: boolean;
+  /** Another word on the button ("Apri" after a Music import); Annulla by default. */
+  label?: string;
 }
 let toastNow: UndoToast | null = null;
 let toastSeq = 0;
@@ -54,8 +56,8 @@ const subscribeToast = (l: () => void) => {
 
 /** Shows "text · Annulla" for a few seconds (longer while the pointer or
  *  focus is on it); Annulla runs onUndo. */
-export function showUndo(text: string, onUndo: () => void, ms = 6000, opts: { focus?: boolean } = {}) {
-  toastNow = { id: ++toastSeq, text, onUndo, ms, focus: opts.focus };
+export function showUndo(text: string, onUndo: () => void, ms = 6000, opts: { focus?: boolean; label?: string } = {}) {
+  toastNow = { id: ++toastSeq, text, onUndo, ms, focus: opts.focus, label: opts.label };
   emitToast();
 }
 /** A message with no Undo (a save that failed), in the same place. */
@@ -144,7 +146,7 @@ export function UndoToastHost() {
             }}
             className="shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold text-[#E9C989] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E9C989]"
           >
-            {t("ux.board.undo")}
+            {toast.label ?? t("ux.board.undo")}
           </button>
           )}
           <button

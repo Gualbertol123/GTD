@@ -110,6 +110,7 @@ import { addFromLink, addSpotifyList, importStep, onImportEvent } from "../lib/s
 import { AddAllButton, ImportProgress, importErrorText, taskToast, toastLinkProblem, useImportState } from "./SpotifyCheck";
 import "../styles/musicTab.css";
 import { AudioOutputButton } from "./AudioOutput";
+import { showUndo as showSharedUndo } from "./TaskDetails";
 
 // -----------------------------------------------------------------------------
 // The MUSIC tab (desktop): a full music app around the same player.
@@ -325,7 +326,6 @@ export function MusicTab() {
       <NowPlaying open={queueOpen} onClose={() => setQueueOpen(false)} />
       <PlayerBar barRef={bar} queueOpen={queueOpen} onQueue={() => setQueueOpen((v) => !v)} />
       <AddMenuHost />
-      <UndoHost />
     </div>
   );
 }
@@ -389,62 +389,18 @@ function reportWrite(p: Promise<WriteResult>, t: T): void {
   });
 }
 
-// An "Undo" pill (6 s) after a remove or a delete. Its own small store: the
-// player's toast has no button.
-type Undo = { id: number; text: string; run: () => void; label?: string } | null;
-let undo: Undo = null;
-let undoSeq = 0;
-const undoListeners = new Set<() => void>();
-function setUndo(u: Undo) {
-  undo = u;
-  undoListeners.forEach((l) => l());
-}
 /** A long name in a page's big title is drawn smaller (musicTab.css clamps it to two lines). */
 function titleCls(name: string | undefined): string {
   return (name?.length ?? 0) > 24 ? " mt-title--long" : "";
 }
 
+// "Annulla" after a remove or a delete, and "Apri" after a one-click import:
+// the app's one toast (components/TaskDetails.tsx), drawn above the player.
 function showUndo(text: string, run: () => void) {
-  const id = ++undoSeq;
-  setUndo({ id, text, run });
-  window.setTimeout(() => undo?.id === id && setUndo(null), 6000);
+  showSharedUndo(text, run, 6000);
 }
-/** The same pill with another action ("Apri" after a one-click import), a little longer. */
 function showAction(text: string, label: string, run: () => void) {
-  const id = ++undoSeq;
-  setUndo({ id, text, run, label });
-  window.setTimeout(() => undo?.id === id && setUndo(null), 8000);
-}
-const subscribeUndo = (l: () => void) => {
-  undoListeners.add(l);
-  return () => {
-    undoListeners.delete(l);
-  };
-};
-
-function UndoHost() {
-  const { t } = useT();
-  const u = useSyncExternalStore(subscribeUndo, () => undo, () => undo);
-  useEffect(() => () => setUndo(null), []);
-  if (!u) return null;
-  // Into <body>, like the player's toasts: a top-level glass layer.
-  return createPortal(
-    <div className="mp-toasts mt-undo" role="status" aria-live="polite">
-      <div className="mp-toast">
-        <span>{u.text}</span>
-        <button
-          className="mp-toast__btn"
-          onClick={() => {
-            setUndo(null);
-            u.run();
-          }}
-        >
-          {u.label ?? t("mt.undo")}
-        </button>
-      </div>
-    </div>,
-    document.body
-  );
+  showSharedUndo(text, run, 8000, { label });
 }
 
 // ---- The "⋯" song menu and the "+" add-to-playlist menu --------------------------

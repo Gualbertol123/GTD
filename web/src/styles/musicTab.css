@@ -678,7 +678,6 @@ html[data-skin] .mt .mt-link:focus-visible { text-decoration: underline; }
 .mt-missing__retry { margin: 10px 0 4px; }
 
 /* Undo after a remove / delete: above the player's own toasts. */
-.mp-toasts.mt-undo { bottom: calc(160px + env(safe-area-inset-bottom)); }
 
 /* Volume (D13): a 24 px hit area around a 4 px track, the knob shown on
    hover, focus and drag, and a focus ring. */

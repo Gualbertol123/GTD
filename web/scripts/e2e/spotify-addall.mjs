@@ -188,10 +188,12 @@ async function main() {
   let PORT = 4231;
   for (; PORT < 4260; PORT++) if (await portFree(PORT)) break;
   const BASE = `http://localhost:${PORT}`;
-  const preview = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort", "--outDir", OUT], { cwd: WEB, detached: true, stdio: ["ignore", "pipe", "pipe"] });
+  const preview = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort", "--outDir", OUT], { cwd: WEB, detached: process.platform !== "win32", shell: process.platform === "win32", stdio: ["ignore", "pipe", "pipe"] });
   const stop = () => {
     try {
-      process.kill(-preview.pid, "SIGTERM");
+      // Windows: the shell's whole tree; elsewhere the detached group.
+      if (process.platform === "win32") execSync(`taskkill /pid ${preview.pid} /T /F`, { stdio: "ignore" });
+      else process.kill(-preview.pid, "SIGTERM");
     } catch {}
   };
   const fails = [];
@@ -246,8 +248,10 @@ async function main() {
     const errors = [];
     page_.on("pageerror", (e) => errors.push(String(e.message || e)));
     await page_.goto(BASE + "/#/board");
-    await page_.getByRole("button", { name: /^(MUSICA|MUSIC)$/ }).first().waitFor({ timeout: 20000 });
-    await page_.getByRole("button", { name: /^(MUSICA|MUSIC)$/ }).first().click();
+    // Musica is in the ALTRO ▾ menu (since 2026-11-25).
+    await page_.getByRole("button", { name: /^(ALTRO|MORE)/ }).first().waitFor({ timeout: 20000 });
+    await page_.getByRole("button", { name: /^(ALTRO|MORE)/ }).first().click();
+    await page_.getByRole("menuitem", { name: /^(musica|music)$/i }).first().click();
     await page_.locator(".mt").waitFor({ timeout: 10000 });
 
     // 1. Signed out, on the library: the one button goes through the sign-in, then starts by itself.
@@ -313,7 +317,7 @@ async function main() {
     await page_.keyboard.press("Enter");
     const kept = await page_.evaluate(() => document.activeElement?.classList.contains("oc-all") ?? false);
     check(kept, "the focus stays on the one button after pressing it");
-    await page_.locator(".mp-toast", { hasText: "già nella libreria" }).waitFor({ timeout: 10000 }).catch(() => {});
+    await page_.locator(":is(.mp-toast, [data-undo-toast])", { hasText: "già nella libreria" }).waitFor({ timeout: 10000 }).catch(() => {});
     await sleep(500);
     check(upserts.length === before, "a second click adds nothing");
 
@@ -326,11 +330,11 @@ async function main() {
     const t1 = Date.now();
     await page_.getByRole("button", { name: "Aggiungi", exact: true }).click();
     const fb = await page_
-      .waitForFunction(() => !!document.querySelector(".oc-progress, .mp-toast"), null, { timeout: 2000 })
+      .waitForFunction(() => !!document.querySelector(".oc-progress, .mp-toast, [data-undo-toast]"), null, { timeout: 2000 })
       .then(() => Date.now() - t1)
       .catch(() => 9999);
     check(fb < 300, `the paste answers at once (${fb} ms)`);
-    const toast = page_.locator(".mp-toast", { hasText: "Aggiunta «" });
+    const toast = page_.locator(":is(.mp-toast, [data-undo-toast])", { hasText: "Aggiunta «" });
     await toast.waitFor({ timeout: 15000 });
     const yt = upserts.find((r) => r.source_kind === "youtube-playlist");
     check(!!yt && yt.source_id === "PLe2eOneClick123" && yt.tracks.length > 0, "the YouTube playlist saved with source youtube-playlist");
@@ -342,7 +346,7 @@ async function main() {
     listingFails = true;
     await page_.locator(".mt-side").getByRole("button", { name: /^Importa/ }).click();
     await page_.getByRole("button", { name: "Aggiungi tutte le mie playlist" }).click();
-    const why = await page_.locator(".mp-toast", { hasText: "Non riesco a leggere le tue playlist" }).waitFor({ timeout: 10000 }).then(() => true).catch(() => false);
+    const why = await page_.locator(":is(.mp-toast, [data-undo-toast])", { hasText: "Non riesco a leggere le tue playlist" }).waitFor({ timeout: 10000 }).then(() => true).catch(() => false);
     check(why, "a failing listing shows a toast on the Importa page");
     listingFails = false;
 

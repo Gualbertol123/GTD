@@ -122,10 +122,12 @@ async function main() {
   let PORT = 4201;
   for (; PORT < 4230; PORT++) if (await portFree(PORT)) break;
   const BASE = `http://localhost:${PORT}`;
-  const preview = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort", "--outDir", OUT], { cwd: WEB, detached: true, stdio: ["ignore", "pipe", "pipe"] });
+  const preview = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort", "--outDir", OUT], { cwd: WEB, detached: process.platform !== "win32", shell: process.platform === "win32", stdio: ["ignore", "pipe", "pipe"] });
   const stop = () => {
     try {
-      process.kill(-preview.pid, "SIGTERM");
+      // Windows: the shell's whole tree; elsewhere the detached group.
+      if (process.platform === "win32") execSync(`taskkill /pid ${preview.pid} /T /F`, { stdio: "ignore" });
+      else process.kill(-preview.pid, "SIGTERM");
     } catch {}
   };
   const fails = [];
@@ -183,8 +185,10 @@ async function main() {
     const errors = [];
     page_.on("pageerror", (e) => errors.push(String(e.message || e)));
     await page_.goto(BASE + "/#/board");
-    await page_.getByRole("button", { name: /^(MUSICA|MUSIC)$/ }).first().waitFor({ timeout: 20000 });
-    await page_.getByRole("button", { name: /^(MUSICA|MUSIC)$/ }).first().click();
+    // Musica is in the ALTRO ▾ menu (since 2026-11-25).
+    await page_.getByRole("button", { name: /^(ALTRO|MORE)/ }).first().waitFor({ timeout: 20000 });
+    await page_.getByRole("button", { name: /^(ALTRO|MORE)/ }).first().click();
+    await page_.getByRole("menuitem", { name: /^(musica|music)$/i }).first().click();
     await page_.locator(".mt").waitFor({ timeout: 10000 });
 
     // 1. The sidebar entry opens the library on "Le mie playlist": every page of /me/playlists.
@@ -215,7 +219,7 @@ async function main() {
     const t0 = Date.now();
     await page_.getByRole("button", { name: /Aggiungi alla libreria del team/ }).click();
     const fb0 = await page_
-      .waitForFunction(() => !!document.querySelector('.spl-import[aria-busy="true"], .mp-toast'), null, { timeout: 1500 })
+      .waitForFunction(() => !!document.querySelector('.spl-import[aria-busy="true"], .mp-toast, [data-undo-toast]'), null, { timeout: 1500 })
       .then(() => Date.now() - t0)
       .catch(() => 9999);
     check(fb0 < 300, `"Aggiungi" answers at once (${fb0} ms)`);
@@ -225,9 +229,9 @@ async function main() {
     check(!!row, "the team playlist was upserted to Supabase, named after the list");
     check(!!row && row.source_kind === "spotify-playlist" && row.source_id === MY_LIST, "…with its source (spotify-playlist)");
     check(!!row && !JSON.stringify(row).includes("i.scdn.co"), "…and no Spotify cover art");
-    await page_.locator(".mp-toast", { hasText: "Aggiunta «Viaggio Spotify»" }).waitFor({ timeout: 8000 });
+    await page_.locator(":is(.mp-toast, [data-undo-toast])", { hasText: "Aggiunta «Viaggio Spotify»" }).waitFor({ timeout: 8000 });
     check(true, "a toast says “Aggiunta «Viaggio Spotify» (…)”");
-    await page_.locator(".mp-toast").getByRole("button", { name: "Apri" }).click();
+    await page_.locator(":is(.mp-toast, [data-undo-toast])").getByRole("button", { name: "Apri" }).click();
     await page_.waitForFunction(() => /#\/music\/playlist\//.test(location.hash), null, { timeout: 5000 }).catch(() => {});
     check(/playlist\//.test(decodeURIComponent(page_.url())), "“Apri” opens the new team playlist");
     if (row) {
