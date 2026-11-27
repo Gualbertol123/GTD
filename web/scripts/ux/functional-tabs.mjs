@@ -1080,12 +1080,21 @@ groups.review = async () => {
     await wait(page, 600);
     ok("review step 1: assigning writes the owner", byTitle(db, "Integrazione DB esterno per PJT")?.owner === "Chiara", byTitle(db, "Integrazione DB esterno per PJT")?.owner);
     ok("review step 1: …and the row leaves the list", !(await titles(page)).includes("Integrazione DB esterno per PJT"));
-    // Set a due date (written on Enter / leaving the field).
+    // Set a due date. Typed digit by digit: written on Enter (not while typing).
     const date = row(page, "VUB - spostare SB").locator('input[type="date"]');
-    await date.fill("2030-01-15");
-    await date.press("Enter");
+    await date.focus();
+    await page.keyboard.type("15012031", { delay: 40 });
+    await wait(page, 300);
+    ok("review step 1: a date being typed is not written yet", !byTitle(db, "VUB - spostare SB")?.due_date, byTitle(db, "VUB - spostare SB")?.due_date);
+    await page.keyboard.press("Enter");
     await wait(page, 600);
-    ok("review step 1: a due date is written", byTitle(db, "VUB - spostare SB")?.due_date === "2030-01-15", byTitle(db, "VUB - spostare SB")?.due_date);
+    ok("review step 1: a typed date is written on Enter", byTitle(db, "VUB - spostare SB")?.due_date === "2031-01-15", byTitle(db, "VUB - spostare SB")?.due_date);
+    await undo(page);
+    await wait(page, 600);
+    // Picked in the calendar (a change with no key just before): written at once.
+    await row(page, "VUB - spostare SB").locator('input[type="date"]').fill("2030-01-15");
+    await wait(page, 600);
+    ok("review step 1: a due date picked is written at once", byTitle(db, "VUB - spostare SB")?.due_date === "2030-01-15", byTitle(db, "VUB - spostare SB")?.due_date);
     ok("review step 1: …and the row leaves the list", !(await titles(page)).includes("VUB - spostare SB"));
     // Keyboard: the focus moves to the row now in its place.
     await undo(page);
