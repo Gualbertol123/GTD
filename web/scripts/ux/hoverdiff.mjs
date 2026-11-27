@@ -66,6 +66,24 @@ const DESKTOP = [
       await page.waitForTimeout(300);
     },
   },
+  {
+    // The Inbox strip with two captured items (I, type, Enter ×2, Escape).
+    name: "board-inbox",
+    path: "#/board",
+    act: async (page) => {
+      await page.evaluate(() => (document.activeElement instanceof HTMLElement ? document.activeElement.blur() : null));
+      await page.keyboard.press("i");
+      await page.waitForTimeout(150);
+      for (const title of ["Hover inbox uno", "Hover inbox due"]) {
+        await page.keyboard.type(title);
+        await page.keyboard.press("Enter");
+      }
+      await page.keyboard.press("Escape");
+      // Dismiss the «Nell’Inbox» toast: its timer would end mid-sweep.
+      await page.locator("[data-undo-toast] button").last().click();
+      await page.waitForTimeout(300);
+    },
+  },
   { name: "board-list", path: "#/board", act: async (page) => { await page.getByRole("button", { name: /^(Elenco|List)$/ }).click(); } },
   { name: "projects", path: "#/projects" },
   { name: "project-page", path: "#/projects/p1" },

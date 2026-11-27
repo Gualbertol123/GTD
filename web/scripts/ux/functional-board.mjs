@@ -464,6 +464,161 @@ section("band", async (browser) => {
   await e.context.close();
 });
 
+// ---- Inbox: quick capture, the strip, the review, the phone ---------------------
+const strip = (page) => page.locator("section[data-inbox-strip]");
+async function stripTitles(page) {
+  return page.evaluate(() => [...document.querySelectorAll("section[data-inbox-strip] [data-inbox-title]")].map((e) => e.textContent?.trim() ?? ""));
+}
+/** Text of every board column (not the strip, band or bars). */
+async function columnsText(page) {
+  return page.evaluate(() => [...document.querySelectorAll('div[style*="min-height"]')].map((c) => c.textContent ?? "").join(" | "));
+}
+
+section("inbox", async (browser) => {
+  const store = createStore();
+  const { page, context } = await openApp(browser, { store, name: "inbox" });
+  check("inbox: the strip is on the Board, empty, with a one-line hint", /Inbox vuota/.test((await strip(page).textContent()) ?? ""));
+  const btn = strip(page).locator("button[aria-keyshortcuts]");
+  check("inbox: a visible Cattura button that names its key", (await btn.count()) === 1 && /tasto I/.test((await btn.getAttribute("title")) ?? ""));
+
+  // The I key, outside a field, opens the capture box with the cursor in it.
+  await page.evaluate(() => (document.activeElement instanceof HTMLElement ? document.activeElement.blur() : null));
+  await page.keyboard.press("i");
+  const box = page.locator("[data-inbox-capture]");
+  await waitFor(async () => (await box.count()) === 1);
+  check("inbox: I opens the capture box", (await box.count()) === 1);
+  check("inbox: the box's field has the focus", await page.evaluate(() => !!document.activeElement?.closest("[data-inbox-capture]") && document.activeElement.tagName === "INPUT"));
+  check("inbox: the I typed to open it is not in the field", (await box.locator("input").inputValue()) === "");
+
+  // Enter writes an INBOX task held by me, and the box stays open for the next.
+  await page.keyboard.type("QA inbox one");
+  await page.keyboard.press("Enter");
+  const one = await waitFor(() => store.db.tasks.find((t) => t.title === "QA inbox one"));
+  check("inbox: Enter writes the task", !!one);
+  check("inbox: status INBOX, owner = me, P2, no date, not highlighted", one?.status === "INBOX" && one?.owner === "Francesco" && one?.priority === "P2" && !one?.due_date && !one?.pinned,
+    JSON.stringify(one && { status: one.status, owner: one.owner, priority: one.priority, due: one.due_date, pinned: one.pinned }));
+  check("inbox: the box stays open, emptied, for the next one", (await box.count()) === 1 && (await box.locator("input").inputValue()) === "");
+  check("inbox: toast «Nell’Inbox» with Annulla", /Nell’Inbox/.test(await toastText(page)) && (await toastUndo(page).count()) === 1, await toastText(page));
+  await sleep(200);
+  check("inbox: the task shows in the strip", (await stripTitles(page)).includes("QA inbox one"), (await stripTitles(page)).join(" / "));
+  check("inbox: and in no column", !(await columnsText(page)).includes("QA inbox one") && (await columnsOf(page, "QA inbox one")).length === 0);
+  check("inbox: the strip counts it", /1/.test((await strip(page).locator("button[aria-expanded]").first().textContent()) ?? ""));
+
+  // Annulla takes a capture back.
+  await box.locator("input").fill("QA inbox undo");
+  await box.locator("input").press("Enter");
+  await waitFor(() => store.db.tasks.find((t) => t.title === "QA inbox undo"));
+  await toastUndo(page).click();
+  const gone = await waitFor(() => !store.db.tasks.some((t) => t.title === "QA inbox undo"));
+  check("inbox: Annulla removes the captured task", !!gone);
+
+  // Escape closes the box and gives the focus back.
+  await page.locator('[aria-label="Cerca attività…"]').focus();
+  await page.locator('[aria-label="Cerca attività…"]').press("i");
+  await sleep(150);
+  check("inbox: I typed in a text field is a letter, not the shortcut", (await box.count()) === 1 && (await page.locator('[aria-label="Cerca attività…"]').inputValue()) === "i");
+  await page.locator('[aria-label="Cerca attività…"]').fill("");
+  await box.locator("input").focus();
+  await page.keyboard.press("Escape");
+  await sleep(150);
+  check("inbox: Escape closes the box", (await box.count()) === 0);
+  check("inbox: … and the focus goes back where it was", await page.evaluate(() => document.activeElement !== document.body && !document.activeElement?.closest("[data-inbox-capture]")),
+    await page.evaluate(() => document.activeElement?.outerHTML.slice(0, 80)));
+  await page.keyboard.press("Control+i");
+  await sleep(150);
+  check("inbox: Ctrl+I does not open it", (await box.count()) === 0);
+  await btn.click();
+  await sleep(150);
+  check("inbox: the Cattura button opens it too", (await box.count()) === 1);
+  await page.keyboard.press("Escape");
+
+  // Sorting: Next leaves the strip and lands in the Next column, with Annulla.
+  const item = strip(page).locator("li", { hasText: "QA inbox one" });
+  await item.locator('[role=group] button', { hasText: /^Next$/ }).click();
+  await waitFor(() => store.db.tasks.find((t) => t.title === "QA inbox one")?.status === "NEXT");
+  check("inbox: Smista → Next writes NEXT", store.db.tasks.find((t) => t.title === "QA inbox one")?.status === "NEXT");
+  await sleep(250);
+  check("inbox: it leaves the strip", !(await stripTitles(page)).includes("QA inbox one"));
+  check("inbox: it appears in the Next column", JSON.stringify(await columnsOf(page, "QA inbox one")) === '["Next"]', JSON.stringify(await columnsOf(page, "QA inbox one")));
+  check("inbox: the sort says so, with Annulla", /QA inbox one/.test(await toastText(page)) && (await toastUndo(page).count()) === 1, await toastText(page));
+
+  // A board card dropped on the strip goes back to the Inbox.
+  await synthDrag(page, "Efficientare l'update dei cambi", "section[data-inbox-strip]");
+  await waitFor(() => sv(store.db, "6").status === "INBOX", 2500);
+  check("inbox: dragging a card onto the strip → INBOX", sv(store.db, "6").status === "INBOX", sv(store.db, "6").status);
+  await sleep(250);
+  check("inbox: the dragged card is in the strip, not in a column", (await stripTitles(page)).some((x) => x.includes("Efficientare")) && (await columnsOf(page, "Efficientare")).length === 0);
+
+  // The title opens the task editor in place; its status picker lists Inbox.
+  await strip(page).locator("[data-inbox-title]", { hasText: "Efficientare" }).click();
+  await sleep(250);
+  const region = strip(page).locator("[role=region]");
+  check("inbox: the title opens the task editor inline", (await region.count()) === 1);
+  const opts = await region.locator('select[title="Stato"]').locator("option").allTextContents().catch(() => []);
+  check("inbox: the editor's “move to” lists Inbox (and it is selected)", opts.includes("Inbox") && (await region.locator('select[title="Stato"]').inputValue()) === "INBOX", opts.join(","));
+
+  // Filters apply to the strip; an empty strip under a search does not say "empty".
+  await page.getByLabel("Cerca attività…").fill("zzzz-nothing");
+  await sleep(200);
+  const ft = (await strip(page).textContent()) ?? "";
+  check("inbox: board filters apply to the strip", (await stripTitles(page)).length === 0 && /corrisponde ai filtri/.test(ft), ft.slice(0, 120));
+  await page.locator("button", { hasText: "Azzera filtri" }).first().click();
+  await sleep(200);
+
+  // Collapsed, remembered.
+  await strip(page).locator("button[aria-expanded]").first().click();
+  await sleep(150);
+  check("inbox: the strip collapses (remembered)", (await stripTitles(page)).length === 0 && (await lsGet(page, "gtd-inbox-strip")) === "0");
+  await strip(page).locator("button[aria-expanded]").first().click();
+
+  // The list view leaves Inbox tasks to the strip.
+  await page.getByRole("button", { name: /^Elenco$/ }).click();
+  await sleep(250);
+  const listTxt = await page.evaluate(() => document.querySelector("table")?.textContent ?? "");
+  check("inbox: the List view does not repeat Inbox tasks", !/Efficientare/.test(listTxt) && (await stripTitles(page)).some((x) => x.includes("Efficientare")));
+  await page.getByRole("button", { name: /^Board$/ }).click();
+
+  // The review's first step lists it first.
+  await goto(page, "#/review");
+  await sleep(300);
+  const first = await page.evaluate(() => document.querySelector("main ul [data-review-title]")?.textContent?.trim() ?? "");
+  check("review: step 1 lists the Inbox task first", /Efficientare/.test(first), first);
+  const rowTxt = await page.locator("main ul li").first().textContent();
+  check("review: the Inbox row says it needs a status, and offers Backlog", /Nell’Inbox/.test(rowTxt) && /Backlog/.test(rowTxt), rowTxt.slice(0, 160));
+  await page.locator("main ul li").first().locator('[role=group] button', { hasText: /^Backlog$/ }).click();
+  await waitFor(() => sv(store.db, "6").status === "BACKLOG");
+  check("review: Backlog from step 1 writes BACKLOG", sv(store.db, "6").status === "BACKLOG", sv(store.db, "6").status);
+  await context.close();
+
+  // Phone: capture from Oggi, which lists the Inbox.
+  const s2 = createStore();
+  const ph = await openApp(browser, { store: s2, name: "inbox-phone", ...PHONE, path: "#/today" });
+  await ph.page.locator("[data-capture-open]").click();
+  await sleep(450);
+  await ph.page.locator("[data-capture-input]").fill("QA phone inbox");
+  await ph.page.locator("[data-capture-input]").press("Enter");
+  const pt = await waitFor(() => s2.db.tasks.find((t) => t.title === "QA phone inbox"));
+  check("phone: capture writes an INBOX task held by me", pt?.status === "INBOX" && pt?.owner === "Francesco", JSON.stringify(pt && { status: pt.status, owner: pt.owner }));
+  check("phone: the sheet stays open for the next one", (await ph.page.locator("[data-capture-input]").count()) === 1 && (await ph.page.locator("[data-capture-input]").inputValue()) === "");
+  check("phone: toast «Nell’Inbox» with Annulla", /Nell’Inbox/.test((await mToast(ph.page).textContent().catch(() => "")) ?? "") && (await mUndo(ph.page).count()) === 1);
+  await ph.page.keyboard.press("Escape");
+  await sleep(400);
+  const today = await bodyText(ph.page);
+  const inboxPart = today.split(/\nInbox\s*\n\s*1\s*\n/i)[1] ?? "";
+  check("phone Oggi: an Inbox section with its count lists it", /QA phone inbox/.test(inboxPart), today.slice(0, 600));
+  await mCard(ph.page, "QA phone inbox").locator(".m-card__open").click();
+  await sleep(500);
+  const sheetTxt = await bodyText(ph.page);
+  check("phone: its task sheet shows Status Inbox", /Stato\s*\n?\s*Inbox/.test(sheetTxt), sheetTxt.slice(0, 200));
+  await ph.page.locator("button", { hasText: /^Stato/ }).first().click();
+  await sleep(300);
+  check("phone: the status chooser offers Inbox", (await ph.page.locator("[role=listbox] [role=option]", { hasText: "Inbox" }).count()) === 1);
+  await ph.page.locator("[role=listbox] [role=option]", { hasText: /^Next/ }).first().click();
+  await waitFor(() => s2.db.tasks.find((t) => t.title === "QA phone inbox")?.status === "NEXT");
+  check("phone: picking Next sorts it", s2.db.tasks.find((t) => t.title === "QA phone inbox")?.status === "NEXT");
+  await ph.context.close();
+});
+
 // ---- Before each migration -----------------------------------------------------
 const writeErrors = (store) => store.log.filter((l) => typeof l.status === "number" && l.status >= 400 && !(l.status === 404 && l.table.startsWith("rpc/subtask")));
 
