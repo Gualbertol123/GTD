@@ -14,6 +14,7 @@ import { TabNav, WEEK_PAGES, WeekSwitch } from "./components/TabNav";
 import { ConnBadge } from "./components/ConnBadge";
 import { IdentityPicker } from "./components/IdentityPicker";
 import { AppearanceMenu } from "./components/AppearanceMenu";
+import { handOffToDesktop } from "./lib/layoutHandoff";
 import { ProjectsProvider } from "./lib/projectsContext";
 import { PHONE_QUERY, useLayout } from "./mobile/useLayout";
 import { MusicButton, MusicPlayer } from "./components/MusicPlayer";
@@ -37,6 +38,12 @@ export default function App() {
   const { board, conn, error, send } = useBoard();
   const { t, lang } = useT();
   const layout = useLayout();
+  // Phone → desktop: open the project whose sheet the phone had open.
+  const wasMobile = useRef(layout.mobile);
+  useEffect(() => {
+    if (wasMobile.current && !layout.mobile) handOffToDesktop();
+    wasMobile.current = layout.mobile;
+  }, [layout.mobile]);
   // The tab lives in the URL (#/board, #/projects/<id>, …) so the browser's
   // Back and Forward move between tabs. Addresses from the phone layout are
   // translated, so switching layout keeps your place.

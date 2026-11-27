@@ -1149,6 +1149,33 @@ section("phone.agenda+projects", async (browser) => {
   await context.close();
 });
 
+// ---- Phone → desktop with a project sheet open (a tablet rotated, G-25) --------
+section("phone.handoff", async (browser) => {
+  const store = createStore();
+  const { page, context } = await openApp(browser, { store, name: "ph-ho", ...PHONE, path: "#/projects" });
+  await page.locator(".m-project", { hasText: "Pricing 2027" }).click();
+  await sleep(500);
+  await page.setViewportSize({ width: 1280, height: 860 });
+  await waitFor(() => page.url().includes("#/projects/p1"), 3000);
+  await sleep(500);
+  const nameShown = await page.evaluate(() => [...document.querySelectorAll("input, textarea")].some((e) => e.value === "Pricing 2027"));
+  check("phone → desktop: the open project's page opens", page.url().includes("#/projects/p1") && nameShown && /Elimina progetto/.test(await bodyText(page)), page.url());
+  await page.goBack();
+  await sleep(500);
+  check("phone → desktop: Back goes to the projects list", /#\/projects$/.test(page.url()), page.url());
+  // Sheet closed before the switch: no project opens.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await sleep(500);
+  await page.locator(".m-project", { hasText: "Pricing 2027" }).click();
+  await sleep(400);
+  await page.keyboard.press("Escape");
+  await sleep(400);
+  await page.setViewportSize({ width: 1280, height: 860 });
+  await sleep(900);
+  check("phone → desktop: a closed sheet opens nothing", !page.url().includes("#/projects/p1"), page.url());
+  await context.close();
+});
+
 // ---- Write ordering (parallel requests that may land out of order) ---------------
 section("races", async (browser) => {
   // Project delete → Undo: the project INSERT and the task re-links go out together

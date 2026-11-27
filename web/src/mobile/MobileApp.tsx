@@ -8,6 +8,7 @@ import { boardTasks } from "../lib/projects";
 import { daysUntil } from "../lib/dates";
 import { readPref, writePref } from "../lib/prefs";
 import { goBackTo, navigate, useRoute } from "../lib/history";
+import { setPhoneProject } from "../lib/layoutHandoff";
 import { music } from "../lib/music";
 import { MailModal } from "../components/MailModal";
 import { Avatar, ToastProvider, setAvatarMembers } from "./ui";
@@ -149,6 +150,8 @@ function Shell({
   const [projectId, setProjectId] = useState<string | null>(() =>
     route.tab === "projects" && route.sub ? route.sub : null
   );
+  // Kept for the desktop if the layout switches with the sheet open.
+  useEffect(() => setPhoneProject(projectId), [projectId]);
   const [adding, setAdding] = useState<{ status?: Status; projectId?: string; dueDate?: string } | null>(null);
   const [meOpen, setMeOpen] = useState(false);
   const [mailOpen, setMailOpen] = useState(false);
