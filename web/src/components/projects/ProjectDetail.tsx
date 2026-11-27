@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Board, Op, Priority, Project, Task } from "../../lib/types";
-import { PRIORITY_DOT, STATUS_ORDER, UNASSIGNED, genId } from "../../lib/constants";
+import { ALL_STATUSES, PRIORITY_DOT, UNASSIGNED, genId } from "../../lib/constants";
 import { statusLabel, useT } from "../../lib/i18n";
 import { useSyncedField } from "../../lib/useSyncedField";
 import { useAutosave } from "../../lib/useAutosave";
@@ -286,7 +286,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
               {!done && <HealthBadge health={s.health} daysLeft={s.daysLeft} />}
             </div>
             <div className="flex-1 space-y-1 text-[12px] text-ink-2">
-              {STATUS_ORDER.filter((st) => s.byStatus[st]).map((st) => (
+              {ALL_STATUSES.filter((st) => s.byStatus[st]).map((st) => (
                 <div key={st} className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full" style={{ background: TASK_STATUS_COLOR[st] }} />

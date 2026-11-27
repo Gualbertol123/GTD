@@ -2,6 +2,7 @@
 // These mirror the rows stored in Supabase and streamed live via Postgres realtime.
 
 export type Status =
+  | "INBOX"
   | "BACKLOG"
   | "NEXT"
   | "IN PROGRESS"

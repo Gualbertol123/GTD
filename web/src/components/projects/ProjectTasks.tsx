@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Board, BoardMode, Op, Priority, Project, Status, Task } from "../../lib/types";
-import { PRIORITY_DOT, STATUS_ORDER, UNASSIGNED, genId, isArchived } from "../../lib/constants";
+import { ALL_STATUSES, PRIORITY_DOT, STATUS_ORDER, UNASSIGNED, genId, isArchived } from "../../lib/constants";
 import { statusLabel, useT } from "../../lib/i18n";
 import { useMe } from "../../lib/identity";
 import { isOwnedBy, ownerInitial, ownersLabel, ownersPatch, taskOwners } from "../../lib/owners";
@@ -151,7 +151,7 @@ export function ProjectTasks({
         <div className="space-y-1.5">
           <StatusStack byStatus={s.byStatus} total={s.total} height={8} />
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ink-2">
-            {STATUS_ORDER.filter((st) => s.byStatus[st]).map((st) => (
+            {ALL_STATUSES.filter((st) => s.byStatus[st]).map((st) => (
               <span key={st} className="inline-flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full" style={{ background: TASK_STATUS_COLOR[st] }} />
                 {statusLabel(lang, st)} <b className="tabular-nums text-[#0A1931]">{s.byStatus[st]}</b>
@@ -240,7 +240,7 @@ export function ProjectTasks({
               className="w-full h-8 rounded-full bg-white border border-dashed border-[#E3DFD7] px-3 text-[12px] text-ink-2 cursor-pointer field focus:border-solid"
             >
               <option value="">{t("projects.tasks.link")}</option>
-              {STATUS_ORDER.map((st) => {
+              {ALL_STATUSES.map((st) => {
                 const group = linkable.filter((x) => x.status === st);
                 return group.length ? (
                   <optgroup key={st} label={statusLabel(lang, st)}>
@@ -365,7 +365,7 @@ export function ProjectTasks({
         </div>
       ) : view === "list" ? (
         <div className="space-y-3">
-          {STATUS_ORDER.filter((st) => st !== "DONE" || showDone).map((st) => {
+          {ALL_STATUSES.filter((st) => st !== "DONE" || showDone).map((st) => {
             const group = filtered.filter((x) => x.status === st);
             if (!group.length) return null;
             return (
@@ -513,7 +513,7 @@ function TaskRow({
           style={{ boxShadow: `inset 3px 0 0 ${TASK_STATUS_COLOR[task.status]}` }}
           aria-label={t("quick.status")}
         >
-          {STATUS_ORDER.map((st) => (
+          {ALL_STATUSES.map((st) => (
             <option key={st} value={st}>
               {statusLabel(lang, st)}
             </option>
@@ -585,7 +585,8 @@ function MiniBoard({
       <div className="text-[11px] text-ink-2">{t("ux.projects.dragHint")}</div>
       <div className="overflow-x-auto -mx-1 px-1 pb-1">
         <div className="grid grid-flow-col auto-cols-[minmax(170px,1fr)] gap-2">
-          {STATUS_ORDER.map((st) => {
+          {/* An Inbox column only while a task of the project is in the Inbox. */}
+          {ALL_STATUSES.filter((st) => st !== "INBOX" || tasks.some((x) => x.status === st)).map((st) => {
             const col = tasks.filter((x) => x.status === st);
             return (
               <div

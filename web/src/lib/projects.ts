@@ -11,7 +11,7 @@
 // -----------------------------------------------------------------------------
 
 import type { Board, BoardMode, Op, Priority, Project, ProjectStatus, Status, Task } from "./types";
-import { ARCHIVE_DAYS, PRIORITY_ORDER, STATUS_ORDER, genId } from "./constants";
+import { ALL_STATUSES, ARCHIVE_DAYS, PRIORITY_ORDER, genId } from "./constants";
 import { daysUntil } from "./dates";
 
 export const PROJECT_STATUS_COLOR: Record<ProjectStatus, string> = {
@@ -21,6 +21,7 @@ export const PROJECT_STATUS_COLOR: Record<ProjectStatus, string> = {
 
 /** Per board column, for the task breakdown bars. Apple light palette. */
 export const TASK_STATUS_COLOR: Record<Status, string> = {
+  INBOX: "#5856D6",
   BACKLOG: "#8E8E93",
   NEXT: "#007AFF",
   "IN PROGRESS": "#AF52DE",
@@ -197,8 +198,10 @@ function isoDiffDays(fromIso: string, toIso: string): number {
 
 export function projectStats(p: Project, allTasks: Task[], now = Date.now()): ProjectStats {
   const tasks = orderedProjectTasks(p, allTasks);
-  const byStatus = Object.fromEntries(STATUS_ORDER.map((s) => [s, 0])) as Record<Status, number>;
-  for (const t of tasks) byStatus[t.status] += 1;
+  // Every status, Inbox too (an Inbox task in a project is open, like
+  // Backlog); a status this version does not know is not counted per column.
+  const byStatus = Object.fromEntries(ALL_STATUSES.map((s) => [s, 0])) as Record<Status, number>;
+  for (const t of tasks) if (t.status in byStatus) byStatus[t.status] += 1;
   const total = tasks.length;
   const done = byStatus.DONE;
   const share = total ? done / total : 0;

@@ -13,6 +13,7 @@ import { UX_MUSIC_EN, UX_MUSIC_IT } from "./i18n.ux.music";
 import { UX_RECURRING_EN, UX_RECURRING_IT } from "./i18n.ux.recurring";
 import { UX_REVIEW_EN, UX_REVIEW_IT } from "./i18n.ux.review";
 import { UX_CHOOSERS_EN, UX_CHOOSERS_IT } from "./i18n.ux.choosers";
+import { UX_INBOX_EN, UX_INBOX_IT } from "./i18n.ux.inbox";
 
 export const UX_IT: Record<string, string> = {
   ...UX_BOARD_IT,
@@ -27,6 +28,7 @@ export const UX_IT: Record<string, string> = {
   ...UX_RECURRING_IT,
   ...UX_REVIEW_IT,
   ...UX_CHOOSERS_IT,
+  ...UX_INBOX_IT,
 };
 
 export const UX_EN: Record<string, string> = {
@@ -42,4 +44,5 @@ export const UX_EN: Record<string, string> = {
   ...UX_RECURRING_EN,
   ...UX_REVIEW_EN,
   ...UX_CHOOSERS_EN,
+  ...UX_INBOX_EN,
 };

@@ -8,7 +8,10 @@ export function isArchived(t: Task, now = Date.now()): boolean {
   return at > 0 && now - at >= ARCHIVE_DAYS * 86400000;
 }
 
-// Column order and display labels — recovered from the original artifact.
+// The BOARD's columns, in order — recovered from the original artifact.
+// INBOX is not a column (it is the strip above them, lib/inbox.ts): use
+// ALL_STATUSES wherever every status must be listed (a "move to" menu, a
+// count per status).
 export const STATUS_ORDER: Status[] = [
   "BACKLOG",
   "NEXT",
@@ -18,7 +21,11 @@ export const STATUS_ORDER: Status[] = [
   "MAYBE",
 ];
 
+/** Every status, Inbox first: "move to" menus and counts per status. */
+export const ALL_STATUSES: Status[] = ["INBOX", ...STATUS_ORDER];
+
 export const STATUS_LABEL: Record<Status, string> = {
+  INBOX: "Inbox",
   BACKLOG: "Backlog",
   NEXT: "Next",
   "IN PROGRESS": "In Progress",
@@ -28,6 +35,7 @@ export const STATUS_LABEL: Record<Status, string> = {
 };
 
 export const STATUS_HELP: Record<Status, string> = {
+  INBOX: "Catturata, da smistare",
   BACKLOG: "Idee non prioritarie",
   NEXT: "Da fare a breve",
   "IN PROGRESS": "In lavorazione ora",

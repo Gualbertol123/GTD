@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { Priority, Recurrence, Status } from "../lib/types";
 import { cleanRule } from "../lib/recurrence";
-import { STATUS_ORDER, UNASSIGNED } from "../lib/constants";
+import { ALL_STATUSES, UNASSIGNED } from "../lib/constants";
 import { useT } from "../lib/i18n";
 import { useProjects } from "../lib/projectsContext";
 import { projectColor, projectStats } from "../lib/projects";
@@ -45,7 +45,7 @@ export function StatusPicker({ value, onPick, onClose }: { value: Status; onPick
   return (
     <Sheet title={t("m.f.status")} onClose={onClose}>
       <div className="m-panel m-list" role="listbox">
-        {STATUS_ORDER.map((s) => (
+        {ALL_STATUSES.map((s) => (
           <Row
             key={s}
             left={<span className="m-row__icon" style={{ ["--tile" as string]: STATUS_VAR[s] }}><span className="m-dot" style={{ background: "#fff" }} /></span>}

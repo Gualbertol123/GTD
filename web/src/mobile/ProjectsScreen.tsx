@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Board, Project, Task } from "../lib/types";
-import { STATUS_ORDER } from "../lib/constants";
+import { ALL_STATUSES } from "../lib/constants";
 import { useT } from "../lib/i18n";
 import { useMe } from "../lib/identity";
 import { useSyncedField } from "../lib/useSyncedField";
@@ -101,7 +101,7 @@ function ProjectCard({ project: p, stats: s, onOpen }: { project: Project; stats
         </div>
       </div>
       <div className="m-statusbar" aria-hidden="true">
-        {STATUS_ORDER.filter((st) => s.byStatus[st] > 0).map((st) => (
+        {ALL_STATUSES.filter((st) => s.byStatus[st] > 0).map((st) => (
           <span key={st} style={{ flex: s.byStatus[st], background: STATUS_VAR[st] }} />
         ))}
       </div>
@@ -225,7 +225,7 @@ export function ProjectSheet({
         </button>
       </h2>
       {s.total === 0 && <div className="m-empty">{t("m.noProjectTasks")}</div>}
-      {STATUS_ORDER.filter((st) => st !== "DONE").map((st) => {
+      {ALL_STATUSES.filter((st) => st !== "DONE").map((st) => {
         const list = byStatus.get(st);
         if (!list?.length) return null;
         return (

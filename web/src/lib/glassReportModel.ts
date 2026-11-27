@@ -21,6 +21,7 @@ export const PRIORITY_COLOR: Record<Priority, string> = {
   P4: "#8E8E93",
 };
 export const STATUS_COLOR: Partial<Record<Status, string>> = {
+  INBOX: "#5856D6",
   BACKLOG: "#8E8E93",
   NEXT: "#007AFF",
   "IN PROGRESS": "#AF52DE",

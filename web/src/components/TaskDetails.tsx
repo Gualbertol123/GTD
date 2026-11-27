@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { focusCardAfterMove } from "../lib/focusAfterMove";
 import { createPortal } from "react-dom";
 import type { Op, Status, Task } from "../lib/types";
-import { STATUS_ORDER, UNASSIGNED, genId } from "../lib/constants";
+import { ALL_STATUSES, STATUS_ORDER, UNASSIGNED, genId } from "../lib/constants";
 import { ownerInitial, ownersLabel, ownersPatch, taskOwners } from "../lib/owners";
 import { statusLabel, useT } from "../lib/i18n";
 import { useSyncedField } from "../lib/useSyncedField";
@@ -262,6 +262,8 @@ export function TaskDetails({
   const pct = total ? Math.round((done / total) * 100) : 0;
 
   const patch = (p: Partial<Task>) => send({ type: "updateTask", id: task.id, patch: p });
+  // ‹ › step through the BOARD's columns; from the Inbox (not a column,
+  // idx -1) › goes to the first column and ‹ is off.
   const idx = STATUS_ORDER.indexOf(task.status);
   const move = (dir: -1 | 1) => {
     const next = STATUS_ORDER[idx + dir];
@@ -557,7 +559,7 @@ export function TaskDetails({
             title={t("quick.status")}
             className="h-8 rounded-full bg-[#F5F3EF] border border-[#E8E6E1] px-2 text-[12px] text-[#0A1931] field cursor-pointer"
           >
-            {STATUS_ORDER.map((s) => (
+            {ALL_STATUSES.map((s) => (
               <option key={s} value={s}>{statusLabel(lang, s)}</option>
             ))}
           </select>

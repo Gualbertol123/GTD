@@ -170,7 +170,7 @@ export function StatusStack({
 }
 
 // Done first, so the filled part reads as progress.
-export const STACK_ORDER: import("../../lib/types").Status[] = ["DONE", "IN PROGRESS", "WAITING", "NEXT", "BACKLOG", "MAYBE"];
+export const STACK_ORDER: import("../../lib/types").Status[] = ["DONE", "IN PROGRESS", "WAITING", "NEXT", "BACKLOG", "INBOX", "MAYBE"];
 
 /** A millisecond time as fmtDay does it (local calendar day). */
 export function fmtMs(ms: number, lang: "it" | "en", withYear = false): string {

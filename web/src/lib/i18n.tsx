@@ -1148,6 +1148,7 @@ export function statusLabel(_lang: Lang, s: Status): string {
   // Column names stay canonical (English) in both languages — they are the
   // shared vocabulary of the board.
   const map: Record<Status, string> = {
+    INBOX: "Inbox",
     BACKLOG: "Backlog",
     NEXT: "Next",
     "IN PROGRESS": "In Progress",
@@ -1155,7 +1156,7 @@ export function statusLabel(_lang: Lang, s: Status): string {
     DONE: "Done",
     MAYBE: "Maybe",
   };
-  return map[s];
+  return map[s] ?? s;
 }
 
 export function priorityLabel(

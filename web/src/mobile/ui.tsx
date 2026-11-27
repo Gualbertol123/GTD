@@ -20,6 +20,7 @@ export const PRIO_VAR: Record<Priority, string> = {
 
 // The same column colours as the desktop's project bars (lib/projects.ts).
 export const STATUS_VAR: Record<Status, string> = {
+  INBOX: "var(--m-indigo)",
   BACKLOG: "var(--m-grey)",
   NEXT: "var(--m-blue)",
   "IN PROGRESS": "var(--m-purple)",
