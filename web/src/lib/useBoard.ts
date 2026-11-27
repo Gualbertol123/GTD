@@ -8,6 +8,8 @@ import { supabase } from "./supabaseClient";
 import { isConfigured } from "./supabaseConfig";
 import { requestAuthCheck } from "./auth";
 import { useT } from "./i18n";
+import { visibleBoard } from "./recurrence";
+import { toISODate } from "./dates";
 
 export type ConnState = "connecting" | "online" | "reconnecting" | "offline";
 
@@ -250,5 +252,22 @@ export function useBoard(): UseBoard {
     return s;
   }, [boardRef, reload, show]);
 
-  return { board, conn, error, send, reload };
+  // The screens get the board without next occurrences not due yet; `send`
+  // keeps working from the whole one (boardRef). The day is re-read at
+  // midnight and when the page comes back, so one shows on its day.
+  const [today, setToday] = useState(() => toISODate(new Date()));
+  useEffect(() => {
+    const check = () => setToday(toISODate(new Date()));
+    const now = new Date();
+    const toMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
+    const timer = setTimeout(check, toMidnight + 1000);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [today]);
+  const shownBoard = useMemo(() => (board ? visibleBoard(board, today) : board), [board, today]);
+
+  return { board: shownBoard, conn, error, send, reload };
 }

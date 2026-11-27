@@ -28,7 +28,9 @@ export function MembersBar({ board, send }: Props) {
 
   const remove = (m: string, viaKeyboard: boolean) => {
     const before = [...board.members];
-    const held = board.tasks.filter((tk) => isOwnedBy(tk, m));
+    // Next occurrences not shown yet too (board.upcoming): they would keep
+    // the departed member otherwise.
+    const held = [...board.tasks, ...(board.upcoming ?? [])].filter((tk) => isOwnedBy(tk, m));
     // Snapshot what the removal changes on each task, for the undo.
     const snap = held.map((tk) => ({
       id: tk.id,

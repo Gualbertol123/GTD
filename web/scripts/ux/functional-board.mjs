@@ -138,8 +138,14 @@ section("recurring.next", async (browser) => {
   const monthu = row({ title: "Rec lun gio", due_date: isoOf(mon), recurrence: { freq: "weekly", every: 1, days: [0, 3] } });
   const y = today.getFullYear() + 1;
   const m31 = row({ title: "Rec mese 31", due_date: `${y}-01-31`, recurrence: { freq: "monthly", every: 1 } });
-  const store = createStore({ db: dbWith([early, late, nodue, feriali, monthu, m31]) });
+  // Copies made by an earlier completion, never changed: one due today, one tomorrow.
+  const made = Date.now() - 3600000;
+  const copyToday = row({ id: `s1@${rel(0)}`, title: "Rec copy due today", due_date: rel(0), pinned: true, recurrence: { freq: "daily", every: 1, series: "s1" }, created_at: made, updated_at: made - 1 });
+  const copyTomorrow = row({ id: `s2@${rel(1)}`, title: "Rec copy due tomorrow", due_date: rel(1), pinned: true, recurrence: { freq: "daily", every: 1, series: "s2" }, created_at: made, updated_at: made - 1 });
+  const store = createStore({ db: dbWith([early, late, nodue, feriali, monthu, m31, copyToday, copyTomorrow]) });
   const { page, context } = await openApp(browser, { store, name: "rec" });
+  check("recurring: a copy shows on its day, ★ in the band", (await columnsOf(page, "Rec copy due today")).includes("Next") && (await bandTitles(page)).some((x) => x.includes("Rec copy due today")));
+  check("recurring: a copy due tomorrow is not shown yet", (await columnsOf(page, "Rec copy due tomorrow")).length === 0 && !(await bandTitles(page)).some((x) => x.includes("Rec copy due tomorrow")));
 
   // ↻ chip
   const chip = await page.locator(".task-card", { hasText: "Rec feriali" }).first().textContent();
@@ -162,7 +168,10 @@ section("recurring.next", async (browser) => {
   const tt = await toastText(page);
   check("recurring: toast says when the next one is due", /prossima il/.test(tt), tt);
   await sleep(300);
-  check("recurring: next occurrence card appears in Next", (await columnsOf(page, "Rec early weekly")).includes("Next"));
+  // Owner's rule (2026-11-27): the copy shows on its due day, not before —
+  // the ★ task does not come straight back to the board or the band.
+  check("recurring: the next copy is not shown before its day (only the Done card)", JSON.stringify(await columnsOf(page, "Rec early weekly")) === '["Done"]', JSON.stringify(await columnsOf(page, "Rec early weekly")));
+  check("recurring: the ★ copy is not back in the band", !(await bandTitles(page)).some((x) => x.includes("Rec early weekly")), (await bandTitles(page)).join(" / "));
 
   // late
   await clickCheck(page, "Rec late daily");
@@ -191,8 +200,12 @@ section("recurring.next", async (browser) => {
   const id2 = `${m31.id}@${feb}`;
   check("recurring: monthly on the 31st → last day of February", !!(await waitFor(() => sv(store.db, id2))), `expected ${id2}; got ${store.db.tasks.filter((t) => t.id.startsWith(m31.id)).map((t) => t.id)}`);
   await sleep(400);
-  // complete the February occurrence (the one still in Next)
-  await page.evaluate(() => 0);
+  // complete the February occurrence (the one still in Next): it is hidden
+  // until February, so a teammate's change (simulated here) brings it out.
+  const febRow = sv(store.db, id2);
+  if (febRow) { febRow.updated_at = (febRow.created_at ?? Date.now()) + 1; febRow.notes = "touched"; }
+  await page.reload();
+  await sleep(1500);
   const febCard = page.locator(".task-card").filter({ hasText: "Rec mese 31" }).filter({ has: page.locator('button[aria-label="Segna come fatta"]') }).first();
   await febCard.locator('button[aria-label="Segna come fatta"]').click();
   await sleep(600);
@@ -232,17 +245,15 @@ section("recurring.undo", async (browser) => {
   const nC = `${c.id}@${rel(2)}`;
   await waitFor(() => sv(store.db, nC));
   await sleep(300);
-  // a teammate edits the next occurrence (priority) in a second browser
-  const other = await openApp(browser, { store, name: "undo-2", me: "Chiara" });
-  await openCard(other.page, "Rec touched C").catch(() => {});
-  const open2 = other.page.locator(".task-card.is-open").first();
-  await open2.locator("button", { hasText: /^P1$/ }).click();
-  await waitFor(() => sv(store.db, nC)?.priority === "P1");
-  await sleep(500);
+  // the next occurrence is changed elsewhere (it is hidden here until its
+  // day): simulated on the server, then this browser re-reads the board
+  { const r = sv(store.db, nC); r.priority = "P1"; r.updated_at = (r.created_at ?? Date.now()) + 1; }
+  await page.reload();
+  await sleep(1500);
+  check("recurring: a copy someone changed shows before its day", (await columnsOf(page, "Rec touched C")).includes("Next"), JSON.stringify(await columnsOf(page, "Rec touched C")));
   await page.locator(".task-card").filter({ hasText: "Rec touched C" }).locator('button[aria-label="Riapri"]').first().click();
   await sleep(600);
   check("recurring Reopen: next occurrence someone changed is kept", !!sv(store.db, nC) && sv(store.db, c.id)?.status === "NEXT");
-  await other.context.close();
   await context.close();
 });
 
@@ -260,7 +271,8 @@ section("recurring.race", async (browser) => {
   check("recurring race: no write refused", errs.length === 0, JSON.stringify(errs.map((e) => e.error)));
   const ca = await columnsOf(A.page, "Rec race");
   const cb = await columnsOf(B.page, "Rec race");
-  check("recurring race: each browser shows one next + one done", ca.filter((x) => x === "Next").length === 1 && cb.filter((x) => x === "Next").length === 1, `A ${ca} | B ${cb}`);
+  // The next copy is due next week: not shown yet in either browser.
+  check("recurring race: each browser shows the one Done card", JSON.stringify(ca) === '["Done"]' && JSON.stringify(cb) === '["Done"]', `A ${ca} | B ${cb}`);
   await A.context.close();
   await B.context.close();
 });

@@ -170,6 +170,33 @@ export function nextOccurrence(task: Task, today: string, now: number): Task {
   };
 }
 
+/**
+ * A next occurrence that is not shown yet (owner's rule, 2026-11-27): the
+ * completed one goes to Done, and its copy appears on the day it is due —
+ * until then it is off the Board, the band and every list, so a ★ task does
+ * not come straight back. The row itself is created at completion (two people
+ * completing at once, and Reopen taking it back, depend on that); it shows
+ * early only once someone changes it.
+ */
+export function isUpcoming(t: Task, today: string): boolean {
+  return (
+    !!t.recurrence &&
+    t.status !== "DONE" &&
+    t.id.includes("@") &&
+    !!t.dueDate &&
+    t.dueDate > today &&
+    t.updatedAt < (t.createdAt ?? 0)
+  );
+}
+
+/** The board as the screens show it: next occurrences not due yet are moved
+ *  to `upcoming` (kept for the few writes that must reach every task). */
+export function visibleBoard(board: Board, today: string): Board {
+  const upcoming = board.tasks.filter((t) => isUpcoming(t, today));
+  if (!upcoming.length) return board;
+  return { ...board, tasks: board.tasks.filter((t) => !isUpcoming(t, today)), upcoming };
+}
+
 function dayOf(ms: number | undefined): string {
   return toISODate(ms ? new Date(ms) : new Date());
 }

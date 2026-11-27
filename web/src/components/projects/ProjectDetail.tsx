@@ -114,7 +114,7 @@ export function ProjectDetail({ board, project: p, stats: s, send, v2, onBack, p
             unlinked and kept, and Annulla links them back. */}
         <button
           onClick={(e) => {
-            onDeleted?.(p, board.tasks.filter((x) => x.projectId === p.id).map((x) => x.id), e.detail === 0);
+            onDeleted?.(p, [...board.tasks, ...(board.upcoming ?? [])].filter((x) => x.projectId === p.id).map((x) => x.id), e.detail === 0);
             save({ type: "projectDelete", id: p.id });
             onBack();
           }}

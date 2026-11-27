@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expandOp, nextDue, nextOccurrence, parseRule, ruleLabel } from "../recurrence";
+import { expandOp, isUpcoming, nextDue, nextOccurrence, parseRule, ruleLabel, visibleBoard } from "../recurrence";
 import { createSend, type BoardCell } from "../optimisticSend";
 import type { Board, Op } from "../types";
 import { board, task } from "./fixtures";
@@ -158,5 +158,40 @@ describe("monthly and yearly keep their day", () => {
   it("a due date moved by hand becomes the new day", () => {
     const moved = { ...t("m", "2027-03-15", "monthly"), recurrence: { freq: "monthly" as const, every: 1, anchor: 31 } };
     expect(nextOccurrence(moved, "2027-03-15", 0).dueDate).toBe("2027-04-15");
+  });
+});
+
+describe("next occurrence shown on its day (owner's rule, 2026-11-27)", () => {
+  const rec = task("r1", { recurrence: { freq: "weekly", every: 1 }, dueDate: "2026-11-25", pinned: true, status: "IN PROGRESS" });
+  const next = () => {
+    const ops = expandOp(board({ tasks: [rec] }), { type: "moveTask", id: "r1", status: "DONE" }, NOW);
+    if (ops[1]?.type !== "addTask") throw new Error("no add");
+    return ops[1].task;
+  };
+
+  it("the ★ copy is off the screens until it is due, then back", () => {
+    const n = next(); // due 2026-12-02
+    const done = { ...rec, status: "DONE" as const };
+    const b = board({ tasks: [done, n] });
+    const before = visibleBoard(b, "2026-11-25");
+    expect(before.tasks.map((t) => t.id)).toEqual(["r1"]);
+    expect(before.upcoming?.map((t) => t.id)).toEqual([n.id]);
+    expect(visibleBoard(b, "2026-12-01").tasks).toHaveLength(1);
+    expect(visibleBoard(b, "2026-12-02").tasks.map((t) => t.id)).toEqual(["r1", n.id]);
+    expect(visibleBoard(b, "2026-12-02").upcoming).toBeUndefined();
+  });
+
+  it("a copy someone changed shows at once", () => {
+    const n = { ...next(), updatedAt: NOW + 5 };
+    expect(isUpcoming(n, "2026-11-25")).toBe(false);
+  });
+
+  it("a recurring task made by hand, due later, shows", () => {
+    expect(isUpcoming(task("r2", { recurrence: { freq: "weekly", every: 1 }, dueDate: "2026-12-30", createdAt: 10, updatedAt: 5 }), "2026-11-25")).toBe(false);
+  });
+
+  it("a board with nothing hidden is handed on unchanged", () => {
+    const b = board({ tasks: [rec] });
+    expect(visibleBoard(b, "2026-11-25")).toBe(b);
   });
 });

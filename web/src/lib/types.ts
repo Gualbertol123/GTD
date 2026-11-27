@@ -155,6 +155,10 @@ export interface Board {
   boardModeAvailable?: boolean;
   /** False when migration 023 has not been run: no recurring or pinned tasks. */
   recurringAvailable?: boolean;
+  /** Next occurrences of recurring tasks before their due date: not on any
+   *  screen yet (lib/recurrence.ts `visibleBoard`). Only on the board the
+   *  screens get, never on the one the writes work from. */
+  upcoming?: Task[];
   updatedAt: number;
   rev?: number; // optional; not used by the Supabase backend
   // Editable settings (nullable until the settings migration is applied).
