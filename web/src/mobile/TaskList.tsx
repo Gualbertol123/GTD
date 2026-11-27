@@ -2,8 +2,16 @@ import type { Task } from "../lib/types";
 import { TaskCard } from "./TaskCard";
 import { useNav } from "./nav";
 import { useTaskActions, type Send } from "./actions";
+import { useCardData } from "./cardData";
 
-/** A column of task cards wired to the shell's open / move actions. */
+/**
+ * A column of task cards wired to the shell's open / move actions.
+ *
+ * The cards are memoised (TaskCard.tsx), so everything handed to them stays
+ * the same object until it really changes: the handlers are the shell's own
+ * (nav) and useTaskActions' (stable callbacks), never a closure per card, and
+ * each card gets its project and step from the board-wide CardData.
+ */
 export function TaskList({
   tasks,
   send,
@@ -21,20 +29,30 @@ export function TaskList({
 }) {
   const nav = useNav();
   const { toggleDone } = useTaskActions(send);
+  const { projectById, steps, members, today } = useCardData();
   return (
     <div className="m-stack">
-      {tasks.map((tk) => (
-        <TaskCard
-          key={tk.id}
-          task={tk}
-          showStatus={showStatus}
-          hideProject={hideProject}
-          swipe={swipe}
-          onOpen={() => nav.openTask(tk.id)}
-          onToggleDone={() => toggleDone(tk)}
-          onMove={() => nav.moveTask(tk.id)}
-        />
-      ))}
+      {tasks.map((tk) => {
+        const project = tk.projectId ? projectById.get(tk.projectId) : undefined;
+        const step = project ? steps.get(tk.id) : undefined;
+        return (
+          <TaskCard
+            key={tk.id}
+            task={tk}
+            project={project}
+            stepN={step?.n}
+            stepTotal={step?.total}
+            members={members}
+            today={today}
+            showStatus={showStatus}
+            hideProject={hideProject}
+            swipe={swipe}
+            onOpen={nav.openTask}
+            onToggleDone={toggleDone}
+            onMove={nav.moveTask}
+          />
+        );
+      })}
     </div>
   );
 }

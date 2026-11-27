@@ -1,8 +1,7 @@
-import { useId, useRef } from "react";
-import type { Task } from "../lib/types";
+import { memo, useId, useRef } from "react";
+import type { Project, Task } from "../lib/types";
 import { useT } from "../lib/i18n";
-import { useProjects } from "../lib/projectsContext";
-import { projectColor, stepOf } from "../lib/projects";
+import { projectColor } from "../lib/projects";
 import { daysSince } from "../lib/dates";
 import { Avatars, DueChip, PRIO_VAR, STATUS_VAR } from "./ui";
 import { IconArrowRight, IconCheck, IconHourglass } from "./icons";
@@ -17,20 +16,46 @@ const SWIPE_AT = 110; // px past which a swipe acts
  * One task in a list. Tap opens it; the round check marks it done (or
  * reopens it). Swipe right does the same as the check; swipe left asks where
  * to move it.
+ *
+ * A list holds dozens to hundreds of these, so the card is memoised: it
+ * re-renders only when its own props change. TaskList keeps them steady: the
+ * task objects are shared between board versions (lib/rowSync.ts
+ * reconcileBoard), the handlers are the same functions for every card and
+ * take the task (or its id), and the project and step come in as props
+ * (worked out once per board, cardData.ts) instead of every card reading all
+ * the tasks from context.
  */
-export function TaskCard({
+export const TaskCard = memo(TaskCardView);
+
+function TaskCardView({
   task,
   onOpen,
   onToggleDone,
   onMove,
+  project,
+  stepN,
+  stepTotal,
   showStatus,
   hideProject,
   swipe = true,
 }: {
   task: Task;
-  onOpen: () => void;
-  onToggleDone: () => void;
-  onMove: () => void;
+  onOpen: (id: string) => void;
+  onToggleDone: (task: Task) => void;
+  onMove: (id: string) => void;
+  /** The task's project, if it has one. */
+  project?: Project;
+  /** "Step n of total" for a task of a sequential project (lib/projects.ts projectSteps). */
+  stepN?: number;
+  stepTotal?: number;
+  /**
+   * Not read here, but part of what the card shows: the avatar colours follow
+   * the members' order (the shell sets it, ui.tsx avatarColor) and the due and
+   * waiting chips count from today. Passed so that a change to either reaches
+   * the memoised card.
+   */
+  members: string[];
+  today: string;
   showStatus?: boolean;
   /** Inside a project's own sheet: no project-name chip (the step chip stays). */
   hideProject?: boolean;
@@ -38,9 +63,7 @@ export function TaskCard({
   swipe?: boolean;
 }) {
   const { t, lang } = useT();
-  const { projects, tasks } = useProjects();
-  const project = task.projectId ? projects.find((p) => p.id === task.projectId) : undefined;
-  const step = stepOf(task, projects, tasks);
+  const step = stepN && stepTotal ? { n: stepN, total: stepTotal } : null;
   const done = task.status === "DONE";
   const subDone = task.subtasks.filter((s) => s.done).length;
 
@@ -97,9 +120,9 @@ export function TaskCard({
       } catch {
         /* not supported */
       }
-      onToggleDone();
+      onToggleDone(task);
     } else if (s.dx <= -SWIPE_AT) {
-      onMove();
+      onMove(task.id);
     }
     setX(0, true);
   };
@@ -125,7 +148,7 @@ export function TaskCard({
         // A tap anywhere on the card opens it; for keyboards and screen
         // readers the title is the "open" button (a role="button" card that
         // held the done checkbox was a control inside a control).
-        onClick={() => !swallowClick.current && onOpen()}
+        onClick={() => !swallowClick.current && onOpen(task.id)}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={end}
@@ -138,7 +161,7 @@ export function TaskCard({
           aria-label={`${done ? t("m.reopen") : t("m.markDoneLong")}: ${task.title || t("m.untitled")}`}
           onClick={(e) => {
             e.stopPropagation();
-            onToggleDone();
+            onToggleDone(task);
           }}
           onPointerDown={(e) => e.stopPropagation()}
         >

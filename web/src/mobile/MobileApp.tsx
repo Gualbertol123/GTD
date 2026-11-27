@@ -13,6 +13,7 @@ import { music } from "../lib/music";
 import { MailModal } from "../components/MailModal";
 import { Avatar, ToastProvider, setAvatarMembers } from "./ui";
 import { NavCtx, type MobileNav, type MobileTab } from "./nav";
+import { CardDataCtx, useCardDataValue } from "./cardData";
 import { TodayScreen } from "./TodayScreen";
 import { BoardScreen } from "./BoardScreen";
 import { ProjectsScreen, ProjectSheet } from "./ProjectsScreen";
@@ -107,9 +108,14 @@ export function MobileApp(props: {
   send: Send;
   setLayout: (c: LayoutChoice) => void;
 }) {
+  // Each task card's project, step, avatar colours and day, once per board
+  // (the lists hand every memoised card its own part, cardData.ts).
+  const cardData = useCardDataValue(props.board);
   return (
     <ToastProvider>
-      <Shell {...props} />
+      <CardDataCtx.Provider value={cardData}>
+        <Shell {...props} />
+      </CardDataCtx.Provider>
     </ToastProvider>
   );
 }
