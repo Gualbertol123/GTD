@@ -9,6 +9,8 @@
     "build": "node scripts/gen-pdf-fonts.mjs && tsc -b && tsc -p netlify/tsconfig.json && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:browser": "node scripts/ux/run-checks.mjs",
+    "test:browser:install": "playwright install chromium",
     "typecheck": "node scripts/gen-pdf-fonts.mjs && tsc -b && tsc -p netlify/tsconfig.json",
     "perf:music": "node scripts/perf/run.mjs",
     "perf:music:check": "node scripts/perf/run.mjs --check --label check --reps 1 --only S2,S3,S4,S8,S9,S14",

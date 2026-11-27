@@ -4,6 +4,9 @@ node_modules/
 # Build output
 web/dist/
 dist/
+# Browser checks (web/scripts/ux/run-checks.mjs): stub build, logs, screenshots
+web/dist-stub/
+web/ux-results/
 
 # Azure Functions local
 api/local.settings.json
