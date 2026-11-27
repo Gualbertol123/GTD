@@ -573,13 +573,6 @@ html[data-skin="glass"] .bg-\[\#FEF3C7\] {
   background-color: color-mix(in srgb, var(--ios-orange) 16%, transparent);
   border-color: color-mix(in srgb, var(--ios-orange) 36%, transparent);
 }
-/* A blue information tint (the Weekly "Learnings" label). */
-html[data-skin="glass"] .bg-\[\#EEF3FA\] {
-  background-color: color-mix(in srgb, var(--ios-cyan) 16%, transparent);
-}
-html[data-skin="glass"] .border-\[\#C9D6EA\] {
-  border-color: color-mix(in srgb, var(--ios-cyan) 38%, transparent);
-}
 html[data-skin="glass"] .border-\[\#A7F3D0\] {
   border-color: color-mix(in srgb, var(--ios-green) 38%, transparent);
 }
@@ -918,18 +911,8 @@ html[data-skin="glass"][data-appearance="light"] :is(.text-\[\#065F46\], .text-\
 }
 /* …and on dark glass systemRed text is 4.2:1 on the darkest panel: Apple's
    high-contrast red for dark. */
-html[data-skin="glass"][data-appearance="dark"] :is(.text-\[\#C81E1E\], .text-\[\#F87171\], .weekly-pill--blockers) {
+html[data-skin="glass"][data-appearance="dark"] :is(.text-\[\#C81E1E\], .text-\[\#F87171\]) {
   color: #ff6961;
-}
-/* Weekly column pills, light glass: darker steps of their colours. */
-html[data-skin="glass"][data-appearance="light"] .weekly-pill--improve {
-  color: #8a5a00;
-}
-html[data-skin="glass"][data-appearance="light"] .weekly-pill--blockers {
-  color: #c4141b;
-}
-html[data-skin="glass"][data-appearance="light"] .weekly-pill--well {
-  color: #1a6b2e;
 }
 /* An overdue chip on dark glass: a lighter red over its red tint. */
 html[data-skin="glass"][data-appearance="dark"] .due-chip--late {
@@ -953,4 +936,13 @@ html[data-skin="glass"] .task-card.is-pinned::before {
 html[data-skin="glass"] .pin-band {
   background: color-mix(in srgb, var(--ios-orange) 12%, transparent);
   border-color: color-mix(in srgb, var(--ios-orange) 40%, transparent);
+}
+
+/* Weekly column names (dot + plain label): the "focus" dot is navy, which
+   disappears on dark glass — it takes the label colour there. */
+html[data-skin="glass"][data-appearance="dark"] .weekly-col--focus .weekly-col__dot {
+  background: var(--label, #fff) !important;
+}
+html[data-skin="glass"][data-appearance="dark"] .weekly-col--learnings .weekly-col__dot {
+  background: #7fa6db !important;
 }

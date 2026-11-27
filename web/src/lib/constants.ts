@@ -68,13 +68,14 @@ export const DEFAULT_LOGIN_DAYS = 7;
 export const WEEKLY_COLUMNS: {
   key: "well" | "learnings" | "improve" | "blockers" | "focus";
   label: string;
-  color: string;
+  /** The dot before the column's name (the name itself is plain text). */
+  dot: string;
 }[] = [
-  { key: "well", label: "WINS", color: "bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]" },
-  { key: "learnings", label: "LEARNINGS", color: "bg-[#EEF3FA] text-[#3A5A8A] border-[#C9D6EA]" },
-  { key: "improve", label: "TO IMPROVE", color: "bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]" },
-  { key: "blockers", label: "BLOCKERS", color: "bg-[#FEF2F2] text-[#C81E1E] border-[#FECACA]" },
-  { key: "focus", label: "FOCUS NEXT WEEK", color: "bg-white text-[#0A1931] border-[#E8E6E1]" },
+  { key: "well", label: "WINS", dot: "#16A34A" },
+  { key: "learnings", label: "LEARNINGS", dot: "#3A5A8A" },
+  { key: "improve", label: "TO IMPROVE", dot: "#D97706" },
+  { key: "blockers", label: "BLOCKERS", dot: "#DC2626" },
+  { key: "focus", label: "FOCUS NEXT WEEK", dot: "#0A1931" },
 ];
 
 export type TabId =

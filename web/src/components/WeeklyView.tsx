@@ -392,7 +392,7 @@ export function WeeklyView({ board, send }: Props) {
             key={col.key}
             colKey={col.key}
             label={t(`m.weekly.${col.key}`)}
-            color={col.color}
+            dot={col.dot}
             items={board.weekly[col.key]}
             send={send}
             onRemove={removeItem}
@@ -407,14 +407,14 @@ export function WeeklyView({ board, send }: Props) {
 function WeeklyColumn({
   colKey,
   label,
-  color,
+  dot,
   items,
   send,
   onRemove,
 }: {
   colKey: ColKey;
   label: string;
-  color: string;
+  dot: string;
   items: WeeklyItem[];
   send: (op: Op) => void;
   onRemove: (column: ColKey, item: WeeklyItem, focus: boolean) => void;
@@ -430,10 +430,11 @@ function WeeklyColumn({
 
   return (
     <div className="bg-white rounded-[14px] border border-[#E8E6E1] p-3 min-w-0">
-      <h3
-        className={`weekly-pill weekly-pill--${colKey} text-[10px] font-semibold uppercase tracking-widest leading-snug rounded-full px-3 py-1 border inline-block max-w-full mb-3 ${color}`}
-      >
-        {label}
+      {/* A coloured dot and the plain name (UX audit H7): the colour tells
+          the columns apart, the words stay ordinary text in both skins. */}
+      <h3 className={`weekly-col weekly-col--${colKey} flex items-center gap-2 text-[13px] font-semibold text-[#0A1931] leading-snug mb-3 min-w-0`}>
+        <span aria-hidden="true" className="weekly-col__dot w-2.5 h-2.5 rounded-full shrink-0" style={{ background: dot }} />
+        <span className="min-w-0">{label}</span>
       </h3>
       <div className="space-y-1.5">
         {items.map((it) => (
