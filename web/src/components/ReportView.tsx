@@ -4,6 +4,7 @@ import { useT } from "../lib/i18n";
 import { collectReport, weekPeriod, type Period } from "../lib/reportData";
 import { GlassReport, type GlassReportActions } from "./GlassReport";
 import { ConfirmInline } from "./ConfirmInline";
+import { IconChevron } from "../mobile/icons";
 import type { ReportDoc } from "../lib/reportDoc";
 import { supabase } from "../lib/supabaseClient";
 import { shortDate } from "../lib/dates";
@@ -290,6 +291,18 @@ export function ReportView({ board, send }: Props) {
   };
   const selected = weeks.find((w) => w.from === period.from && w.to === period.to);
   const periodText = `${fmt(period.from)} – ${fmt(period.to, true)}`;
+  // ‹ › step through the same weeks the list used to offer (this one and the
+  // WEEKS_BACK - 1 before it), as on Weekly. From a custom period they step
+  // from the week it starts in, and leave it.
+  const anchor =
+    selected?.offset ??
+    weeks.find((w) => w.from <= period.from && period.from <= w.to)?.offset ??
+    (period.from > weeks[0].to ? 0 : WEEKS_BACK - 1);
+  const atWeek = !custom && !!selected;
+  const goWeek = (offset: number) => {
+    setCustom(false);
+    setPeriod(weekPeriod(Math.min(WEEKS_BACK - 1, Math.max(0, offset))));
+  };
 
   // The old Word template, straight to a download.
   const downloadWord = async () => {
@@ -361,6 +374,8 @@ export function ReportView({ board, send }: Props) {
 
   // One visible keyboard focus for every control, in both skins and themes.
   const control = "h-9 rounded-full bg-white border border-[#E8E6E1] text-[13px] field px-3";
+  const chevBtn =
+    "h-9 w-9 rounded-full flex items-center justify-center bg-white border border-[#E8E6E1] text-[#0A1931] disabled:opacity-40 disabled:cursor-not-allowed";
   const primaryBtn = `h-9 px-5 rounded-full bg-[#0A1931] text-[#C9A96E] text-[12px] font-semibold disabled:opacity-40`;
   const ghostBtn = `h-9 px-4 rounded-full bg-white text-[#0A1931] border border-[#E8E6E1] text-[12px] font-semibold disabled:opacity-40`;
   const views = ["report", "excluded"] as const;
@@ -455,27 +470,53 @@ export function ReportView({ board, send }: Props) {
         </div>
 
         <div ref={actionsRowRef} className="flex items-end gap-2 flex-wrap">
-          <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-ink-2">
+          <div className="flex flex-col gap-1 max-w-full">
+            <span id="report-period-label" className="text-[10px] uppercase tracking-wide text-ink-2">
               {t("report.period")}
             </span>
-            <select
-              value={custom ? "custom" : selected ? String(selected.offset) : "custom"}
-              onChange={(e) => {
-                if (e.target.value === "custom") return setCustom(true);
-                setCustom(false);
-                setPeriod(weekPeriod(Number(e.target.value)));
-              }}
-              className={`${control} min-w-[230px] max-w-full`}
-            >
-              {weeks.map((w) => (
-                <option key={w.offset} value={w.offset}>
-                  {weekLabel(w)}
-                </option>
-              ))}
-              <option value="custom">{t("report.custom")}</option>
-            </select>
-          </label>
+            <div role="group" aria-labelledby="report-period-label" className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                className={chevBtn}
+                onClick={() => goWeek(anchor + 1)}
+                disabled={atWeek && anchor >= WEEKS_BACK - 1}
+                aria-label={t("weekly.prevWeek")}
+                title={t("weekly.prevWeek")}
+              >
+                <IconChevron size={14} className="rotate-180" />
+              </button>
+              <span
+                className="min-w-[200px] text-center text-[13px] font-semibold text-[#0A1931] tabular-nums"
+                aria-live="polite"
+              >
+                {atWeek && selected ? weekLabel(selected) : `${fmt(period.from)} – ${fmt(period.to)}`}
+              </span>
+              <button
+                type="button"
+                className={chevBtn}
+                onClick={() => goWeek(anchor - 1)}
+                disabled={atWeek && anchor === 0}
+                aria-label={t("weekly.nextWeek")}
+                title={t("weekly.nextWeek")}
+              >
+                <IconChevron size={14} />
+              </button>
+              {!(atWeek && anchor === 0) && (
+                <button type="button" onClick={() => goWeek(0)} className={`${ghostBtn} !px-3`}>
+                  {t("weekly.thisWeek")}
+                </button>
+              )}
+              <button
+                type="button"
+                aria-pressed={custom}
+                onClick={() => (custom ? goWeek(anchor) : setCustom(true))}
+                title={t("chooser.reportCustomHint")}
+                className="tab h-9 px-3 text-[12px] font-semibold"
+              >
+                {t("chooser.reportCustom")}
+              </button>
+            </div>
+          </div>
 
           {custom && (
             <>
