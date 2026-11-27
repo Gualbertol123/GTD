@@ -4,6 +4,8 @@ Usability, interaction and visual design audits of the web app (`web/`),
 each with its fixes applied in the same pass. Two passes so far, newest
 first:
 
+- **2026-11-27, fourth pass** — an Inbox with quick capture, and the
+  third pass's loose ends. Branch `next-steps-2`.
 - **2026-11-27, third pass** — the owner's next steps: the open items of the
   second pass, a guided weekly review, and checks on every push. Branch
   `next-steps`.
@@ -17,6 +19,39 @@ The audit scripts are in `web/scripts/ux/`. The first pass's screenshots were
 removed from the tree after the move to `Gualbertol123/GTD`
 (`git checkout 48fc426 -- ux-audit` brings them back); this pass's are in
 `ux-audit/shots/`.
+
+---
+
+## 2026-11-27 — Fourth pass: Inbox and loose ends
+
+Decision taken: quick-captured items land in a new **Inbox status**, shown as
+a strip above the Board (not a 7th column); no database change
+(`tasks.status` is free text).
+
+| ID | Area | Change | Checked by |
+| --- | --- | --- | --- |
+| N-10 | Inbox | Status `INBOX` handled wherever a status is listed (`ALL_STATUSES`; columns stay six); counts as open, never as done; left out of the report and the mail; projects treat it like Backlog (a NaN in `projectStats` for an unknown status fixed) | `lib/__tests__/inbox.test.ts` (15) |
+| N-11 | Capture | Key **I** anywhere on the desktop (not while typing, no modifiers, no dialog open) or «Cattura» on the strip: title only, Enter saves and keeps the box open, toast «Nell’Inbox» with Annulla; on the phone, «Cattura nell’Inbox» on Oggi | `functional-board.mjs inbox` (40) |
+| N-12 | Inbox strip | Above In evidenza: «Inbox · N», board filters applied, oldest first; per row: sort into a column, date, assign, delete (all with Annulla); title opens the editor; cards dropped on it go to the Inbox; open/closed remembered (`gtd-inbox-strip`) | `functional-board.mjs inbox`; pointer sweep `board-inbox`; axe |
+| N-13 | Revisione | Step 1 is «Inbox e da chiarire»: the Inbox first, then no date / no owner | `functional-tabs.mjs review` |
+| N-14 | Dates | A date picked in the calendar is saved at once in Revisione and the Inbox strip; a typed one still waits for Enter or leaving the field | `functional-tabs.mjs review`, `functional-board.mjs inbox` |
+| N-15 | Phone Agenda | Upcoming recurring copies shown faded on their date, as in the Calendar | `functional-board.mjs phone.upcoming` |
+| N-16 | Phone cards | Memoised, project and step as props (`mobile/cardData.ts`): one remote change re-renders 1 card instead of 89 (Oggi) / 315 (Board); 33–66 ms → 7–9 ms per commit | `perf-rerender-phone.mjs`; `board-cards.mjs` (8 phone guards) |
+
+### Measured on the final branch
+
+| Check | Result |
+| --- | --- |
+| typecheck, unit tests (33 files), build | pass · 472 / 472 · main JS 210 kB gz |
+| `npm run test:browser` | board 242 / 0 · tabs 176 / 0 · cards pass · pointer sweep 0 violations · offline 28 / 0 |
+| axe, desktop and phone, 4 skin combos | 0 violations |
+
+### Still open
+
+- No "captured by" field: an Inbox row shows who holds the task (the person
+  who captured it until someone reassigns it).
+- Oggi on the phone shows the team's whole Inbox, as the desktop strip does.
+- The CI workflow's first runs on GitHub: check the Actions tab.
 
 ---
 
