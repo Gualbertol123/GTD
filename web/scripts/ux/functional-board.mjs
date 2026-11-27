@@ -617,6 +617,22 @@ section("inbox", async (browser) => {
   await waitFor(() => s2.db.tasks.find((t) => t.title === "QA phone inbox")?.status === "NEXT");
   check("phone: picking Next sorts it", s2.db.tasks.find((t) => t.title === "QA phone inbox")?.status === "NEXT");
   await ph.context.close();
+  // Strip: a date picked in the calendar is saved at once (a typed one on Enter).
+  const s3 = createStore();
+  const dk = await openApp(browser, { store: s3, name: "inbox-date" });
+  await sleep(400);
+  await dk.page.keyboard.press("i");
+  await sleep(300);
+  await dk.page.keyboard.type("QA inbox date");
+  await dk.page.keyboard.press("Enter");
+  await waitFor(() => s3.db.tasks.find((t) => t.title === "QA inbox date"));
+  await dk.page.keyboard.press("Escape");
+  await sleep(400);
+  const rowDate = strip(dk.page).locator("li", { hasText: "QA inbox date" }).locator('input[type="date"]');
+  await rowDate.fill(rel(6));
+  await waitFor(() => s3.db.tasks.find((t) => t.title === "QA inbox date")?.due_date === rel(6), 2500);
+  check("strip: a date picked is saved at once", s3.db.tasks.find((t) => t.title === "QA inbox date")?.due_date === rel(6), s3.db.tasks.find((t) => t.title === "QA inbox date")?.due_date);
+  await dk.context.close();
 });
 
 // ---- Before each migration -----------------------------------------------------

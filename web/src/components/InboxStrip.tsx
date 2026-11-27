@@ -282,11 +282,14 @@ function InboxRow({
   // as in the weekly review.
   const [due, setDueDraft] = useState(tk.dueDate ?? "");
   useEffect(() => setDueDraft(tk.dueDate ?? ""), [tk.dueDate]);
-  const commitDue = () => {
-    if (due === (tk.dueDate ?? "") || !/^\d{4}-\d{2}-\d{2}$/.test(due) || Number(due.slice(0, 4)) < 2000) return;
+  const commitDue = (v = due) => {
+    if (v === (tk.dueDate ?? "") || !/^\d{4}-\d{2}-\d{2}$/.test(v) || Number(v.slice(0, 4)) < 2000) return;
     onAction();
-    actions.setDue(tk, due);
+    actions.setDue(tk, v);
   };
+  // Typed digit by digit: saved on Enter or on leaving the field. Picked in the
+  // calendar (no key pressed just before): saved at once (as in Revisione).
+  const typedAt = useRef(0);
   const act = (fn: () => void) => {
     onAction();
     fn();
@@ -342,13 +345,16 @@ function InboxRow({
               type="date"
               value={due}
               aria-label={t("wr.dueFor", { title })}
-              onChange={(e) => setDueDraft(e.target.value)}
-              onBlur={commitDue}
+              onChange={(e) => {
+                setDueDraft(e.target.value);
+                if (Date.now() - typedAt.current > 1000) commitDue(e.target.value);
+              }}
+              onBlur={() => commitDue()}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
                   commitDue();
-                }
+                } else typedAt.current = Date.now();
               }}
               className="bg-transparent outline-none text-[11px] text-[#0A1931]"
             />
