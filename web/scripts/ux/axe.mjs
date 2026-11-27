@@ -1,8 +1,9 @@
 // axe-core over every desktop tab and phone screen, in every skin combo.
-// Usage: node scripts/ux/axe.mjs [desktop|phone] [comboNames]
+// Usage: node scripts/ux/axe.mjs [desktop|phone] [comboNames] [paths]
+//   paths: comma-separated hashes to check instead of every page (e.g. "#/review").
 // Prints violations grouped by rule, with the first few targets.
 import { launch, openApp, COMBOS } from "./stub.mjs";
-const [mode = "desktop", only] = process.argv.slice(2);
+const [mode = "desktop", only, onlyPaths] = process.argv.slice(2);
 import { createRequire } from "node:module";
 // axe-core is not a project dependency: install it anywhere
 // (npm i axe-core@4.10.2) and set AXE_PATH to its axe.min.js, or install it
@@ -16,10 +17,10 @@ const AXE =
       throw new Error("axe-core not found: npm i axe-core@4.10.2 and set AXE_PATH to its axe.min.js");
     }
   })();
-const DESK = ["#/board", "#/projects", "#/projects/p1", "#/weekly", "#/report", "#/mail", "#/calendario", "#/reflection", "#/products", "#/settings"];
+const DESK = ["#/board", "#/projects", "#/projects/p1", "#/weekly", "#/review", "#/report", "#/mail", "#/calendario", "#/reflection", "#/products", "#/settings"];
 const PHONE = ["#/today", "#/board", "#/projects", "#/agenda", "#/more", "#/more/weekly"];
 const phone = mode === "phone";
-const paths = phone ? PHONE : DESK;
+const paths = onlyPaths ? onlyPaths.split(",") : phone ? PHONE : DESK;
 const browser = await launch();
 const summary = {};
 for (const c of COMBOS.filter((c) => !only || only.split(",").includes(c.name))) {

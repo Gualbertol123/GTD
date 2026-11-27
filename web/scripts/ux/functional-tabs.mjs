@@ -5,7 +5,7 @@
 // a FAIL.
 //
 //   node scripts/ux/functional-tabs.mjs [group,group,…]
-//   groups: weekly report calendar reflection products music settings auth
+//   groups: weekly review report calendar reflection products music settings auth
 //           routes lang offline board
 //
 // Needs the dev server on :5199 pointed at the fake host (see stub.mjs).
@@ -988,6 +988,160 @@ groups.board = async () => {
   ok("board refused add: UI says it was not saved", errs.length > 0, errs.join(" / ") || "nothing on screen");
   await page.screenshot({ path: `${OUT}/board-refused.png` });
   await context.close();
+};
+
+// ---------------------------------------------------------------- REVIEW (SETTIMANA › Revisione)
+groups.review = async () => {
+  const todayIso = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+  const titles = (page) => page.locator("main [data-review-title]").allInnerTexts();
+  const current = (page) => page.locator('main nav ol button[aria-current="step"]').innerText();
+  const byTitle = (db, title) => db.tasks.find((r) => r.title === title);
+  const row = (page, title) => page.locator("main li").filter({ has: page.locator("[data-review-title]", { hasText: title }) });
+  const next = (page) => page.locator("main button", { hasText: /^Avanti$/ }).click();
+  const back = (page) => page.locator("main button", { hasText: /^Indietro$/ }).click();
+  const undo = (page) => page.locator("[role=status] button", { hasText: "Annulla" }).first().click();
+  {
+    const { context, page, db } = await openApp(browser, { skin: "classic", appearance: "light", path: "#/board" });
+    // The SETTIMANA switch now reads Weekly | Revisione | Report | Mail.
+    await page.locator("nav[aria-label] button", { hasText: "SETTIMANA" }).first().click();
+    await wait(page, 400);
+    const sw = await page.locator('[role=group][aria-label="SETTIMANA"] button').allInnerTexts();
+    ok("review: the SETTIMANA switch is Weekly | Revisione | Report | Mail", sw.join("|") === "Weekly|Revisione|Report|Mail", sw.join("|"));
+    await page.locator('[role=group][aria-label="SETTIMANA"] button', { hasText: "Revisione" }).click();
+    await wait(page, 900);
+    ok("review: the switch opens #/review", /#\/review$/.test(page.url()), page.url());
+    const steps = await page.locator("main nav ol button").count();
+    ok("review: a stepper with 5 steps, step 1 current", steps === 5 && /^1\. Da chiarire/.test(await current(page)), `${steps} steps, current=${await current(page)}`);
+    ok("review: document.title names the page", /Revisione|REVISIONE/.test(await page.title()), await page.title());
+
+    // Step 1: open tasks with no due date and/or no owner, Maybe left out.
+    const s1 = await titles(page);
+    ok(
+      "review step 1: lists the unclear tasks (no due / no owner), not Maybe, not dated+owned",
+      ["VUB - spostare SB", "BU_LOANS_DEPO_PIVOT_luglio_v9", "Integrazione DB esterno per PJT"].every((x) => s1.includes(x)) &&
+        !s1.some((x) => /Chief dashboard ppt|Mind Map|BU Pivot loans|Retail Q3/.test(x)),
+      s1.join(" / ")
+    );
+    const reasons = await row(page, "Integrazione DB esterno per PJT").innerText();
+    ok("review step 1: says why (Senza responsabile)", /Senza responsabile/.test(reasons) && !/Senza scadenza/.test(reasons));
+    ok("review step 1: count on the stepper matches", /3/.test(await current(page)), await current(page));
+    // Assign the unowned one.
+    await row(page, "Integrazione DB esterno per PJT").locator("select").selectOption("Chiara");
+    await wait(page, 600);
+    ok("review step 1: assigning writes the owner", byTitle(db, "Integrazione DB esterno per PJT")?.owner === "Chiara", byTitle(db, "Integrazione DB esterno per PJT")?.owner);
+    ok("review step 1: …and the row leaves the list", !(await titles(page)).includes("Integrazione DB esterno per PJT"));
+    // Set a due date (written on Enter / leaving the field).
+    const date = row(page, "VUB - spostare SB").locator('input[type="date"]');
+    await date.fill("2030-01-15");
+    await date.press("Enter");
+    await wait(page, 600);
+    ok("review step 1: a due date is written", byTitle(db, "VUB - spostare SB")?.due_date === "2030-01-15", byTitle(db, "VUB - spostare SB")?.due_date);
+    ok("review step 1: …and the row leaves the list", !(await titles(page)).includes("VUB - spostare SB"));
+    // Keyboard: the focus moves to the row now in its place.
+    await undo(page);
+    await wait(page, 600);
+    ok("review step 1: Annulla takes the date back, the row returns", !byTitle(db, "VUB - spostare SB")?.due_date && (await titles(page)).includes("VUB - spostare SB"));
+    await row(page, "VUB - spostare SB").locator('[role=group] button', { hasText: /^Next$/ }).focus();
+    await page.keyboard.press("Enter");
+    await wait(page, 600);
+    const focused = await page.evaluate(() => document.activeElement?.textContent ?? "");
+    ok("review step 1: moving from the keyboard writes the status", byTitle(db, "VUB - spostare SB")?.status === "NEXT");
+    ok(
+      "review step 1: …still no due date, so it stays, and the focus goes to its title (its Next button is gone)",
+      (await titles(page)).includes("VUB - spostare SB") && focused === "VUB - spostare SB",
+      focused.slice(0, 80)
+    );
+
+    // Step 2: waiting 7+ days.
+    await next(page);
+    await wait(page, 400);
+    ok("review: Next goes to step 2", /^2\./.test(await current(page)));
+    const s2 = await titles(page);
+    ok("review step 2: lists the task waiting for 12 days", s2.length === 1 && s2[0] === "Integrazione DB esterno per PJT", s2.join(" / "));
+    ok("review step 2: says for how long", /In attesa da 12 giorni/.test(await mainText(page)));
+    await row(page, "Integrazione DB esterno per PJT").locator("button", { hasText: "Sollecitato" }).click();
+    await wait(page, 600);
+    ok("review step 2: Sollecitato restarts the count (waiting_since = today)", byTitle(db, "Integrazione DB esterno per PJT")?.waiting_since === todayIso, byTitle(db, "Integrazione DB esterno per PJT")?.waiting_since);
+    ok("review step 2: an empty step says so", /Niente da rivedere qui/.test(await mainText(page)));
+
+    // Step 3: overdue.
+    await next(page);
+    await wait(page, 400);
+    const s3 = await titles(page);
+    ok("review step 3: lists the overdue tasks", s3.includes("BU Pivot loans") && s3.includes("Integrazione DB esterno per PJT") && s3.length === 2, s3.join(" / "));
+    await row(page, "BU Pivot loans").locator('[role=group] button', { hasText: /^Done$/ }).focus();
+    await page.keyboard.press("Enter");
+    await wait(page, 600);
+    ok("review step 3: Done writes the status, the row leaves", byTitle(db, "BU Pivot loans")?.status === "DONE" && !(await titles(page)).includes("BU Pivot loans"));
+    const focused3 = await page.evaluate(() => document.activeElement?.textContent ?? "");
+    ok("review step 3: …from the keyboard, the focus goes to the row now in its place", focused3 === "Integrazione DB esterno per PJT", focused3.slice(0, 80));
+
+    // Step 4: Maybe.
+    await next(page);
+    await wait(page, 400);
+    const s4 = await titles(page);
+    ok("review step 4: lists the Maybe tasks", s4.length === 2 && s4.includes("Chief dashboard ppt") && s4.includes("Mind Map macroambiti"), s4.join(" / "));
+    const n0 = db.tasks.length;
+    await row(page, "Mind Map macroambiti").locator("button", { hasText: /^Elimina$/ }).click();
+    await wait(page, 600);
+    const toast = await page.locator("[role=status]", { hasText: "Annulla" }).count();
+    ok("review step 4: delete is at once, with Annulla", db.tasks.length === n0 - 1 && !byTitle(db, "Mind Map macroambiti") && toast > 0 && !(await titles(page)).includes("Mind Map macroambiti"));
+    await undo(page);
+    await wait(page, 700);
+    ok("review step 4: Annulla brings the task back", !!byTitle(db, "Mind Map macroambiti") && (await titles(page)).includes("Mind Map macroambiti"));
+    await row(page, "Mind Map macroambiti").locator("button", { hasText: "Tieni in Maybe" }).click();
+    await wait(page, 300);
+    ok("review step 4: Tieni in Maybe keeps it there and takes it off the list", byTitle(db, "Mind Map macroambiti")?.status === "MAYBE" && !(await titles(page)).includes("Mind Map macroambiti"));
+    await row(page, "Chief dashboard ppt").locator('[role=group] button', { hasText: /^Next$/ }).click();
+    await wait(page, 600);
+    ok("review step 4: → Next writes the status", byTitle(db, "Chief dashboard ppt")?.status === "NEXT" && /Niente da rivedere qui/.test(await mainText(page)));
+
+    // Reload: the step is remembered (sessionStorage), the kept task too.
+    await page.reload();
+    await wait(page, 1200);
+    ok("review: a reload keeps the step", /^4\./.test(await current(page)) && /#\/review$/.test(page.url()), await current(page));
+    ok("review: … and the kept Maybe task stays off the list", (await titles(page)).length === 0);
+
+    // Step 5: summary and the Weekly.
+    await next(page);
+    await wait(page, 400);
+    const t5 = await mainText(page);
+    ok("review step 5: the week's figures", /Completate questa settimana/.test(t5) && /Voci nel Weekly/.test(t5), t5.replace(/\n+/g, " | ").slice(0, 200));
+    ok("review step 5: no Next on the last step", (await page.locator("main button", { hasText: /^Avanti$/ }).count()) === 0);
+    await back(page);
+    await wait(page, 300);
+    ok("review: Back goes to step 4", /^4\./.test(await current(page)));
+    await page.locator("main nav ol button", { hasText: "Scrivi il Weekly" }).click();
+    await wait(page, 300);
+    await page.locator("main a", { hasText: "Apri il Weekly" }).click();
+    await wait(page, 700);
+    ok("review step 5: Apri il Weekly opens #/weekly", /#\/weekly$/.test(page.url()) && /RECAP|Recap/.test(await mainText(page)), page.url());
+    await page.goBack();
+    await wait(page, 700);
+    ok("review: Back (browser) returns to #/review", /#\/review$/.test(page.url()), page.url());
+
+    // No overflow at 1024.
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.locator("main nav ol button").first().click();
+    await wait(page, 400);
+    const sw1024 = await page.evaluate(() => document.documentElement.scrollWidth);
+    ok("review: no horizontal overflow at 1024px", sw1024 <= 1024, `scrollWidth=${sw1024}`);
+    await context.close();
+  }
+  // English, and the phone.
+  {
+    const { context, page } = await openApp(browser, { skin: "glass", appearance: "dark", lang: "en", path: "#/review" });
+    const sw = await page.locator('[role=group][aria-label="WEEK"] button').allInnerTexts();
+    ok("review EN: the switch reads Weekly | Review | Report | Mail", sw.join("|") === "Weekly|Review|Report|Mail", sw.join("|"));
+    ok("review EN: step 1 is To clarify", /To clarify/.test(await current(page)));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await wait(page, 1500);
+    ok("review: #/review on a phone opens More › Weekly", /#\/more\/weekly$/.test(page.url()), page.url());
+    await context.close();
+  }
 };
 
 // ---------------------------------------------------------------- BOARD TOP AREA (measurements)

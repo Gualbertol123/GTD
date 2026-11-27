@@ -70,6 +70,15 @@ const DESKTOP = [
   { name: "projects", path: "#/projects" },
   { name: "project-page", path: "#/projects/p1" },
   { name: "weekly", path: "#/weekly" },
+  { name: "review", path: "#/review" },
+  {
+    name: "review-step3",
+    path: "#/review",
+    act: async (page) => {
+      await page.locator("main nav ol button").nth(2).click();
+      await page.waitForTimeout(300);
+    },
+  },
   { name: "report", path: "#/report" },
   { name: "mail", path: "#/mail" },
   { name: "products", path: "#/products" },
