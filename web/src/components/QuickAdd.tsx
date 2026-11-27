@@ -3,14 +3,13 @@ import { toISODate } from "../lib/dates";
 import type { Op, Priority, Recurrence, Status, Task } from "../lib/types";
 import { STATUS_ORDER, UNASSIGNED, genId } from "../lib/constants";
 import { ownerInitial, ownersLabel, ownersPatch } from "../lib/owners";
-import { priorityLabel, statusLabel, useT } from "../lib/i18n";
+import { statusLabel, useT } from "../lib/i18n";
 import { useMe } from "../lib/identity";
 import { useProjects } from "../lib/projectsContext";
 import { RepeatIcon, StarIcon } from "./RecurrenceControls";
 import { isOffline } from "../lib/optimisticSend";
 import { takeNewTask } from "../lib/newTaskShortcut";
-
-const PRIOS: Priority[] = ["P1", "P2", "P3", "P4"];
+import { PriorityPills } from "./PriorityPills";
 
 interface Props {
   members: string[];
@@ -185,17 +184,12 @@ export function QuickAdd({
           —
         </span>
       )}
-      <select
+      <PriorityPills
         value={priority}
-        onChange={(e) => setPriority(e.target.value as Priority)}
-        title={t("quick.priority")}
-        aria-label={t("quick.priority")}
-        className={`${field} px-3`}
-      >
-        {PRIOS.map((p) => (
-          <option key={p} value={p}>{priorityLabel(t, p)}</option>
-        ))}
-      </select>
+        onChange={setPriority}
+        label={t("quick.priority")}
+        size="h-9 px-3 text-[12px]"
+      />
       <select
         value={status}
         onChange={(e) => setStatus(e.target.value as Status)}

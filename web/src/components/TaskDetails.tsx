@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { focusCardAfterMove } from "../lib/focusAfterMove";
 import { createPortal } from "react-dom";
-import type { Op, Priority, Status, Task } from "../lib/types";
+import type { Op, Status, Task } from "../lib/types";
 import { STATUS_ORDER, UNASSIGNED, genId } from "../lib/constants";
 import { ownerInitial, ownersLabel, ownersPatch, taskOwners } from "../lib/owners";
-import { priorityLabel, statusLabel, useT } from "../lib/i18n";
+import { statusLabel, useT } from "../lib/i18n";
 import { useSyncedField } from "../lib/useSyncedField";
 import { daysSince } from "../lib/dates";
 import { useProjects } from "../lib/projectsContext";
@@ -12,8 +12,7 @@ import { projectColor } from "../lib/projects";
 import { AutoTextarea } from "./AutoTextarea";
 import { SortableSubtasks } from "./SortableSubtasks";
 import { RecurrenceControls } from "./RecurrenceControls";
-
-const PRIOS: Priority[] = ["P1", "P2", "P3", "P4"];
+import { PriorityPills } from "./PriorityPills";
 
 interface Props {
   task: Task;
@@ -434,27 +433,11 @@ export function TaskDetails({
       )}
 
       <div className="flex items-center gap-1.5 flex-wrap">
-        {PRIOS.map((p) => (
-          <button
-            key={p}
-            onClick={() => patch({ priority: p })}
-            title={priorityLabel(t, p)}
-            aria-pressed={task.priority === p}
-            className={`h-7 px-2.5 rounded-full text-[11px] font-semibold border transition-all ${
-              task.priority === p
-                ? p === "P1"
-                  ? "bg-[#DC2626] text-white border-[#DC2626]"
-                  : p === "P2"
-                  ? "bg-[#C9A96E] text-[#0A1931] border-[#C9A96E]"
-                  : p === "P3"
-                  ? "bg-[#C9C5BE] text-[#0A1931] border-[#C9C5BE]"
-                  : "bg-[#0A1931] text-white border-[#0A1931]"
-                : "bg-white text-ink-2 border-[#E8E6E1]"
-            }`}
-          >
-            {p}
-          </button>
-        ))}
+        <PriorityPills
+          value={task.priority}
+          onChange={(p) => patch({ priority: p })}
+          label={t("quick.priority")}
+        />
         <span className="text-[11px] text-ink-2 ml-1">{t(`prio.${task.priority}short`)}</span>
       </div>
 

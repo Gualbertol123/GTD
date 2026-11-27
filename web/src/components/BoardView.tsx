@@ -1,13 +1,14 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { boardTasks, projectSteps } from "../lib/projects";
-import type { Board, Op, Priority, Project, Status, Task } from "../lib/types";
+import type { Board, Op, Project, Status, Task } from "../lib/types";
 import { STATUS_ORDER, PRIORITY_ORDER, isArchived } from "../lib/constants";
-import { priorityLabel, statusLabel, useT } from "../lib/i18n";
+import { statusLabel, useT } from "../lib/i18n";
 import { TaskCard } from "./TaskCard";
 import { isOwnedBy } from "../lib/owners";
 import { QuickAdd } from "./QuickAdd";
 import { MembersBar } from "./MembersBar";
 import { PriorityDistribution } from "./PriorityDistribution";
+import { PriorityPills } from "./PriorityPills";
 import { ListView } from "./ListView";
 import { MenuBar } from "./MenuBar";
 import { StarIcon } from "./RecurrenceControls";
@@ -32,7 +33,6 @@ interface Props {
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
 }
 
-const PRIOS: Priority[] = ["P1", "P2", "P3", "P4"];
 const MIN_WEIGHT = 0.4;
 const EMPTY_FILTERS: FilterState = { search: "", owner: "all", priority: "all", focusP1: false };
 
@@ -349,12 +349,13 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
-          <select value={filters.priority} onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value }))} aria-label={t("quick.priority")} className={`${control} px-3`}>
-            <option value="all">{t("filters.allPriorities")}</option>
-            {PRIOS.map((p) => (
-              <option key={p} value={p}>{priorityLabel(t, p)}</option>
-            ))}
-          </select>
+          <PriorityPills
+            value={filters.priority}
+            onChange={(priority) => setFilters((f) => ({ ...f, priority }))}
+            label={t("chooser.prioFilter")}
+            all={t("chooser.prioAll")}
+            size="h-9 px-3 text-[12px]"
+          />
           <button
             type="button"
             aria-pressed={filters.focusP1}

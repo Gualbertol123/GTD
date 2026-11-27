@@ -1,5 +1,5 @@
-import { priorityLabel, useT } from "../lib/i18n";
-import type { Priority } from "../lib/types";
+import { useT } from "../lib/i18n";
+import { PriorityPills } from "./PriorityPills";
 
 export interface FilterState {
   search: string;
@@ -13,8 +13,6 @@ interface Props {
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   members: string[];
 }
-
-const PRIOS: Priority[] = ["P1", "P2", "P3", "P4"];
 
 export function Filters({ filters, setFilters, members }: Props) {
   const { t } = useT();
@@ -48,17 +46,13 @@ export function Filters({ filters, setFilters, members }: Props) {
           <option key={m} value={m}>{m}</option>
         ))}
       </select>
-      <select
+      <PriorityPills
         value={filters.priority}
-        onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value }))}
-        aria-label={t("quick.priority")}
-        className={`${control} px-3`}
-      >
-        <option value="all">{t("filters.allPriorities")}</option>
-        {PRIOS.map((p) => (
-          <option key={p} value={p}>{priorityLabel(t, p)}</option>
-        ))}
-      </select>
+        onChange={(priority) => setFilters((f) => ({ ...f, priority }))}
+        label={t("chooser.prioFilter")}
+        all={t("chooser.prioAll")}
+        size="h-9 px-3 text-[12px]"
+      />
       <button
         type="button"
         onClick={() => setFilters((f) => ({ ...f, focusP1: !f.focusP1 }))}

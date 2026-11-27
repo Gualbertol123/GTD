@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Board, BoardMode, Op, Priority, Project, Status, Task } from "../../lib/types";
 import { PRIORITY_DOT, STATUS_ORDER, UNASSIGNED, genId, isArchived } from "../../lib/constants";
-import { priorityLabel, statusLabel, useT } from "../../lib/i18n";
+import { statusLabel, useT } from "../../lib/i18n";
 import { useMe } from "../../lib/identity";
 import { isOwnedBy, ownersPatch, taskOwners } from "../../lib/owners";
 import { daysSince, daysUntil, toISODate } from "../../lib/dates";
 import { readPref, writePref } from "../../lib/prefs";
 import { HEALTH_COLOR, TASK_STATUS_COLOR, boardMode, projectPriority, type ProjectStats } from "../../lib/projects";
 import { TaskDetails } from "../TaskDetails";
+import { PriorityPills } from "../PriorityPills";
 import { Avatars, Icon, StatusStack, fmtDay } from "./ProjectBits";
 
-const PRIOS: Priority[] = ["P1", "P2", "P3", "P4"];
 type View = "list" | "board";
 
 const field =
@@ -182,13 +182,7 @@ export function ProjectTasks({
                   </option>
                 ))}
               </select>
-              <select value={prio} onChange={(e) => setPrio(e.target.value as Priority)} className={field} aria-label={t("projects.priority")}>
-                {PRIOS.map((pr) => (
-                  <option key={pr} value={pr}>
-                    {priorityLabel(t, pr)}
-                  </option>
-                ))}
-              </select>
+              <PriorityPills value={prio} onChange={setPrio} label={t("projects.priority")} size="h-8 px-2.5 text-[11px]" />
               <select
                 value={owner}
                 onChange={(e) => setOwner(e.target.value)}
