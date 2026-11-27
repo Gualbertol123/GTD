@@ -819,7 +819,7 @@ GTD/
 │   ├── migration-020-music-playlist-clock.sql ← playlist changes stamped by the database clock
 │   ├── migration-021-music-radio-playlists.sql ← radio playlists, updated once a day
 │   └── migration-022-music-playlist-sources.sql ← imported playlists synced with their source daily
-├── .github/workflows/ci.yml      ← on every push / PR: npm test + production build
+├── .github/workflows/ci.yml      ← on every push / PR: typecheck, tests, build, browser checks (§6)
 ├── menu/                        ← the canteen menu: monthly PDF → web/src/data/menu.json (§8)
 │   ├── menu_from_pdf.py
 │   └── README.md
@@ -1040,12 +1040,47 @@ npm test                  # Vitest unit tests (no Supabase needed)
 npm run build             # type-check (tsc -b) + production build to web/dist
 ```
 
-GitHub Actions (`.github/workflows/ci.yml`) runs `npm test` and `npm run build`
-on every push and pull request, so a change that breaks either shows up there
-before Netlify deploys it.
-
 You need a Supabase project (the app talks to it directly). Point `.env` at any
 project set up as in §7 / §11 and log in with the team password.
+
+### Checks / CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull
+request, so a broken change shows up there before Netlify deploys it. Two jobs
+run side by side on Ubuntu with Node 20 (as on Netlify):
+
+- **Typecheck, unit tests, build** — `npm ci`, `npm run typecheck`,
+  `npx vitest run`, `npm run build` (with placeholder `VITE_*` values; no
+  secrets are used anywhere in CI).
+- **Browser checks** — the real app in headless Chromium against the in-memory
+  fake Supabase (`web/scripts/ux/stub.mjs`), so no database is touched:
+  `functional-board.mjs` (board, recurring tasks, In evidenza, projects, phone),
+  `functional-tabs.mjs` (Weekly, Report, Calendar, Reflection, Products, Music,
+  Settings, login, addresses, languages, refused writes, offline),
+  `board-cards.mjs` (memoised cards), `offline-pwa.mjs` (the installed app
+  offline, against a production build) and a quick `hoverdiff.mjs` pointer
+  sweep (one skin, one size; the hover rule in §10). On a failure the logs and
+  screenshots are attached to the run as the `browser-checks` artifact.
+
+The same browser checks, locally (from `web/`):
+
+```bash
+npm install
+npm run test:browser:install     # once: Playwright's Chromium
+npm run test:browser             # all of them; about 11 minutes
+npm run test:browser -- --only=board,cards   # just some: board tabs cards offline hover
+```
+
+`test:browser` (`web/scripts/ux/run-checks.mjs`) starts its own dev server on
+port 5199 and a production preview on 5198 with the fake Supabase's settings
+(whatever `.env` says), runs the scripts one after another, stops the servers
+and exits non-zero if anything failed. `DEV_PORT` / `PREVIEW_PORT` move the
+servers if those ports are taken. Logs and screenshots go to `web/ux-results/`
+(ignored by git). A section that fails is run once more on its own and, if it
+then passes, reported as flaky rather than failed: a few checks time
+animations and can miss on a busy machine. Each script can also be run alone
+against a server you started yourself, as its header describes
+(`APP_URL=http://localhost:5199/ node scripts/ux/functional-board.mjs recurring`).
 
 ---
 

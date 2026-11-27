@@ -1,14 +1,31 @@
 name: CI
 
-# Type-check, test and build the web app on every push and pull request, so a
-# broken change is caught here before Netlify deploys it.
+# Type-check, test and build the web app, and drive it in Chromium against the
+# in-memory fake Supabase (web/scripts/ux/stub.mjs), on every push and pull
+# request, so a broken change is caught here before Netlify deploys it.
+# Nothing here uses a real Supabase project or any secret.
 on:
   push:
   pull_request:
 
+# A newer push to the same branch (or PR) cancels the run it supersedes; runs
+# on main are left to finish, so every commit there gets a result.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+env:
+  # Same as netlify.toml's NODE_VERSION.
+  NODE_VERSION: 20
+
 jobs:
   web:
+    name: Typecheck, unit tests, build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: web
@@ -16,13 +33,52 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
-      - run: npm test
+      - run: npm run typecheck
+      - run: npx vitest run
       - run: npm run build
         env:
-          # The build refuses to run without one (vite.config.ts); any address
-          # will do here, since this copy is never deployed.
-          VITE_TEAM_EMAIL: ci@example.invalid
+          # The build refuses to run without a team e-mail (vite.config.ts).
+          # Placeholders only: this copy is never deployed.
+          VITE_TEAM_EMAIL: team@example.com
+          VITE_SUPABASE_URL: http://stub.supabase.local
+          VITE_SUPABASE_ANON_KEY: stub
+
+  browser:
+    name: Browser checks (fake Supabase)
+    runs-on: ubuntu-latest
+    # The checks take about 11 minutes on a developer laptop; the margin is for
+    # a slower runner and a second try of a flaky section.
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: web
+    env:
+      # The team's time zone, so "today" and due dates read as they do for them.
+      TZ: Europe/Rome
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      # Starts the dev server (port 5199) and a production preview (5198, for
+      # the service worker) with the fake Supabase's environment, then runs
+      # functional-board, functional-tabs, board-cards, offline-pwa and a quick
+      # hoverdiff sweep (web/scripts/ux/run-checks.mjs).
+      - name: Browser checks
+        run: npm run test:browser
+      - name: Upload screenshots and logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-checks
+          path: web/ux-results/
+          retention-days: 14
