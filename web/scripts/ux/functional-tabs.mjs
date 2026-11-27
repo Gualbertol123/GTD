@@ -1061,7 +1061,7 @@ groups.review = async () => {
     await wait(page, 900);
     ok("review: the switch opens #/review", /#\/review$/.test(page.url()), page.url());
     const steps = await page.locator("main nav ol button").count();
-    ok("review: a stepper with 5 steps, step 1 current", steps === 5 && /^1\. Da chiarire/.test(await current(page)), `${steps} steps, current=${await current(page)}`);
+    ok("review: a stepper with 5 steps, step 1 current", steps === 5 && /^1\. Inbox e da chiarire/.test(await current(page)), `${steps} steps, current=${await current(page)}`);
     ok("review: document.title names the page", /Revisione|REVISIONE/.test(await page.title()), await page.title());
 
     // Step 1: open tasks with no due date and/or no owner, Maybe left out.
@@ -1192,7 +1192,7 @@ groups.review = async () => {
     const { context, page } = await openApp(browser, { skin: "glass", appearance: "dark", lang: "en", path: "#/review" });
     const sw = await page.locator('[role=group][aria-label="WEEK"] button').allInnerTexts();
     ok("review EN: the switch reads Weekly | Review | Report | Mail", sw.join("|") === "Weekly|Review|Report|Mail", sw.join("|"));
-    ok("review EN: step 1 is To clarify", /To clarify/.test(await current(page)));
+    ok("review EN: step 1 is Inbox and to clarify", /Inbox and to clarify/.test(await current(page)));
     await page.setViewportSize({ width: 390, height: 844 });
     await wait(page, 1500);
     ok("review: #/review on a phone opens More › Weekly", /#\/more\/weekly$/.test(page.url()), page.url());

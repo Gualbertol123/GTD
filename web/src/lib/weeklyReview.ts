@@ -6,10 +6,11 @@
 // Nothing is stored: a task the user has dealt with simply stops matching its
 // step and leaves the list.
 //
-//   1. clarify   open tasks (not DONE, not MAYBE) with no due date and/or no
-//                owner, among the tasks the BOARD shows (a later step of a
-//                sequential project, or a project-only task, is parked on
-//                purpose and not asked about);
+//   1. clarify   the Inbox first (INBOX tasks, oldest first: each needs a
+//                status), then open tasks (not DONE, not MAYBE) with no due
+//                date and/or no owner, among the tasks the BOARD shows (a
+//                later step of a sequential project, or a project-only task,
+//                is parked on purpose and not asked about);
 //   2. waiting   WAITING for 7 days or more (waitingSince);
 //   3. overdue   open tasks whose due date is before today;
 //   4. maybe     MAYBE;
@@ -20,6 +21,7 @@ import { PRIORITY_ORDER, UNASSIGNED } from "./constants";
 import { toISODate } from "./dates";
 import { taskOwners } from "./owners";
 import { boardTasks } from "./projects";
+import { inboxTasks, isInbox } from "./inbox";
 import { mondayOf, periodBounds, taskCompletedAt } from "./reportData";
 import type { Board, Task } from "./types";
 
@@ -55,17 +57,25 @@ function byPriority(a: Task, b: Task): number {
 
 export interface ClarifyItem {
   task: Task;
+  /** In the Inbox: it needs a status before anything else. */
+  inbox: boolean;
   noDue: boolean;
   noOwner: boolean;
 }
 
-/** Step 1: open, not MAYBE, no due date and/or no owner. Both missing first. */
+/**
+ * Step 1: the Inbox (oldest first), then open, not MAYBE, no due date and/or
+ * no owner (both missing first). An Inbox task is listed once, with the Inbox.
+ */
 export function toClarify(board: Pick<Board, "tasks" | "projects">): ClarifyItem[] {
-  return boardTasks(board)
-    .filter((t) => isOpen(t) && t.status !== "MAYBE")
-    .map((task) => ({ task, noDue: !task.dueDate, noOwner: hasNoOwner(task) }))
+  const shown = boardTasks(board);
+  const inbox = inboxTasks(shown).map((task) => ({ task, inbox: true, noDue: !task.dueDate, noOwner: hasNoOwner(task) }));
+  const rest = shown
+    .filter((t) => isOpen(t) && t.status !== "MAYBE" && !isInbox(t))
+    .map((task) => ({ task, inbox: false, noDue: !task.dueDate, noOwner: hasNoOwner(task) }))
     .filter((x) => x.noDue || x.noOwner)
     .sort((a, b) => Number(b.noDue && b.noOwner) - Number(a.noDue && a.noOwner) || byPriority(a.task, b.task));
+  return [...inbox, ...rest];
 }
 
 /** How long a WAITING task has waited, in days (0 without a start date). */

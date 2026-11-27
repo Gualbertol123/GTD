@@ -19,12 +19,13 @@ import {
   type ReviewStep,
 } from "../lib/weeklyReview";
 import { IconChevron } from "../mobile/icons";
+import { SORT_TARGETS, isInbox } from "../lib/inbox";
 import { TaskDetails, showUndo } from "./TaskDetails";
 
 // -----------------------------------------------------------------------------
 // SETTIMANA › Revisione: the guided weekly review, one step at a time.
 //
-//   1 Da chiarire · 2 In attesa da più di una settimana · 3 Scadute ·
+//   1 Inbox e da chiarire · 2 In attesa da più di una settimana · 3 Scadute ·
 //   4 Forse / Maybe · 5 Scrivi il Weekly
 //
 // Each list is derived from the board (lib/weeklyReview.ts), so a task that is
@@ -43,6 +44,8 @@ interface Props {
 const STEP_KEY = "gtd-review-step";
 const KEPT_KEY = "gtd-review-kept";
 const MOVES: Status[] = ["NEXT", "IN PROGRESS", "WAITING", "DONE", "MAYBE"];
+// An Inbox task can also go to Backlog (lib/inbox.ts SORT_TARGETS).
+const INBOX_MOVES: Status[] = SORT_TARGETS;
 
 function readStep(): number {
   try {
@@ -107,9 +110,10 @@ export function WeeklyReview({ board, send, members }: Props) {
     };
     switch (current) {
       case "clarify":
-        return lists.clarify.map(({ task, noDue, noOwner }) => ({
+        return lists.clarify.map(({ task, inbox, noDue, noOwner }) => ({
           task,
           chips: [
+            ...(inbox ? [{ text: t("inbox.chip"), tone: "warn" as Tone }] : []),
             ...(noDue ? [{ text: t("wr.noDue"), tone: "warn" as Tone }] : []),
             ...(noOwner ? [{ text: t("wr.noOwner"), tone: "warn" as Tone }] : []),
           ],
@@ -377,7 +381,7 @@ function ReviewRow({
   // pressed just before, is saved at once.
   const typedAt = useRef(0);
   const noOwner = hasNoOwner(tk);
-  const moves = step === "maybe" ? (["NEXT"] as Status[]) : MOVES.filter((s) => s !== tk.status);
+  const moves = step === "maybe" ? (["NEXT"] as Status[]) : isInbox(tk) ? INBOX_MOVES : MOVES.filter((s) => s !== tk.status);
   const act = (fn: () => void) => {
     onAction();
     fn();
