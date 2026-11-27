@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Board, Op, Status, Task } from "../lib/types";
 import { PRIORITY_DOT } from "../lib/constants";
-import { localeCode, statusLabel, useT } from "../lib/i18n";
+import { localeCode, ownerLabel, statusLabel, useT } from "../lib/i18n";
 import { toISODate } from "../lib/dates";
 import { ownersLabel, ownersPatch, taskOwners } from "../lib/owners";
 import { nextDue } from "../lib/recurrence";
@@ -400,7 +400,7 @@ function ReviewRow({
               <span aria-hidden="true">·</span>
               <span>{statusLabel(lang, tk.status)}</span>
               <span aria-hidden="true">·</span>
-              <span>{ownersLabel(tk, (n) => n)}</span>
+              <span>{ownersLabel(tk, (n) => ownerLabel(t, n))}</span>
               {tk.dueDate && (
                 <>
                   <span aria-hidden="true">·</span>
