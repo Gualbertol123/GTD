@@ -4,6 +4,9 @@ Usability, interaction and visual design audits of the web app (`web/`),
 each with its fixes applied in the same pass. Two passes so far, newest
 first:
 
+- **2026-11-27, third pass** — the owner's next steps: the open items of the
+  second pass, a guided weekly review, and checks on every push. Branch
+  `next-steps`.
 - **2026-11-25, second pass** — a calm interface (one hover rule for the
   whole app, measured), then function, UX, UI, accessibility and
   performance. Branch `ux-audit-calm-hover`.
@@ -14,6 +17,55 @@ The audit scripts are in `web/scripts/ux/`. The first pass's screenshots were
 removed from the tree after the move to `Gualbertol123/GTD`
 (`git checkout 48fc426 -- ux-audit` brings them back); this pass's are in
 `ux-audit/shots/`.
+
+---
+
+## 2026-11-27 — Third pass: next steps
+
+The owner asked for the open items of the second pass to be done, with
+questions one at a time. Decisions taken today:
+
+| # | Question | Answer |
+| --- | --- | --- |
+| 1 | A recurring ★ task came straight back to In evidenza when done | The completed one stays in Done; the next copy appears **on its due date** |
+| 2 | Spotify → YouTube import vs Spotify's developer policy | Keep it as is (risk noted in README §1e) |
+| 3 | Show the hidden next copies anywhere? | Faded in the Calendar on their date, nowhere else |
+| 4 | A guided weekly review | Yes: SETTIMANA → Revisione |
+| 5 | Checks on GitHub | Typecheck, unit tests, build **and** the browser checks |
+
+### What changed
+
+| ID | Area | Change | Checked by |
+| --- | --- | --- | --- |
+| N-01 | Recurring | The next occurrence is still written at completion (two people completing at once, Undo/Reopen) but is off every screen until its due date unless someone changes it (`isUpcoming` / `visibleBoard`, `lib/recurrence.ts`; `useBoard` re-reads the day at midnight) | unit tests; `functional-board.mjs recurring` |
+| N-02 | Calendar | Upcoming copies drawn faded and dashed with ↻ on their date, not openable or draggable, with a hint saying when they show | `functional-board.mjs recurring` |
+| N-03 | Choosers (U3) | Priority as pills everywhere (`PriorityPills`: editor, new-task bar, board and calendar filters, project form); the board's multi-person picker on a project's new task (`AssigneePicker`, one person before 009); ‹ › for the report's week, with «Questa settimana» and «Personalizzato» | `functional-board.mjs`, `functional-tabs.mjs report` |
+| N-04 | Weekly review | SETTIMANA = Weekly · **Revisione** · Report · Mail (`#/review`): 1 Da chiarire (no date / no owner), 2 In attesa > 7 giorni, 3 Scadute, 4 Forse, 5 Scrivi il Weekly; quick actions per row (move, date, assign, sollecitato, keep in Maybe, delete), every write with Annulla; filters in `lib/weeklyReview.ts` | unit tests; `functional-tabs.mjs review` (38 checks); axe; pointer sweep |
+| N-05 | Weekly (H7) | Column names: a coloured dot and plain text in both skins; the pill-only glass rules removed | `functional-tabs.mjs weekly`; screenshots |
+| N-06 | Toasts | Music's Undo/Apri and the Report's notices go through the app's one toast, which gains a button label and an error kind (kept until dismissed, `role="alert"`); only the phone keeps its own | `functional-tabs.mjs`; `scripts/e2e/spotify-*.mjs` |
+| N-07 | Phone → desktop (G-25) | The desktop opens the project whose sheet the phone had open; Back goes to the list | `functional-board.mjs phone.handoff` |
+| N-08 | CI | `.github/workflows/ci.yml`: a build job (typecheck, unit tests, build) and a browser job (`npm run test:browser`: board, tabs, cards, quick pointer sweep, offline) on every push and PR; Playwright is a devDependency; failures upload `web/ux-results/` | — |
+| N-09 | Scripts | `functional-tabs.mjs` now exits 1 on a FAIL; clipboard permission follows `APP_URL`; the Spotify e2e scripts open Musica from ALTRO and run on Windows; `npm run typecheck` works on a fresh checkout; `@types/node` is a direct devDependency (npm 11 skipped it as an optional peer) | — |
+
+### Measured on the final branch
+
+| Check | Result |
+| --- | --- |
+| typecheck, unit tests (32 files), build | pass · 457 / 457 · main JS 206 kB gz |
+| `npm run test:browser` (705 s) | board 200 / 0 · tabs 174 / 0 · cards pass · pointer sweep 0 violations · offline 28 / 0 · nothing flaky |
+| axe, desktop (11 pages) and phone (6 screens), 4 skin combos | 0 violations |
+| `scripts/e2e/spotify-library.mjs`, `spotify-addall.mjs` | all checks passed |
+
+### Still open
+
+- **Phone**: the Agenda does not show upcoming recurring copies (its rows are
+  full task cards); the phone keeps its own toast, on purpose.
+- **The CI workflow** has not run on GitHub yet: the browser job's time on a
+  2-vCPU runner (about 11 min here) and fonts on Linux are untested.
+- A date picked with the mouse in Revisione is saved when the field is left or
+  on Enter, not on the click.
+- On real devices, as before: Glass with blur, the menus with a screen reader,
+  the installed app offline.
 
 ---
 
@@ -259,10 +311,10 @@ means reproduced, fixed, and re-checked with the script named (in
 | **Offline edits queued and sent later** | The owner decided "opens offline, edits not kept" (README §1d): the app opens offline and says so, and an edit made offline is refused up front with a message instead of being queued. | A persistent outbox replayed on `online`. |
 | **Type-scale and colour-token migration** | The tokens inventory (in the agent notes below) found 72 hex values and 14 font sizes in components; Tailwind's named colours are defined and unused. The near-duplicates that could merge invisibly have four uses in all; the rest change the look. glass.css keys on the literal class names, so a rename must change both sides in one commit (the new `glass-coupling.test.ts` now catches a miss). | One mechanical commit per scale, after the owner OKs the visible merges (§4). |
 | **Report's PDF / Word**, the server PDF | Unchanged; the screen-only × on report cards is now always visible (never exported). | — |
-| **Toast implementations** (four left) | Shared (desktop, now also the Calendar's), Report (its notice), Music, phone. The save-error notice uses the shared one on both layouts. | Route Report and Music through `showUndo` / `showNotice`; the phone's is styled for the phone on purpose. |
-| **Weekly's coloured column pills** (H7) | Their colour classes are restyled by glass.css and their labels are uppercase copy keys; a dot + plain label touches both skins and the copy. | One commit changing the header markup, the glass rules and the five labels. |
-| **Chooser consistency** (U3): priority as pills in the editor but a select in the new-task bar and filters; one person (select) on a project's new task but several on the board; the report's week as a select, Weekly's as ‹ › | Each works; unifying them changes how those screens are used. | Pills for priority everywhere, the multi-person picker on the project form, ‹ › for the report's week. |
-| **Phone → desktop with a project sheet open** (G-25) | Only when a tablet is rotated across 767 px with a sheet open; the sheet's own history step would undo an address change. | Put the open project sheet in the phone's address. |
+| **Toast implementations** — *done 2026-11-27 (third pass)*: Report and Music now use the shared toast; only the phone's stays its own | The phone's is styled for the phone on purpose. | — |
+| **Weekly's coloured column pills** (H7) — *done 2026-11-27 (third pass)* | A coloured dot and the plain name, both skins. | — |
+| **Chooser consistency** (U3) — *done 2026-11-27 (third pass)* | Priority pills everywhere, the multi-person picker on the project form, ‹ › for the report's week. | — |
+| **Phone → desktop with a project sheet open** (G-25) — *done 2026-11-27 (third pass)* | The desktop opens the project the phone had open. | — |
 | **Phone cards and the sync layer** | The phone's cards still read every task from the projects context; they gain from the memoised context and `reconcileBoard` only. | The same props-instead-of-context change as the desktop card. |
 
 ### 4. What needs the owner
@@ -279,8 +331,8 @@ means reproduced, fixed, and re-checked with the script named (in
 | 6 | Classic greys; the report cover's "In evidenza" | Both: a real third grey; «Da sottolineare» pre-filled from ★ | G-47, G-48 |
 | 7 | Offline | Opens offline (whole app precached), edits refused up front, no board data stored | G-17, G-38 |
 
-Still open: the **Spotify policy** (README §1e), and the items in §3 above
-(Weekly pills, chooser consistency, phone → desktop project sheet).
+Spotify policy: decided 2026-11-27 — keep the Spotify → YouTube import as it is
+(README §1e notes the risk). The §3 items are done in the third pass above.
 
 #### Only on a real device or GPU
 
