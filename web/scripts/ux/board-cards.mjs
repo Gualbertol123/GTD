@@ -2,7 +2,9 @@
 // These check what a stale card would get wrong and functional-board.mjs does
 // not cover: the sequential step label, the column widening for an open card,
 // a card moved with the editor's ‹ reopening with focus, a card filtered away
-// while open, remote task / project changes, and a language switch.
+// while open, remote task / project changes, and a language switch. The
+// phone's cards (mobile/TaskCard.tsx, also React.memo) get the same checks
+// for their project chip and step, plus the round check and a project sheet.
 //
 // Usage (dev server on the fake Supabase, see perf-stub.mjs):
 //   APP_URL=http://localhost:5199/ node scripts/ux/board-cards.mjs
@@ -126,6 +128,72 @@ await page.locator('[role="group"] button', { hasText: /^EN$/ }).first().click()
 await page.waitForTimeout(300);
 c = await colCard("Chiusura mensile novembre");
 check("language switch reaches the cards", /Step 1\/2/.test(c?.text ?? ""), c?.text);
+
+// ---- Phone cards (mobile/TaskCard.tsx is React.memo too) ----------------------
+// Their project and step come from the shell (mobile/cardData.ts) as props, so
+// a stale card would keep an old title, project name or step.
+{
+  const PHONE = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
+  const ph = await openApp(browser, { skin: "classic", appearance: "light", ...PHONE, path: "#/board" });
+  const { page, db, realtime } = ph;
+  await page.waitForTimeout(800);
+  const mCard = (title) =>
+    page.evaluate((title) => {
+      const c = [...document.querySelectorAll(".m-card")].find((x) => x.querySelector(".m-card__title")?.textContent?.startsWith(title));
+      return c ? { text: c.textContent, done: c.classList.contains("m-card--done"), col: c.closest("section")?.getAttribute("aria-label") } : null;
+    }, title);
+
+  let m = await mCard("Allineamento pricing Q4");
+  check("phone: step on a sequential project's chip", /Chiusure contabili· 1\/2/.test(m?.text ?? ""), m?.text);
+  m = await mCard("Chiusura mensile novembre");
+  check("phone: step on its second step", /· 2\/2/.test(m?.text ?? ""), m?.text);
+  m = await mCard("BU Pivot loans");
+  check("phone: an 'all' project's chip has no step", m && /Pricing 2027/.test(m.text) && !/· \d+\/\d+/.test(m.text), m?.text);
+
+  const row = db.tasks.find((r) => r.title === "Cambiare corporate con legal entities");
+  row.title = "Cambiare corporate (remoto)";
+  row.updated_at = Date.now();
+  realtime.push("tasks", row, "UPDATE");
+  await page.waitForTimeout(800);
+  check("phone: remote title change shows", !!(await mCard("Cambiare corporate (remoto)")));
+
+  const p1 = db.projects.find((p) => p.id === "p1");
+  p1.name = "Pricing 2028";
+  p1.updated_at = Date.now();
+  realtime.push("projects", p1, "UPDATE");
+  await page.waitForTimeout(800);
+  m = await mCard("BU Pivot loans");
+  check("phone: remote project rename shows on its cards", /Pricing 2028/.test(m?.text ?? ""), m?.text);
+
+  const p2 = db.projects.find((p) => p.id === "p2");
+  const ids = db.tasks.filter((t) => t.project_id === "p2").map((t) => t.id);
+  p2.task_order = [ids[1], ids[0]];
+  p2.updated_at = Date.now();
+  realtime.push("projects", p2, "UPDATE");
+  await page.waitForTimeout(800);
+  m = await mCard("Chiusura mensile novembre");
+  check("phone: remote step reorder updates the step", /· 1\/2/.test(m?.text ?? ""), m?.text);
+
+  // The round check: a local change moves the card to Done, shown done.
+  await page.evaluate(() => {
+    const c = [...document.querySelectorAll(".m-card")].find((x) => x.querySelector(".m-card__title")?.textContent === "Efficientare l'update dei cambi");
+    c.querySelector(".m-hit--check").click();
+  });
+  await page.waitForTimeout(600);
+  m = await mCard("Efficientare l'update dei cambi");
+  check("phone: the check moves the card to Done, shown done", m?.done === true && m?.col === "Done", JSON.stringify(m));
+
+  // A project's own sheet: no project chip, the step as "Passo n/total".
+  await page.evaluate(() => (location.hash = "#/projects"));
+  await page.waitForTimeout(500);
+  await page.locator(".m-project", { hasText: "Chiusure contabili" }).click();
+  await page.waitForTimeout(500);
+  await page.locator(".m-sheet button.m-btn", { hasText: /Mostra/ }).first().click().catch(() => {});
+  await page.waitForTimeout(300);
+  m = await mCard("Chiusura mensile novembre");
+  check("phone project sheet: step chip, no project chip", /Passo 1\/2/.test(m?.text ?? "") && !/Chiusure contabili/.test(m?.text ?? ""), m?.text);
+  await ph.context.close();
+}
 
 await browser.close();
 console.log(fails ? `${fails} FAIL` : "all PASS");
