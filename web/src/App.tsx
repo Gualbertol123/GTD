@@ -23,6 +23,7 @@ import { onSaveError } from "./lib/saveErrors";
 import { isNetworkError, isOffline } from "./lib/optimisticSend";
 import { navigate, useRoute } from "./lib/history";
 import { wantsNewTask } from "./lib/newTaskShortcut";
+import { InboxCaptureHost } from "./components/InboxCapture";
 
 // Screens other than the board load when first opened (each is its own
 // chunk): the first paint downloads the board and the shell only.
@@ -204,6 +205,9 @@ export default function App() {
           </>
         }
       />
+
+      {/* Quick capture to the Inbox: the I key on every tab (lib/inbox.ts). */}
+      <InboxCaptureHost members={members} send={send} />
 
       {/* Tabs: six places (components/TabNav.tsx). */}
       <TabNav

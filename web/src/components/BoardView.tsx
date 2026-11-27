@@ -12,6 +12,8 @@ import { PriorityPills } from "./PriorityPills";
 import { ListView } from "./ListView";
 import { MenuBar } from "./MenuBar";
 import { StarIcon } from "./RecurrenceControls";
+import { InboxStrip } from "./InboxStrip";
+import { INBOX, inboxTasks, isInbox } from "../lib/inbox";
 import {
   readHidden,
   writeHidden,
@@ -202,7 +204,17 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
     .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
 
   const visibleCols = STATUS_ORDER.filter((s) => !hidden.has(s));
-  const listTasks = tasks.filter((tk) => !hidden.has(tk.status));
+  // Inbox tasks are in the strip above the columns, never in a column or the list.
+  const listTasks = tasks.filter((tk) => !hidden.has(tk.status) && !isInbox(tk));
+  const inboxShown = inboxTasks(tasks);
+  const inboxAll = shown.filter(isInbox).length;
+  const dropOnInbox = () => {
+    const tk = dragId ? board.tasks.find((x) => x.id === dragId) : undefined;
+    if (tk && !isInbox(tk)) send({ type: "moveTask", id: tk.id, status: INBOX });
+    setDragId(null);
+    setOverCol(null);
+    setOverBand(false);
+  };
   // Archive is self-contained: the whole archive (ignoring the board filters
   // above) with its own search box.
   const archivedAll = shown.filter((tk) => isArchived(tk));
@@ -496,6 +508,22 @@ export function BoardView({ board, members, send, filters, setFilters }: Props) 
           </button>
         </div>
       )}
+
+      {/* Inbox — captured tasks still to sort (lib/inbox.ts), above everything else. */}
+      <InboxStrip
+        board={board}
+        tasks={inboxShown}
+        total={inboxAll}
+        filtersActive={!!filtersActive}
+        members={members}
+        send={send}
+        showNames={showNames}
+        dragging={!!dragId}
+        onDropCard={dropOnInbox}
+        onDragStart={onCardDragStart}
+        onDragEnd={onCardDragEnd}
+        draggable={!editLayout}
+      />
 
       {/* In evidenza — highlighted tasks and recurring tasks, above the columns. */}
       {board.recurringAvailable && (

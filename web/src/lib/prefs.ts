@@ -12,6 +12,7 @@ const KEYS = {
   reviewed: "gtd-reviewed",
   prio: "gtd-prio-collapsed",
   pinBand: "gtd-pin-band",
+  inbox: "gtd-inbox-strip",
   menuBar: "gtd-menu-bar",
   reflauth: "gtd-refl-auth",
   reflpane: "gtd-reflection-pane",
@@ -122,6 +123,15 @@ export function readPinBandOpen(): boolean {
 }
 export function writePinBandOpen(v: boolean): void {
   writePref("pinBand", v ? "1" : "0");
+}
+
+// The Inbox strip above the columns: open by default (it holds only what is
+// still to sort, and shows nothing but a line when empty), remembered per device.
+export function readInboxOpen(): boolean {
+  return readPref("inbox") !== "0";
+}
+export function writeInboxOpen(v: boolean): void {
+  writePref("inbox", v ? "1" : "0");
 }
 
 // The "Menu mensa" bar under the board: collapsed by default (owner's
